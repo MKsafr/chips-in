@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
 <meta name="theme-color" content="#0a1a13">
 <title>Chips-in - Virtual Casino Chips</title>
 <style>
@@ -20,6 +22,8 @@ body{margin:0;background:radial-gradient(circle at 50% -10%,var(--line),var(--bg
 
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .logo-box{display:flex;align-items:center;gap:8px}
+.logo-pic{border-radius:9px;object-fit:contain;flex:none;display:block}
+.logo-ph{border-radius:9px;flex:none;display:grid;place-items:center;background:var(--gold);color:#222;font-weight:800;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .logo{font-weight:800;letter-spacing:.5px;font-size:18px}.logo b{color:var(--gold)}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
@@ -49,7 +53,7 @@ input,select{font:inherit;background:var(--inp);border:1px solid var(--line);col
 
 .pot{text-align:center}.pot .big{font-size:38px}
 .log{max-height:160px;overflow-y:auto;font-size:12px;color:var(--mut)}
-.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--red);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:99;max-width:90%;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--red);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:20000;max-width:90%;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:999;text-align:center;padding:20px}
 .overlay h1{font-size:36px;color:var(--red);margin:0 0 10px}
@@ -57,10 +61,19 @@ input,select{font:inherit;background:var(--inp);border:1px solid var(--line);col
 .winner-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;text-align:center}
 .confetti-box{font-size:50px;animation:bounce 0.8s infinite alternate}
 @keyframes bounce{from{transform:scale(0.8)}to{transform:scale(1.2)}}
+
+.av{display:inline-grid;place-items:center;border-radius:50%;flex:none;font-weight:800;color:#fff;line-height:1;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.4);user-select:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:420px;max-height:100%;overflow-y:auto}
+.avgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.avbtn{padding:4px;background:transparent;border:2px solid transparent;border-radius:12px;display:grid;place-items:center}
+.avbtn.sel{border-color:var(--gold);background:rgba(232,195,90,.15)}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div id="modal"></div>
+<div id="alert"></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -75,11 +88,31 @@ let currentTheme = THEMES[localStorage.cb_theme] ? localStorage.cb_theme : 'defa
 document.documentElement.setAttribute('data-theme', currentTheme);
 syncThemeColor();
 
+const APP_VER = '3.2.0';
 let st = null, draft = { w: {} }, toastMsg = '', hostOpen = false, deferredPrompt = null;
+let pfOpen = false, pf = {}, leaving = false;
+
+// Foto profil bawaan (tanpa upload). Id harus sama dengan AVATARS di server.js
+const AV = {
+  spade:{t:'♠',bg:'#222'}, heart:{t:'♥',bg:'#c0392b'}, club:{t:'♣',bg:'#1e9a5a'}, diamond:{t:'♦',bg:'#2471c9'},
+  'chip-red':{chip:'#c0392b',t:'5'}, 'chip-blue':{chip:'#2471c9',t:'10'}, 'chip-green':{chip:'#1e9a5a',t:'25'},
+  'chip-black':{chip:'#222',t:'100'}, 'chip-purple':{chip:'#7d3cc4',t:'500'}, 'chip-allin':{allin:1},
+  crown:{e:'👑'}, joker:{e:'🃏'}, dice:{e:'🎲'}, shark:{e:'🦈'}, wolf:{e:'🐺'}, fox:{e:'🦊'}, cowboy:{e:'🤠'}, cool:{e:'😎'},
+  slot:{e:'🎰'}, clover:{e:'🍀'}, fire:{e:'🔥'}, dragon:{e:'🐉'}, lion:{e:'🦁'}, hat:{e:'🎩'}, rocket:{e:'🚀'}, money:{e:'💰'}
+};
+const AV_IDS = Object.keys(AV);
+function avatar(id, size) {
+  size = size || 36;
+  const a = AV[id] || AV.spade, wh = `width:${size}px;height:${size}px;`, bw = Math.max(2, Math.round(size / 11));
+  if (a.e) return `<span class="av" style="${wh}font-size:${Math.round(size * .55)}px;background:var(--btn2)">${a.e}</span>`;
+  if (a.allin) return `<span class="av" style="${wh}font-size:${Math.round(size * .22)}px;color:#000;background:linear-gradient(135deg,#e8c35a,#e5484d);border:${bw}px solid rgba(255,255,255,.75)">ALL<br>IN</span>`;
+  if (a.chip) return `<span class="av" style="${wh}font-size:${Math.round(size * .3)}px;background:${a.chip};border:${bw}px dashed rgba(255,255,255,.6)">${a.t}</span>`;
+  return `<span class="av" style="${wh}font-size:${Math.round(size * .55)}px;background:${a.bg}">${a.t}</span>`;
+}
 let audioCtx = null;
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(()=>{});
 }
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -128,7 +161,10 @@ async function api(type, extra = {}) {
       body: JSON.stringify({ token, roomCode, type, ...extra })
     });
     const j = await r.json();
-    if (j.err) flash(j.err);
+    if (j.err) {
+      if (/Room tidak ditemukan/i.test(j.err)) showAlert('Room tidak ditemukan', 'Kode room salah atau room sudah ditutup. Periksa lagi kode dari Bandar.');
+      else flash(j.err);
+    }
     if (j.roomCode) {
       roomCode = j.roomCode;
       localStorage.cb_room = roomCode;
@@ -151,12 +187,14 @@ function connect() {
   es.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
+      if (data.ver && data.ver !== APP_VER && sessionStorage.cb_rl !== data.ver) {
+        sessionStorage.cb_rl = data.ver;   // server sudah versi baru -> muat ulang halaman sekali
+        location.reload();
+        return;
+      }
       if (data.error === 'ROOM_NOT_FOUND') {
-        roomCode = '';
-        localStorage.cb_room = '';
-        st = null;
-        flash('Room telah ditutup atau tidak ada');
-        render();
+        exitRoom();
+        showAlert('Room tidak ditemukan', 'Room sudah ditutup atau server baru saja restart. Buat atau gabung room lagi.');
         return;
       }
       if (st && data.lastEvent && st.lastEvent !== data.lastEvent) {
@@ -181,6 +219,21 @@ const d = (k, def) => draft[k] !== undefined ? draft[k] : def;
 const setD = (k, v) => { draft[k] = v; };
 const num = id => Math.floor(+($('#' + id) || {}).value || 0);
 
+// Logo: pakai /logo.png kalau ada. Kalau belum ada, tampil placeholder ♠ (otomatis berubah saat logo.png diupload ke GitHub)
+let logoOk = false;
+(function () {
+  const im = new Image();
+  im.onload = () => { logoOk = true; render(); };
+  im.onerror = () => { logoOk = false; };
+  im.src = '/logo.png';
+})();
+function logoHTML(size) {
+  size = size || 34;
+  return logoOk
+    ? `<img class="logo-pic" src="/logo.png" alt="Chips-in" style="width:${size}px;height:${size}px">`
+    : `<span class="logo-ph" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .6)}px">♠</span>`;
+}
+
 function syncThemeColor() {
   const m = document.querySelector('meta[name=theme-color]');
   if (m) m.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a1a13';
@@ -200,20 +253,69 @@ function themeSelect() {
 function exitRoom() {
   if (es) { es.close(); es = null; }
   roomCode = ''; localStorage.cb_room = ''; st = null; hostOpen = false;
+  closeProfile();
   render();
 }
-let leaving = false;
 async function leaveSeat() {
   leaving = true;
   const j = await api('leave');
   if (j && j.ok) exitRoom();
   leaving = false;
 }
-function renameMe() {
-  const me = (st && st.players || []).find(p => p.id === st.you);
+function showAlert(title, msg) {
+  $('#alert').innerHTML = `<div class="modal" style="z-index:10001"><div class="mbox" style="text-align:center">
+    <div style="font-size:40px">🚫</div>
+    <div style="font-size:18px;font-weight:800;margin:6px 0">${esc(title)}</div>
+    <div class="mut" style="margin-bottom:14px">${esc(msg)}</div>
+    <button class="y" style="width:100%" onclick="closeAlert()">OK</button></div></div>`;
+}
+function closeAlert() { $('#alert').innerHTML = ''; }
+
+async function joinRoom() {
+  const v = (($('#rc') || {}).value || '').trim().toUpperCase();
+  if (v.length !== 6) { showAlert('Kode room tidak valid', 'Kode room terdiri dari 6 karakter. Cek lagi kode dari Bandar.'); return; }
+  const j = await api('checkRoom', { roomCode: v });   // kalau room tidak ada -> pop up "Room tidak ditemukan"
+  if (j && j.ok) { roomCode = v; localStorage.cb_room = v; connect(); render(); }
+}
+
+// ----- Profil pemain (nama + foto) -----
+// Profil milik kita: pemain di meja, atau profil Bandar kalau kita Bandar
+function myProfile() {
+  if (!st) return null;
+  return st.isHost ? st.host : (st.players || []).find(p => p.id === st.you) || null;
+}
+function openProfile(mode) {
+  const me = myProfile();
   if (!me) return;
-  const n = prompt('Nama baru (maks 16 karakter):', me.name);
-  if (n !== null && n.trim()) api('rename', { name: n });
+  pf = { mode, name: me.name, avatar: me.avatar };
+  pfOpen = true;
+  renderProfile();
+}
+function closeProfile() { pfOpen = false; const m = $('#modal'); if (m) m.innerHTML = ''; }
+function pickAvatar(id) {
+  const el = $('#pfName'); if (el) pf.name = el.value;
+  pf.avatar = id; renderProfile();
+}
+function renderProfile() {
+  const full = pf.mode === 'full', showName = pf.mode !== 'avatar', showAv = pf.mode !== 'name';
+  const title = full ? (st && st.isHost ? 'Kamu jadi Bandar! 👑' : 'Selamat datang di meja! 🎉') : pf.mode === 'name' ? 'Ganti Nama' : 'Ganti Foto Profil';
+  $('#modal').innerHTML = `<div class="modal"><div class="mbox">
+    <div style="font-size:18px;font-weight:800">${title}</div>
+    ${full ? `<div class="mut" style="margin-top:4px">${st && st.isHost ? 'Pilih nama dan foto profil Bandar dulu sebelum mengatur room. Pemain lain akan melihatnya.' : 'Pilih foto profil dan isi namamu. Bisa diubah lagi kapan saja saat bermain.'}</div>` : ''}
+    ${showAv ? `<div class="avgrid">${AV_IDS.map(id => `<button class="avbtn ${pf.avatar === id ? 'sel' : ''}" onclick="pickAvatar('${id}')">${avatar(id, 44)}</button>`).join('')}</div>` : ''}
+    ${showName ? `<div class="mut" style="margin:10px 0 4px">Nama (maks 16 karakter)</div>
+      <input id="pfName" maxlength="16" value="${esc(pf.name)}" onkeydown="if(event.key==='Enter')saveProfile()">` : ''}
+    <div class="row" style="margin-top:14px">
+      ${full ? '' : '<button class="g f" onclick="closeProfile()">Batal</button>'}
+      <button class="ok f" onclick="saveProfile()">${full ? (st && st.isHost ? 'Lanjut' : 'Mulai Main') : 'Simpan'}</button>
+    </div></div></div>`;
+}
+async function saveProfile() {
+  const payload = {};
+  if (pf.mode !== 'avatar') payload.name = ($('#pfName') || {}).value;
+  if (pf.mode !== 'name') payload.avatar = pf.avatar;
+  const j = await api('profile', payload);
+  if (j && j.ok) closeProfile();
 }
 
 function pRow(p, extra = '') {
@@ -231,7 +333,7 @@ function pRow(p, extra = '') {
   const out = pk && k.active && (!p.inHand || p.folded);
 
   return `<div class="pl ${k.turn === p.id && pk ? 'turn' : ''} ${out ? 'out' : ''} ${p.id === st.you ? 'me' : ''}">
-    <div><b>${esc(p.name)}</b>${t.join('')}${extra}</div>
+    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b>${esc(p.name)}</b>${t.join('')}${extra}</div></div>
     <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
 }
 
@@ -359,7 +461,7 @@ function hostPanel() {
     <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),sb:num('sb'),bb:num('bb')})">Simpan Pengaturan</button></div>
     
     <div class="card"><h3>Kelola Pemain</h3>` +
-    (st.players || []).map(p => `<div class="pl"><div><b>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div>
+    (st.players || []).map(p => `<div class="pl"><div class="row" style="flex-wrap:nowrap;gap:8px">${avatar(p.avatar, 28)}<div><b>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div></div>
       <div class="row">
       <button class="g s" onclick="if(confirm('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.'))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
       <button class="ok s" onclick="api('adjust',{id:${p.id},delta:100})">+100</button>
@@ -372,7 +474,7 @@ function hostPanel() {
 function render() {
   if (!roomCode) {
     $('#app').innerHTML = `
-      <div class="top"><div class="logo-box"><div class="logo">♠ Chips-<b>in</b></div></div>${themeSelect()}</div>
+      <div class="top"><div class="logo-box">${logoHTML(36)}<div class="logo">Chips-<b>in</b></div></div>${themeSelect()}</div>
       <div class="card">
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital lokal untuk Poker & Blackjack IRL bersama teman.</p>
@@ -381,8 +483,8 @@ function render() {
         </div>
         <div style="margin:16px 0;text-align:center" class="mut">— ATAU —</div>
         <div class="row">
-          <input id="rc" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6">
-          <button class="ok" onclick="let v=$('#rc').value.trim().toUpperCase(); if(v){ roomCode=v; localStorage.cb_room=v; connect(); }">Join Room</button>
+          <input id="rc" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6" onkeydown="if(event.key==='Enter')joinRoom()">
+          <button class="ok" onclick="joinRoom()">Join Room</button>
         </div>
       </div>`;
     return;
@@ -397,7 +499,7 @@ function render() {
   
   let h = `<div class="top">
     <div class="logo-box">
-      <div class="logo">♠ Room: <b>${st.code || roomCode}</b></div>
+      ${logoHTML(36)}<div class="logo">Room: <b>${st.code || roomCode}</b></div>
     </div>
     <div class="row">
       ${themeSelect()}
@@ -407,14 +509,21 @@ function render() {
     </div>
   </div>`;
 
+  if (!st.isHost && st.host) {
+    h += `<div class="row" style="margin:0 0 10px;gap:8px">${avatar(st.host.avatar, 26)}<div class="mut">👑 Bandar: <b style="color:var(--tx)">${esc(st.host.name)}</b></div></div>`;
+  }
+
   if (st.isHost) {
-    h += `<div class="card"><div class="mut">👑 Kamu adalah <b>Bandar</b></div>
-      <div class="mut" style="margin-top:4px">Bandar mengatur permainan dan <b>tidak ikut bermain</b>. Semua orang lain yang masuk room otomatis duduk di meja.</div></div>`;
+    const hp = st.host || {};
+    h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar • tidak ikut bermain</div></div></div></div>
+      <div class="mut" style="margin-top:8px">Bandar mengatur permainan. Semua orang lain yang masuk room otomatis duduk di meja.</div>
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
   } else if (me) {
-    h += `<div class="card row sp">
-      <div><div class="mut">${esc(me.name)} <button class="g s" style="padding:2px 8px" onclick="renameMe()">✎ Ganti Nama</button></div><div class="big">${fmt(me.chips)}</div></div>
-      <button class="g s" onclick="if(confirm('Keluar dari room?'))leaveSeat()">Keluar</button>
-    </div>`;
+    h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div style="font-weight:800">${esc(me.name)}</div><div class="big">${fmt(me.chips)}</div></div></div>
+      <button class="g s" onclick="if(confirm('Keluar dari room?'))leaveSeat()">Keluar</button></div>
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
   }
 
   const ph = st.pendingHost;
@@ -463,6 +572,11 @@ function render() {
 
   if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
   $('#app').innerHTML = h;
+
+  // Pemain baru yang belum isi profil -> langsung muncul pop up nama + foto
+  const prof = myProfile();   // berlaku juga untuk Bandar: wajib pilih nama & foto sebelum memegang kontrol room
+  if (prof && !prof.ready && !pfOpen) openProfile('full');
+  else if (pfOpen && pf.mode === 'full' && (!prof || prof.ready)) closeProfile();
 }
 
 // PENTING: tampilkan UI dulu, baru sambungkan (kalau tidak, layar kosong saat belum ada room)

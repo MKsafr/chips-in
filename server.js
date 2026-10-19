@@ -1,5 +1,10 @@
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const PORT = process.env.PORT || 3000;
+const VERSION = '3.2.0';   // klien yang versinya beda akan otomatis refresh
+
+// Foto profil yang tersedia (tanpa upload). Harus sama dengan daftar di index.html
+const AVATARS = ['spade','heart','club','diamond','chip-red','chip-blue','chip-green','chip-black','chip-purple','chip-allin',
+  'crown','joker','dice','shark','wolf','fox','cowboy','cool','slot','clover','fire','dragon','lion','hat','rocket','money'];
 
 // In-Memory Multi-Room Storage
 const rooms = {}; 
@@ -34,6 +39,7 @@ function initRoom(code) {
     lastEvent: 'Room berhasil dibuat.',
     dealerConfirmedStage: true,
     pendingHost: null,
+    hostProfile: { name: 'Bandar', avatar: 'crown', ready: false },   // Bandar juga punya nama & foto (tidak ikut bermain)
     stash: {},   // chip & nama pemain yang sedang tidak duduk (supaya tidak bisa dapat chip baru dengan keluar-masuk)
     touched: Date.now(),
     poker: { active: false, stage: 'idle', dealer: null, turn: null, currentBet: 0, minRaise: 0, order: [], sbId: null, bbId: null },
@@ -233,7 +239,12 @@ function bjResolve(room, p, res) {
 }
 
 // ---------- Meja: semua orang di room (selain Bandar) otomatis jadi pemain ----------
-const nameTaken = (room, name, except) => room.players.some(p => p !== except && p.name.toLowerCase() === name.toLowerCase());
+// except: objek pemain yang dikecualikan, atau 'host' kalau yang dicek adalah nama Bandar sendiri
+const nameTaken = (room, name, except) => {
+  const n = name.toLowerCase();
+  if (room.players.some(p => p !== except && p.name.toLowerCase() === n)) return true;
+  return except !== 'host' && !!room.hostProfile && room.hostProfile.name.toLowerCase() === n;
+};
 
 function defaultName(room) {
   for (let i = 1; ; i++) if (!nameTaken(room, 'Pemain ' + i)) return 'Pemain ' + i;
@@ -243,8 +254,11 @@ function seatPlayer(room, token) {
   if (!token || room.hostToken === token || room.players.some(p => p.token === token)) return null;
   const old = room.stash[token];
   let name = old && old.name && !nameTaken(room, old.name) ? old.name : defaultName(room);
+  const id = room.nextId++;
   const p = {
-    id: room.nextId++, token, name,
+    id, token, name,
+    avatar: old && old.avatar ? old.avatar : AVATARS[(id - 1) % AVATARS.length],
+    ready: !!(old && old.ready),          // false = belum mengisi nama/foto -> klien menampilkan pop up profil
     chips: old ? old.chips : room.startChips,
     bet: 0, contrib: 0, folded: false, allin: false, acted: false, inHand: false,
     bjBet: 0, bjSplitBet: 0, last: 0
@@ -259,7 +273,7 @@ function seatPlayer(room, token) {
 function unseatPlayer(room, p) {
   p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0);   // taruhan blackjack yang belum dikunci dikembalikan
   p.bjBet = p.bjSplitBet = 0;
-  room.stash[p.token] = { name: p.name, chips: p.chips };
+  room.stash[p.token] = { name: p.name, chips: p.chips, avatar: p.avatar, ready: p.ready };
   room.players = room.players.filter(q => q !== p);
   if (room.pendingHost && room.pendingHost.targetId === p.id) clearOffer(room);
 }
@@ -286,8 +300,14 @@ function promote(room, newToken) {
   }
   clearOffer(room);
   const newName = np.name;
+  const oldProf = room.hostProfile;
+  const newProf = { name: np.name, avatar: np.avatar, ready: true };
   unseatPlayer(room, np);
   room.hostToken = newToken;
+  // Profil Bandar lama disimpan supaya dia duduk dengan nama & foto yang sama; profil pemain baru jadi profil Bandar
+  const prev = room.stash[oldToken];
+  room.stash[oldToken] = { name: oldProf.name, avatar: oldProf.avatar, ready: !!oldProf.ready, chips: prev ? prev.chips : room.startChips };
+  room.hostProfile = newProf;
   const online = [...clients].some(c => c.token === oldToken && c.roomCode === room.code);
   const seated = online ? seatPlayer(room, oldToken) : null;
   logRoom(room, `${newName} sekarang menjadi Bandar${seated ? ` • Bandar sebelumnya duduk sebagai ${seated.name}` : ''}`);
@@ -338,18 +358,27 @@ function handle(b) {
   const me = room.players.find(p => p.token === token);
   const isHost = room.hostToken === token;
 
-  const needHost = () => { if (!isHost) throw 'Hanya Bandar yang memiliki akses ini!'; };
+  const needHost = () => {
+    if (!isHost) throw 'Hanya Bandar yang memiliki akses ini!';
+    if (!room.hostProfile.ready) throw 'Pilih nama dan foto profil Bandar dulu';
+  };
   const needMe = () => { if (!me) throw 'Kamu belum bergabung di room ini!'; return me; };
 
   switch (type) {
-    case 'rename': {
-      const m = needMe();
-      const name = String(b.name || '').trim().slice(0, 16);
-      if (!name) throw 'Nama tidak boleh kosong';
-      if (nameTaken(room, name, m)) throw 'Nama sudah dipakai pemain lain';
-      const oldName = m.name;
-      m.name = name;
-      logRoom(room, `${oldName} mengganti nama menjadi ${name}`);
+    case 'checkRoom': break;   // hanya untuk memastikan room ada (error ditangani di atas)
+    case 'profile': {
+      const m = isHost ? room.hostProfile : needMe();   // Bandar mengatur profilnya sendiri
+      if (b.name !== undefined) {
+        const name = String(b.name || '').trim().slice(0, 16);
+        if (!name) throw 'Nama tidak boleh kosong';
+        if (nameTaken(room, name, isHost ? 'host' : m)) throw 'Nama sudah dipakai';
+        if (name !== m.name) { const o = m.name; m.name = name; logRoom(room, `${o} mengganti nama menjadi ${name}`); }
+      }
+      if (b.avatar !== undefined) {
+        if (!AVATARS.includes(b.avatar)) throw 'Foto profil tidak valid';
+        m.avatar = b.avatar;
+      }
+      m.ready = true;
       break;
     }
     case 'leave': {
@@ -513,7 +542,7 @@ function handle(b) {
 
 function view(token, roomCode) {
   const room = rooms[roomCode];
-  if (!room) return { error: 'ROOM_NOT_FOUND' };
+  if (!room) return { error: 'ROOM_NOT_FOUND', ver: VERSION };
   
   const me = room.players.find(p => p.token === token);
   const k = room.poker;
@@ -523,6 +552,7 @@ function view(token, roomCode) {
   const winnerName = (room.players.length > 1 && activeChipHolders.length === 1) ? activeChipHolders[0].name : null;
 
   return {
+    ver: VERSION,
     code: room.code,
     mode: room.mode,
     startChips: room.startChips,
@@ -536,6 +566,7 @@ function view(token, roomCode) {
     poker: { ...k, pot: pot(room), layers: k.stage === 'showdown' ? layers(room) : [] },
     bj: room.bj,
     pendingHost: room.pendingHost,
+    host: room.hostProfile,
     you: me ? me.id : null,
     isHost
   };
@@ -557,15 +588,18 @@ http.createServer((req, res) => {
     return res.end(fs.readFileSync(path.join(__dirname, 'manifest.json')));
   }
   if (u.pathname === '/sw.js') {
-    res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    res.writeHead(200, { 'Content-Type': 'application/javascript', 'Cache-Control': 'no-cache' });
     return res.end(fs.readFileSync(path.join(__dirname, 'sw.js')));
   }
   if (u.pathname === '/logo.png') {
     const p = path.join(__dirname, 'logo.png');
     if (fs.existsSync(p)) {
-      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' });
       return fs.createReadStream(p).pipe(res);
     }
+    // Belum ada logo.png -> 404 (jangan kirim index.html), klien akan memakai placeholder
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    return res.end('logo.png belum ada');
   }
 
   if (u.pathname === '/events') {
@@ -610,7 +644,7 @@ http.createServer((req, res) => {
   }
 
   fs.readFile(path.join(__dirname, 'index.html'), (err, html) => {
-    res.writeHead(err ? 500 : 200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(err ? 500 : 200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache, no-store, must-revalidate' });
     res.end(err ? 'index.html tidak ditemukan' : html);
   });
 }).listen(PORT, '0.0.0.0', () => {
