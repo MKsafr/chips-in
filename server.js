@@ -3,7 +3,7 @@ const http = require("http"),
   path = require("path"),
   crypto = require("crypto");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.3.0"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.4.0"; // klien yang versinya beda akan otomatis refresh
 
 // Foto profil yang tersedia (tanpa upload). Harus sama dengan daftar di index.html
 const AVATARS = [
@@ -440,11 +440,15 @@ function cancelRound(room, why) {
 }
 
 // Bandar baru turun dari meja (keluar sebagai pemain). Bandar lama otomatis duduk di meja kalau masih online.
-function promote(room, newToken) {
+function promote(room, newToken, returnFormerHostToSeat = true) {
   const np = room.players.find((p) => p.token === newToken);
   if (!np) return;
   const oldToken = room.hostToken;
-  if (room.poker.active || room.bj.phase === "playing") {
+  if (
+    room.poker.active ||
+    room.bj.phase === "playing" ||
+    room.players.some((p) => p.bjBet || p.bjSplitBet)
+  ) {
     cancelRound(
       room,
       "Ronde dibatalkan karena pergantian Bandar. Semua chip dikembalikan",
@@ -458,16 +462,22 @@ function promote(room, newToken) {
   room.hostToken = newToken;
   // Profil Bandar lama disimpan supaya dia duduk dengan nama & foto yang sama; profil pemain baru jadi profil Bandar
   const prev = room.stash[oldToken];
-  room.stash[oldToken] = {
-    name: oldProf.name,
-    avatar: oldProf.avatar,
-    ready: !!oldProf.ready,
-    chips: prev ? prev.chips : room.startChips,
-  };
+  if (returnFormerHostToSeat) {
+    room.stash[oldToken] = {
+      name: oldProf.name,
+      avatar: oldProf.avatar,
+      ready: !!oldProf.ready,
+      chips: prev ? prev.chips : room.startChips,
+    };
+  } else {
+    delete room.stash[oldToken];
+  }
   room.hostProfile = newProf;
-  const online = [...clients].some(
-    (c) => c.token === oldToken && c.roomCode === room.code,
-  );
+  const online =
+    returnFormerHostToSeat &&
+    [...clients].some(
+      (c) => c.token === oldToken && c.roomCode === room.code,
+    );
   const seated = online ? seatPlayer(room, oldToken) : null;
   logRoom(
     room,
@@ -498,9 +508,10 @@ function handleDisconnect(token) {
       logRoom(room, "Bandar terputus. Mencari Bandar baru secara otomatis…");
       promote(room, next.token);
       broadcast(code);
-    } else if (![...clients].some((x) => x.roomCode === code)) {
+    } else {
       clearOffer(room);
       delete rooms[code];
+      broadcast(code);
     }
   }
 }
@@ -589,6 +600,23 @@ function handle(b) {
         throw "Tunggu hingga ronde selesai sebelum keluar";
       unseatPlayer(room, me);
       logRoom(room, `${me.name} telah meninggalkan meja`);
+      break;
+    }
+    case "leaveHost": {
+      needHost();
+      clearOffer(room);
+      const nextHost =
+        room.players.find((p) =>
+          [...clients].some(
+            (client) =>
+              client.token === p.token && client.roomCode === room.code,
+          ),
+        ) || room.players[0];
+      if (nextHost) {
+        promote(room, nextHost.token, false);
+      } else {
+        delete rooms[room.code];
+      }
       break;
     }
     case "act":
