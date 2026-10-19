@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0a1a13">
-<title>ChipBank - Virtual Casino Chips</title>
+<title>Chips-in - Virtual Casino Chips</title>
 <style>
 :root{
   --bg:#0a1a13;--card:#10291f;--line:#1f4f39;--tx:#eef6f0;--mut:#8fb3a1;--gold:#e8c35a;--red:#e5484d;--grn:#3ecf8e;--blu:#4c8dff;
@@ -20,7 +20,6 @@ body{margin:0;background:radial-gradient(circle at 50% -10%,var(--line),var(--bg
 
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .logo-box{display:flex;align-items:center;gap:8px}
-.logo-img{width:32px;height:32px;border-radius:6px;object-fit:cover;background:var(--gold)}
 .logo{font-weight:800;letter-spacing:.5px;font-size:18px}.logo b{color:var(--gold)}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
@@ -55,7 +54,6 @@ input,select{font:inherit;background:#07140f;border:1px solid var(--line);color:
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:999;text-align:center;padding:20px}
 .overlay h1{font-size:36px;color:var(--red);margin:0 0 10px}
 
-/* Animasi Emoji Pemenang */
 .winner-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;text-align:center}
 .confetti-box{font-size:50px;animation:bounce 0.8s infinite alternate}
 @keyframes bounce{from{transform:scale(0.8)}to{transform:scale(1.2)}}
@@ -66,8 +64,8 @@ input,select{font:inherit;background:#07140f;border:1px solid var(--line);color:
 
 <script>
 const $=s=>document.querySelector(s);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=n=>Number(n).toLocaleString('id-ID');
+const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n||0).toLocaleString('id-ID');
 
 let token = localStorage.cb_token || (localStorage.cb_token = Math.random().toString(36).slice(2) + Date.now().toString(36));
 let roomCode = localStorage.cb_room || '';
@@ -77,7 +75,6 @@ document.documentElement.setAttribute('data-theme', currentTheme);
 let st = null, draft = { w: {} }, toastMsg = '', hostOpen = false, deferredPrompt = null;
 let audioCtx = null;
 
-// Service Worker Registration for PWA
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
@@ -87,7 +84,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
   render();
 });
 
-// Audio Synthesizer Lightweight (Tanpa File External)
 function playSFX(type) {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -149,22 +145,26 @@ function connect() {
   if (es) es.close();
   es = new EventSource(`/events?token=${token}&room=${roomCode}`);
   es.onmessage = e => {
-    const data = JSON.parse(e.data);
-    if (data.error === 'ROOM_NOT_FOUND') {
-      roomCode = '';
-      localStorage.cb_room = '';
-      st = null;
-      flash('Room telah ditutup atau tidak ada');
+    try {
+      const data = JSON.parse(e.data);
+      if (data.error === 'ROOM_NOT_FOUND') {
+        roomCode = '';
+        localStorage.cb_room = '';
+        st = null;
+        flash('Room telah ditutup atau tidak ada');
+        render();
+        return;
+      }
+      if (st && data.lastEvent && st.lastEvent !== data.lastEvent) {
+        if (data.lastEvent.includes('Raise')) playSFX('raise');
+        else if (data.lastEvent.includes('Fold')) playSFX('fold');
+        else if (data.lastEvent.includes('FLOP') || data.lastEvent.includes('TURN') || data.lastEvent.includes('RIVER')) playSFX('stage');
+      }
+      st = data;
       render();
-      return;
+    } catch(err) {
+      console.error(err);
     }
-    if (st && st.lastEvent !== data.lastEvent) {
-      if (data.lastEvent.includes('Raise')) playSFX('raise');
-      else if (data.lastEvent.includes('Fold')) playSFX('fold');
-      else if (data.lastEvent.includes('FLOP') || data.lastEvent.includes('TURN') || data.lastEvent.includes('RIVER')) playSFX('stage');
-    }
-    st = data;
-    render();
   };
 }
 
@@ -179,7 +179,8 @@ function changeTheme(th) {
 }
 
 function pRow(p, extra = '') {
-  const k = st.poker, pk = st.mode === 'poker';
+  if (!p) return '';
+  const k = st.poker || {}, pk = st.mode === 'poker';
   const t = [];
   if (pk && k.active && k.dealer === p.id) t.push('<span class="tag d">D</span>');
   if (pk && k.active && k.sbId === p.id) t.push('<span class="tag">SB</span>');
@@ -197,33 +198,30 @@ function pRow(p, extra = '') {
 }
 
 function pokerView(me) {
-  const k = st.poker;
+  const k = st.poker || {};
   let h = `<div class="grid-2">`;
   
-  // Kolom Kiri: Pot & Status Meja
-  h += `<div><div class="card pot"><div class="mut">${k.stage.toUpperCase()}${k.active && k.currentBet ? ' • Taruhan saat ini ' + fmt(k.currentBet) : ''}</div>
+  h += `<div><div class="card pot"><div class="mut">${(k.stage || 'IDLE').toUpperCase()}${k.active && k.currentBet ? ' • Taruhan saat ini ' + fmt(k.currentBet) : ''}</div>
     <div class="big">${fmt(k.pot)}</div><div class="mut">Total Pot</div></div></div>`;
 
-  // Kolom Kanan: Feed Log Pesan Terbaru
   h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || '-')}</div></div></div></div>`;
 
-  // Notifikasi Dealer untuk Pembukaan Kartu Fizik
   if (st.isHost && k.active && !st.dealerConfirmedStage && k.stage !== 'showdown') {
     h += `<div class="card" style="border-color:var(--gold)">
       <h3>Aksi Bandar (Dealer)</h3>
-      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${k.stage.toUpperCase()}</b> di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.</div>
-      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${k.stage.toUpperCase()}</button>
+      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${(k.stage || '').toUpperCase()}</b> di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.</div>
+      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${(k.stage || '').toUpperCase()}</button>
     </div>`;
   }
 
-  h += `<div class="card"><h3>Daftar Pemain</h3>${st.players.map(p => pRow(p)).join('') || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map(p => pRow(p)).join('') || '<div class="mut">Belum ada pemain</div>'}</div>`;
 
   if (me && k.active && k.turn === me.id) {
     if (!st.dealerConfirmedStage) {
-      h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3><div class="mut">Tunggu Bandar mengonfirmasi pembukaan kartu ${k.stage.toUpperCase()} di meja fisik...</div></div>`;
+      h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3><div class="mut">Tunggu Bandar mengonfirmasi pembukaan kartu ${(k.stage || '').toUpperCase()} di meja fisik...</div></div>`;
     } else {
-      const toCall = k.currentBet - me.bet, callAmt = Math.min(toCall, me.chips), maxTo = me.bet + me.chips, minTo = Math.min(k.currentBet + k.minRaise, maxTo);
-      const canRaise = maxTo > k.currentBet;
+      const toCall = (k.currentBet || 0) - (me.bet || 0), callAmt = Math.min(toCall, me.chips), maxTo = me.bet + me.chips, minTo = Math.min((k.currentBet || 0) + (k.minRaise || 0), maxTo);
+      const canRaise = maxTo > (k.currentBet || 0);
       h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3>
         <div class="row"><button class="r f" onclick="api('act',{a:'fold'})">Fold</button>
         <button class="ok f" onclick="api('act',{a:'call'})">${toCall > 0 ? 'Call ' + fmt(callAmt) : 'Check'}</button></div>`;
@@ -246,16 +244,16 @@ function pokerView(me) {
 }
 
 function qr(minTo, frac) {
-  const k = st.poker, me = st.players.find(p => p.id === st.you), maxTo = me.bet + me.chips, toCall = k.currentBet - me.bet;
-  let v = frac ? k.currentBet + Math.round((k.pot + toCall) * frac) : minTo;
-  v = Math.max(Math.min(k.currentBet + k.minRaise, maxTo), Math.min(v, maxTo));
+  const k = st.poker || {}, me = (st.players || []).find(p => p.id === st.you) || {}, maxTo = (me.bet || 0) + (me.chips || 0), toCall = (k.currentBet || 0) - (me.bet || 0);
+  let v = frac ? (k.currentBet || 0) + Math.round(((k.pot || 0) + toCall) * frac) : minTo;
+  v = Math.max(Math.min((k.currentBet || 0) + (k.minRaise || 0), maxTo), Math.min(v, maxTo));
   draft.raise = v; render();
 }
 
 function showdown() {
-  const k = st.poker, nm = id => { const p = st.players.find(x => x.id === id); return p ? esc(p.name) : 'Pemain'; };
+  const k = st.poker || {}, nm = id => { const p = (st.players || []).find(x => x.id === id); return p ? esc(p.name) : 'Pemain'; };
   let h = `<div class="card" style="border-color:var(--gold)"><h3>Showdown — Tentukan Pemenang</h3>`;
-  k.layers.forEach((l, i) => {
+  (k.layers || []).forEach((l, i) => {
     h += `<div style="margin-top:8px"><b>${i === 0 ? 'Pot Utama' : 'Side Pot ' + i}</b> <span style="color:var(--gold)">(${fmt(l.amount)})</span>`;
     h += l.elig.map(id => st.isHost ? `<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="checkbox" ${draft.w[i + '_' + id] ? 'checked' : ''} onchange="draft.w['${i}_${id}']=this.checked"> ${nm(id)}</label>` : `<div class="mut">• ${nm(id)}</div>`).join('');
     h += '</div>';
@@ -265,20 +263,21 @@ function showdown() {
 }
 
 function doAward() {
-  const winners = st.poker.layers.map((l, i) => l.elig.filter(id => draft.w[i + '_' + id]));
+  const winners = (st.poker.layers || []).map((l, i) => l.elig.filter(id => draft.w[i + '_' + id]));
   api('award', { winners });
 }
 
 function bjView(me) {
+  const bj = st.bj || {};
   let h = `<div class="grid-2">
-    <div class="card pot"><div class="mut">Blackjack</div><div class="big">${fmt(st.players.reduce((a, p) => a + p.bjBet + p.bjSplitBet, 0))}</div><div class="mut">Total Taruhan</div></div>
+    <div class="card pot"><div class="mut">Blackjack</div><div class="big">${fmt((st.players || []).reduce((a, p) => a + (p.bjBet || 0) + (p.bjSplitBet || 0), 0))}</div><div class="mut">Total Taruhan</div></div>
     <div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || '-')}</div></div>
   </div>`;
   
-  const playing = st.bj.phase === 'playing';
-  h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>` + st.players.map(p => {
+  const playing = bj.phase === 'playing';
+  h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>` + (st.players || []).map(p => {
     let ex = '';
-    if (st.isHost && playing && (p.bjBet > 0 || p.bjSplitBet > 0)) {
+    if (st.isHost && playing && ((p.bjBet || 0) > 0 || (p.bjSplitBet || 0) > 0)) {
       ex = `<div class="row" style="margin-top:6px">
         <button class="ok s" onclick="api('bjResolve',{id:${p.id},result:'win'})">Menang</button>
         <button class="y s" onclick="api('bjResolve',{id:${p.id},result:'bj'})">BJ 3:2</button>
@@ -288,15 +287,15 @@ function bjView(me) {
     return pRow(p, ex);
   }).join('') + '</div>';
 
-  if (me && st.bj.phase === 'betting') {
+  if (me && bj.phase === 'betting') {
     h += `<div class="card"><h3>Taruhanmu: ${fmt(me.bjBet)}</h3><div class="chips">` +
-      [5, 10, 25, 100, 500].map(v => `<button class="chip c${v}" onclick="api('bet',{amount:${me.bjBet + v}})">${v}</button>`).join('') +
-      `<button class="chip callin" onclick="api('bet',{amount:${me.chips + me.bjBet}})">ALL IN</button>` +
+      [5, 10, 25, 100, 500].map(v => `<button class="chip c${v}" onclick="api('bet',{amount:${(me.bjBet || 0) + v}})">${v}</button>`).join('') +
+      `<button class="chip callin" onclick="api('bet',{amount:${(me.chips || 0) + (me.bjBet || 0)}})">ALL IN</button>` +
       `</div><div class="row"><button class="g f" onclick="api('bet',{amount:0})">Reset</button>
       ${me.last ? `<button class="g f" onclick="api('bet',{amount:${me.last}})">Ulang (${fmt(me.last)})</button>` : ''}</div></div>`;
   }
 
-  if (me && playing && me.bjBet > 0) {
+  if (me && playing && (me.bjBet || 0) > 0) {
     h += `<div class="card"><h3>Opsi Tambahan</h3>
       <div class="row"><button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>
       <button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button></div></div>`;
@@ -321,8 +320,8 @@ function hostPanel() {
     <div style="flex:1"><div class="mut">Big Blind</div><input id="bb" type="number" value="${d('bb', st.bb)}" oninput="setD('bb',this.value)"></div></div>
     <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),sb:num('sb'),bb:num('bb')})">Simpan Pengaturan</button></div>
     
-    <div class="card"><h3>Urutan Tempat Duduk & Kelola Pemain</h3>` +
-    st.players.map(p => `<div class="pl"><div><b>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div>
+    <div class="card"><h3>Kelola Pemain</h3>` +
+    (st.players || []).map(p => `<div class="pl"><div><b>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div>
       <div class="row">
       <button class="g s" onclick="api('transferHost',{targetId:${p.id}})">Oper Bandar</button>
       <button class="ok s" onclick="api('adjust',{id:${p.id},delta:100})">+100</button>
@@ -335,13 +334,9 @@ function hostPanel() {
 function render() {
   if (!roomCode) {
     $('#app').innerHTML = `
-      <div class="top">
-        <div class="logo-box">
-          <div class="logo">♠ Chip<b>Bank</b></div>
-        </div>
-      </div>
+      <div class="top"><div class="logo-box"><div class="logo">♠ Chips-<b>in</b></div></div></div>
       <div class="card">
-        <h3>Selamat Datang di ChipBank</h3>
+        <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital lokal untuk Poker & Blackjack IRL bersama teman.</p>
         <div class="row" style="margin-top:12px">
           <button class="y f" onclick="api('hostRoom')">Host Room (Buat Meja Baru)</button>
@@ -399,15 +394,13 @@ function render() {
 
   h += `<div class="card"><h3>Riwayat Permainan</h3><div class="log">${(st.log || []).map(l => `<div>${esc(l)}</div>`).join('') || '—'}</div></div>`;
 
-  // Modal Kalah (Chips Habis)
-  if (me && me.chips === 0 && (!st.poker.active || me.folded)) {
+  if (me && me.chips === 0 && (!st.poker || !st.poker.active || me.folded)) {
     h += `<div class="overlay">
       <h1>CHIPS KAMU HABIS!</h1>
       <p style="color:#fff">Minta Bandar mengisi chip kamu untuk bermain kembali.</p>
     </div>`;
   }
 
-  // Modal Pemenang Utama
   if (st.winnerName) {
     h += `<div class="winner-modal">
       <div class="confetti-box">🎉 🪙 👑 🪙 🎉</div>
