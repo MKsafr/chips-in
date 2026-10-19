@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ChipBank</title>
+<style>
+:root{--bg:#0a1a13;--card:#10291f;--line:#1f4f39;--tx:#eef6f0;--mut:#8fb3a1;--gold:#e8c35a;--red:#e5484d;--grn:#3ecf8e;--blu:#4c8dff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#16422f,var(--bg) 60%);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding-bottom:40px}
+#app{max-width:520px;margin:0 auto;padding:12px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.logo{font-weight:800;letter-spacing:.5px}.logo b{color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.mut{color:var(--mut);font-size:13px}
+h3{margin:0 0 8px;font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px}
+.big{font-size:34px;font-weight:800;color:var(--gold)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{justify-content:space-between}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 14px;background:#1d5a40;color:var(--tx);cursor:pointer}
+button:active{transform:scale(.97)}button.g{background:#2a3d34}button.r{background:var(--red)}button.y{background:var(--gold);color:#222}button.b{background:var(--blu)}button.ok{background:var(--grn);color:#062}
+button.s{padding:7px 10px;font-size:13px}button.f{flex:1}
+input{font:inherit;background:#07140f;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:10px;width:100%;min-width:0}
+input[type=checkbox]{width:20px;height:20px}
+.pl{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:10px;border:1px solid transparent;margin-bottom:4px;background:#0c2118}
+.pl.turn{border-color:var(--gold);box-shadow:0 0 0 2px #e8c35a33}.pl.out{opacity:.45}.pl.me{background:#12382a}
+.tag{font-size:11px;font-weight:800;padding:2px 6px;border-radius:6px;background:#2a3d34;margin-left:4px}
+.tag.d{background:var(--gold);color:#222}.tag.a{background:var(--red)}.tag.t{background:var(--grn);color:#052}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{width:46px;height:46px;border-radius:50%;border:4px dashed #fff8;font-weight:800;font-size:13px;padding:0;color:#fff;display:grid;place-items:center}
+.c5{background:#c0392b}.c10{background:#2471c9}.c25{background:#1e9a5a}.c100{background:#222}.c500{background:#7d3cc4}
+.pot{text-align:center}.pot .big{font-size:42px}
+.log{max-height:150px;overflow:auto;font-size:13px;color:var(--mut)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--red);padding:10px 16px;border-radius:12px;font-weight:700;z-index:9;max-width:90%}
+.tabs{display:flex;gap:6px}.tabs button{flex:1}.tabs .on{background:var(--gold);color:#222}
+.lay{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+label.w{display:flex;gap:8px;align-items:center;padding:6px 0}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>Number(n).toLocaleString('id-ID');
+let token=localStorage.cb_token||(localStorage.cb_token=Math.random().toString(36).slice(2)+Date.now().toString(36));
+let st=null,draft={w:{}},toastMsg='',hostOpen=false;
+const STAGE={idle:'Menunggu',preflop:'Pre-flop',flop:'Flop',turn:'Turn',river:'River',showdown:'Showdown'};
+
+async function api(type,extra={}){
+  try{const r=await fetch('/api',{method:'POST',body:JSON.stringify({token,type,...extra})});const j=await r.json();if(j.err)flash(j.err);return j}
+  catch{flash('Koneksi ke server terputus')}
+}
+function flash(m){toastMsg=m;render();setTimeout(()=>{toastMsg='';render()},2500)}
+function connect(){
+  const es=new EventSource('/events?token='+token);
+  es.onmessage=e=>{st=JSON.parse(e.data);if(st.poker.stage!=='showdown')draft.w={};render()};
+}
+const d=(k,def)=>draft[k]!==undefined?draft[k]:def;
+const setD=(k,v)=>{draft[k]=v};
+const num=id=>Math.floor(+($('#'+id)||{}).value||0);
+
+function pRow(p,extra=''){
+  const k=st.poker,pk=st.mode==='poker';
+  const t=[];
+  if(pk&&k.active&&k.dealer===p.id)t.push('<span class="tag d">D</span>');
+  if(pk&&k.active&&k.sbId===p.id)t.push('<span class="tag">SB</span>');
+  if(pk&&k.active&&k.bbId===p.id)t.push('<span class="tag">BB</span>');
+  if(p.folded)t.push('<span class="tag">FOLD</span>');
+  if(p.allin)t.push('<span class="tag a">ALL-IN</span>');
+  if(pk&&k.turn===p.id)t.push('<span class="tag t">GILIRAN</span>');
+  const bet=pk?(p.bet?`<div class="mut">bet ${fmt(p.bet)}</div>`:''):(p.bjBet?`<div class="mut">taruhan ${fmt(p.bjBet)}</div>`:'');
+  const out=pk&&k.active&&(!p.inHand||p.folded);
+  return `<div class="pl ${k.turn===p.id&&pk?'turn':''} ${out?'out':''} ${p.id===st.you?'me':''}">
+    <div><b>${esc(p.name)}</b>${t.join('')}${extra}</div>
+    <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
+}
+
+function pokerView(me){
+  const k=st.poker;let h='';
+  h+=`<div class="card pot"><div class="mut">${STAGE[k.stage]||''}${k.active&&k.currentBet?' • taruhan saat ini '+fmt(k.currentBet):''}</div>
+    <div class="big">${fmt(k.pot)}</div><div class="mut">total pot</div></div>`;
+  h+=`<div class="card"><h3>Pemain</h3>${st.players.map(p=>pRow(p)).join('')||'<div class="mut">Belum ada pemain</div>'}</div>`;
+  if(me&&k.active&&k.turn===me.id){
+    const toCall=k.currentBet-me.bet,callAmt=Math.min(toCall,me.chips),maxTo=me.bet+me.chips,minTo=Math.min(k.currentBet+k.minRaise,maxTo);
+    const canRaise=maxTo>k.currentBet;
+    h+=`<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3>
+      <div class="row"><button class="r f" onclick="api('act',{a:'fold'})">Fold</button>
+      <button class="ok f" onclick="api('act',{a:'call'})">${toCall>0?'Call '+fmt(callAmt):'Check'}</button></div>`;
+    if(canRaise){
+      h+=`<div class="mut" style="margin:10px 0 4px">Raise ke (min ${fmt(minTo)})</div>
+      <div class="row"><input id="raise" type="number" inputmode="numeric" value="${d('raise',minTo)}" oninput="setD('raise',this.value)">
+      <button class="y" onclick="api('act',{a:'raise',amount:num('raise')})">Raise</button></div>
+      <div class="row" style="margin-top:6px">
+      <button class="g s" onclick="qr(${minTo},0)">Min</button>
+      <button class="g s" onclick="qr(0,.5)">½ Pot</button>
+      <button class="g s" onclick="qr(0,.75)">¾ Pot</button>
+      <button class="g s" onclick="qr(0,1)">Pot</button>
+      <button class="r s" onclick="api('act',{a:'allin'})">All-in ${fmt(me.chips)}</button></div>`;
+    } else h+=`<div class="mut" style="margin-top:8px">Tidak bisa raise (chip habis ketemu taruhan)</div>`;
+    h+='</div>';
+  }
+  if(k.stage==='showdown')h+=showdown();
+  return h;
+}
+function qr(minTo,frac){
+  const k=st.poker,me=st.players.find(p=>p.id===st.you),maxTo=me.bet+me.chips,toCall=k.currentBet-me.bet;
+  let v=frac?k.currentBet+Math.round((k.pot+toCall)*frac):minTo;
+  v=Math.max(Math.min(k.currentBet+k.minRaise,maxTo),Math.min(v,maxTo));
+  draft.raise=v;render();
+}
+function showdown(){
+  const k=st.poker,nm=id=>esc(st.players.find(p=>p.id===id).name);
+  let h=`<div class="card" style="border-color:var(--gold)"><h3>Showdown — tentukan pemenang</h3>`;
+  k.layers.forEach((l,i)=>{
+    h+=`<div class="${i?'lay':''}"><b>${i===0?'Pot utama':'Side pot '+i}</b> <span style="color:var(--gold)">${fmt(l.amount)}</span>`;
+    h+=l.elig.map(id=>st.host?`<label class="w"><input type="checkbox" ${draft.w[i+'_'+id]?'checked':''} onchange="draft.w['${i}_${id}']=this.checked"> ${nm(id)}</label>`:`<div class="mut">• ${nm(id)}</div>`).join('');
+    h+='</div>';
+  });
+  h+=st.host?`<button class="ok" style="width:100%;margin-top:10px" onclick="doAward()">Bagikan pot</button><div class="mut" style="margin-top:6px">Centang lebih dari satu jika split pot.</div>`:`<div class="mut" style="margin-top:8px">Menunggu bandar menentukan pemenang…</div>`;
+  return h+'</div>';
+}
+function doAward(){
+  const winners=st.poker.layers.map((l,i)=>l.elig.filter(id=>draft.w[i+'_'+id]));
+  api('award',{winners});
+}
+
+function bjView(me){
+  let h=`<div class="card pot"><div class="mut">Blackjack • ${st.bj.phase==='betting'?'Fase taruhan':'Kartu sedang dimainkan'}</div>
+    <div class="big">${fmt(st.players.reduce((a,p)=>a+p.bjBet,0))}</div><div class="mut">total taruhan di meja</div></div>`;
+  const playing=st.bj.phase==='playing';
+  h+=`<div class="card"><h3>Pemain</h3>`+st.players.map(p=>{
+    let ex='';
+    if(st.host&&playing&&p.bjBet>0)ex=`<div class="row" style="margin-top:6px">
+      <button class="ok s" onclick="api('bjResolve',{id:${p.id},result:'win'})">Menang</button>
+      <button class="y s" onclick="api('bjResolve',{id:${p.id},result:'bj'})">BJ 3:2</button>
+      <button class="g s" onclick="api('bjResolve',{id:${p.id},result:'push'})">Seri</button>
+      <button class="r s" onclick="api('bjResolve',{id:${p.id},result:'lose'})">Kalah</button></div>`;
+    return pRow(p,ex);
+  }).join('')+'</div>';
+  if(me&&st.bj.phase==='betting'){
+    h+=`<div class="card"><h3>Taruhanmu: ${fmt(me.bjBet)}</h3><div class="chips">`+
+      [5,10,25,100,500].map(v=>`<button class="chip c${v}" onclick="api('bet',{amount:${me.bjBet+v}})">${v}</button>`).join('')+
+      `</div><div class="row"><button class="g f" onclick="api('bet',{amount:0})">Hapus</button>
+      ${me.last?`<button class="g f" onclick="api('bet',{amount:${me.last}})">Ulang ${fmt(me.last)}</button>`:''}</div>
+      <div class="row" style="margin-top:6px"><input id="bjamt" type="number" inputmode="numeric" placeholder="Jumlah bebas" value="${d('bjamt','')}" oninput="setD('bjamt',this.value)">
+      <button class="y" onclick="api('bet',{amount:num('bjamt')})">Pasang</button></div></div>`;
+  }
+  if(me&&playing&&me.bjBet>0){
+    h+=`<div class="card"><h3>Double / Split</h3><div class="mut" style="margin-bottom:6px">Tambah taruhan di atas taruhan awal.</div>
+      <div class="row"><button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button></div>
+      <div class="row" style="margin-top:6px"><input id="addamt" type="number" inputmode="numeric" placeholder="Jumlah lain" value="${d('addamt','')}" oninput="setD('addamt',this.value)">
+      <button class="g" onclick="api('add',{amount:num('addamt')})">Tambah</button></div></div>`;
+  }
+  if(st.host){
+    h+=`<div class="card"><h3>Kontrol bandar</h3><div class="row">`+(playing?
+      `<button class="ok f s" onclick="api('bjAll',{result:'win'})">Semua menang</button>
+       <button class="g f s" onclick="api('bjAll',{result:'push'})">Semua seri</button>
+       <button class="r f s" onclick="api('bjAll',{result:'lose'})">Semua kalah</button>
+       <button class="g s" onclick="if(confirm('Batalkan ronde & kembalikan taruhan?'))api('bjCancel')">Batal</button>`
+      :`<button class="y f" onclick="api('bjDeal')">Bagi kartu (kunci taruhan)</button>`)+`</div></div>`;
+  }
+  return h;
+}
+
+function hostPanel(){
+  if(!st.host)return `<div class="card"><h3>Masuk sebagai bandar</h3><div class="row"><input id="pin" type="password" inputmode="numeric" placeholder="PIN (lihat terminal server)"><button class="y" onclick="api('unlock',{pin:$('#pin').value})">Buka</button></div></div>`;
+  const k=st.poker;
+  let h=`<div class="card"><h3>Pengaturan</h3>
+    <div class="tabs" style="margin-bottom:8px"><button class="${st.mode==='poker'?'on':'g'}" onclick="api('setup',{mode:'poker'})">♠ Poker</button><button class="${st.mode==='blackjack'?'on':'g'}" onclick="api('setup',{mode:'blackjack'})">♣ Blackjack</button></div>
+    <div class="row"><div style="flex:1"><div class="mut">Chip awal</div><input id="sc" type="number" value="${d('sc',st.startChips)}" oninput="setD('sc',this.value)"></div>
+    <div style="flex:1"><div class="mut">Small blind</div><input id="sb" type="number" value="${d('sb',st.sb)}" oninput="setD('sb',this.value)"></div>
+    <div style="flex:1"><div class="mut">Big blind</div><input id="bb" type="number" value="${d('bb',st.bb)}" oninput="setD('bb',this.value)"></div></div>
+    <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),sb:num('sb'),bb:num('bb')}).then(()=>draft={w:{}})">Simpan pengaturan</button>
+    <div class="mut" style="margin-top:6px">Chip awal hanya berlaku untuk pemain baru / reset.</div></div>
+    <div class="card"><h3>Kelola chip pemain</h3>
+    <div class="row" style="margin-bottom:8px"><div class="mut">Jumlah:</div><input id="adj" type="number" inputmode="numeric" value="${d('adj',100)}" oninput="setD('adj',this.value)" style="width:110px"></div>`+
+    st.players.map(p=>`<div class="pl"><div><b>${esc(p.name)}</b> <span class="mut">${fmt(p.chips)}</span></div>
+      <div class="row"><button class="ok s" onclick="api('adjust',{id:${p.id},delta:num('adj')})">+</button>
+      <button class="r s" onclick="api('adjust',{id:${p.id},delta:-num('adj')})">−</button>
+      <button class="g s" onclick="if(confirm('Keluarkan ${esc(p.name)}?'))api('kick',{id:${p.id}})">✕</button></div></div>`).join('')+
+    `<button class="g" style="width:100%;margin-top:8px" onclick="if(confirm('Reset semua chip ke chip awal?'))api('resetAll')">Reset semua chip</button></div>`;
+  return h;
+}
+
+function render(){
+  if(!st){$('#app').innerHTML='<div class="mut">Menghubungkan…</div>';return}
+  const ae=document.activeElement,aid=ae&&ae.id,sel=ae&&ae.selectionStart;
+  const me=st.players.find(p=>p.id===st.you),k=st.poker;
+  let h=`<div class="top"><div class="logo">♠ Chip<b>Bank</b> <span class="mut">${st.mode==='poker'?'Poker':'Blackjack'}</span></div>
+    <button class="g s" onclick="hostOpen=!hostOpen;render()">${st.host?'👑 Bandar':'⚙'}</button></div>`;
+  if(!me){
+    h+=`<div class="card"><h3>Gabung ke meja</h3><div class="row"><input id="nm" placeholder="Nama kamu" maxlength="16" value="${d('nm','')}" oninput="setD('nm',this.value)">
+      <button class="y" onclick="api('join',{name:$('#nm').value})">Gabung</button></div>
+      <div class="mut" style="margin-top:6px">Kamu mulai dengan ${fmt(st.startChips)} chip.</div></div>`;
+  } else {
+    h+=`<div class="card row sp"><div><div class="mut">${esc(me.name)}</div><div class="big">${fmt(me.chips)}</div></div>
+      <div class="mut" style="text-align:right">chip</div></div>`;
+  }
+  if(hostOpen)h+=hostPanel();
+  if(st.mode==='poker'){
+    if(st.host&&!k.active)h+=`<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai hand baru</button>`;
+    if(st.host&&k.active)h+=`<button class="g s" style="margin-bottom:10px" onclick="if(confirm('Batalkan hand & kembalikan chip?'))api('cancel')">Batalkan hand</button>`;
+    h+=pokerView(me);
+    if(!k.active&&st.players.length)h+=`<div class="mut" style="text-align:center;margin-bottom:10px">Menunggu bandar memulai hand…</div>`;
+  } else h+=bjView(me);
+  h+=`<div class="card"><h3>Riwayat</h3><div class="log">${st.log.map(l=>`<div>${esc(l)}</div>`).join('')||'—'}</div></div>`;
+  if(toastMsg)h+=`<div class="toast">${esc(toastMsg)}</div>`;
+  $('#app').innerHTML=h;
+  if(aid){const e=document.getElementById(aid);if(e){e.focus();try{if(sel!=null)e.setSelectionRange(sel,sel)}catch{}}}
+}
+connect();
+</script></body></html>
