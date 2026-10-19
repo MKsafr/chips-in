@@ -3,7 +3,7 @@ const http = require("http"),
   path = require("path"),
   crypto = require("crypto");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.4.0"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.5.0"; // klien yang versinya beda akan otomatis refresh
 
 // Foto profil yang tersedia (tanpa upload). Harus sama dengan daftar di index.html
 const AVATARS = [
@@ -74,6 +74,7 @@ function initRoom(code) {
     pendingHost: null,
     hostProfile: { name: "Bandar", avatar: "crown", ready: false },
     stash: {}, // chip & nama pemain yang sedang tidak duduk (supaya tidak bisa dapat chip baru dengan keluar-masuk)
+    suspended: {},
     touched: Date.now(),
     poker: {
       active: false,
@@ -454,6 +455,7 @@ function promote(room, newToken, returnFormerHostToSeat = true) {
       "Ronde dibatalkan karena pergantian Bandar. Semua chip dikembalikan",
     );
   }
+
   clearOffer(room);
   const newName = np.name;
   const oldProf = room.hostProfile;
@@ -485,6 +487,31 @@ function promote(room, newToken, returnFormerHostToSeat = true) {
   );
 }
 
+function resumeSession(room, token) {
+  const session = room.suspended[token];
+  if (!session) throw "Sesi sebelumnya tidak ditemukan";
+
+  if (session.role === "host") {
+    const currentHostToken = room.hostToken;
+    room.hostToken = token;
+    room.hostProfile = session.profile;
+    delete room.stash[token];
+    if (currentHostToken && currentHostToken !== token)
+      seatPlayer(room, currentHostToken);
+  } else {
+    const player = seatPlayer(room, token);
+    if (!player) throw "Tidak dapat melanjutkan sesi pemain";
+  }
+
+  delete room.suspended[token];
+  logRoom(
+    room,
+    session.role === "host"
+      ? `${room.hostProfile.name} kembali menjadi Bandar`
+      : `${session.name} kembali ke meja`,
+  );
+}
+
 // Dipakai untuk tawaran Bandar (perlu persetujuan pemain)
 const offerTimers = {};
 function clearOffer(room) {
@@ -493,27 +520,47 @@ function clearOffer(room) {
   room.pendingHost = null;
 }
 
-// Dipanggil HANYA kalau Bandar benar-benar terputus (sudah lewat masa tunggu).
-// Di sini pengalihan Bandar otomatis, tanpa persetujuan.
-function handleDisconnect(token) {
-  for (const code in rooms) {
-    const room = rooms[code];
-    if (room.hostToken !== token) continue;
-    const others = room.players.filter((p) => p.token !== token);
-    const online = others.filter((p) =>
+// Menyimpan sesi saat koneksi terakhir pemain di room benar-benar terputus.
+function handleDisconnect(token, code) {
+  const room = rooms[code];
+  if (
+    !room ||
+    [...clients].some((c) => c.token === token && c.roomCode === code)
+  )
+    return;
+
+  if (room.hostToken === token) {
+    room.suspended[token] = {
+      role: "host",
+      profile: { ...room.hostProfile },
+    };
+    clearOffer(room);
+    if (room.poker.active || room.bj.phase === "playing")
+      cancelRound(room, "Ronde dibatalkan karena Bandar terputus");
+
+    const next = room.players.find((p) =>
       [...clients].some((c) => c.token === p.token && c.roomCode === code),
     );
-    const next = online[0] || others[0];
     if (next) {
       logRoom(room, "Bandar terputus. Mencari Bandar baru secara otomatis…");
       promote(room, next.token);
-      broadcast(code);
     } else {
-      clearOffer(room);
-      delete rooms[code];
-      broadcast(code);
+      room.hostToken = null;
+      logRoom(room, "Bandar terputus. Menunggu Bandar kembali…");
     }
+  } else {
+    const player = room.players.find((p) => p.token === token);
+    if (!player) return;
+    room.suspended[token] = {
+      role: "player",
+      name: player.name,
+    };
+    if (room.poker.active || room.bj.phase === "playing")
+      cancelRound(room, `${player.name} terputus. Ronde dibatalkan`);
+    unseatPlayer(room, player);
+    logRoom(room, `${player.name} terputus dan meninggalkan meja`);
   }
+  broadcast(code);
 }
 
 function handle(b) {
@@ -552,6 +599,20 @@ function handle(b) {
   switch (type) {
     case "checkRoom":
       break; // hanya untuk memastikan room ada (error ditangani di atas)
+    case "resumeSession":
+      resumeSession(room, token);
+      break;
+    case "declineResume": {
+      const session = room.suspended[token];
+      delete room.suspended[token];
+      delete room.stash[token];
+      if (session && session.role === "host" && !room.hostToken) {
+        const next = room.players[0];
+        if (next) promote(room, next.token);
+        else delete rooms[room.code];
+      }
+      break;
+    }
     case "joinRoom": {
       if (isHost) throw "Bandar tidak dapat bergabung sebagai pemain";
       const name = String(b.name || "")
@@ -692,10 +753,16 @@ function handle(b) {
       break;
     case "reorderPlayers": {
       needHost();
-      if (room.poker.active)
-        throw "Tidak bisa mengubah urutan saat hand berjalan";
+      if (room.poker.active || room.bj.phase === "playing")
+        throw "Tidak bisa mengubah urutan saat ronde berjalan";
       if (Array.isArray(b.newOrder)) {
-        const order = b.newOrder;
+        const order = b.newOrder.map(Number);
+        if (
+          order.length !== room.players.length ||
+          new Set(order).size !== room.players.length ||
+          room.players.some((p) => !order.includes(p.id))
+        )
+          throw "Urutan pemain tidak valid";
         room.players.sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
         logRoom(room, "Bandar merubah urutan tempat duduk pemain");
       }
@@ -773,7 +840,9 @@ function handle(b) {
       needHost();
       const p = P(room, b.id);
       if (!p) break;
-      const d = Math.trunc(+b.delta || 0);
+      const d = Number(b.delta);
+      if (!Number.isSafeInteger(d) || d === 0)
+        throw "Jumlah chip harus berupa angka bulat lebih dari nol";
       p.chips = Math.max(0, p.chips + d);
       logRoom(
         room,
@@ -879,6 +948,16 @@ function view(token, roomCode) {
     bj: room.bj,
     pendingHost: room.pendingHost,
     host: room.hostProfile,
+    resumeOffer: room.suspended[token]
+      ? {
+          role: room.suspended[token].role,
+          name:
+            room.suspended[token].role === "host"
+              ? room.suspended[token].profile.name
+              : room.suspended[token].name,
+          chips: room.stash[token] ? room.stash[token].chips : null,
+        }
+      : null,
     you: me ? me.id : null,
     isHost,
   };
@@ -977,13 +1056,9 @@ http
       const rm = rooms[c.roomCode];
       if (rm) rm.touched = Date.now();
       send(c);
-      req.on("close", () => {
+      res.on("close", () => {
         clients.delete(c);
-        // Beri waktu 60 detik: refresh / layar HP mati / sinyal putus jangan langsung menghapus room atau memindah bandar
-        setTimeout(() => {
-          if (![...clients].some((x) => x.token === c.token))
-            handleDisconnect(c.token);
-        }, 60000);
+        setTimeout(() => handleDisconnect(c.token, c.roomCode), 1000);
       });
       return;
     }

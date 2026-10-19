@@ -234,6 +234,10 @@
       button:active {
         transform: scale(0.96);
       }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
       button.g {
         background: var(--btn2);
       }
@@ -548,7 +552,14 @@
         "Kode Room (6 Karakter)": "Room Code (6 characters)",
         "Join Room": "Join Room",
         "Install App": "Install App",
+        "Lanjutkan ke room sebelumnya?": "Continue to your previous room?",
+        "Kamu telah dikeluarkan": "You have been removed",
+        "Bandar telah mengeluarkan kamu dari room.": "The dealer removed you from the room.",
+        "Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.": "You are out of chips. Wait for the next round or ask the dealer for more chips.",
+        "Masukkan jumlah chip": "Enter the chip amount",
+        "Jumlah chip harus berupa angka bulat lebih dari nol": "Enter a whole number greater than zero",
         "Pengaturan": "Settings",
+        "Kontrol Dealer": "Dealer Controls",
         "Tutup": "Close",
         "Tampilan (hanya di perangkat ini)": "Appearance (this device only)",
         "Tema": "Theme",
@@ -879,11 +890,11 @@
       document.documentElement.setAttribute("data-theme", currentTheme);
       syncThemeColor();
 
-      const APP_VER = "3.4.0";
+      const APP_VER = "3.5.0";
       let st = null,
         draft = { w: {} },
         toastMsg = "",
-        hostOpen = false,
+        dealerControlsOpen = false,
         deferredPrompt = null;
       let pfOpen = false,
         pf = {},
@@ -891,7 +902,8 @@
         pendingRoomCode = "",
         pendingEntrySound = false,
         notice = null,
-        noticeTimer = null;
+        noticeTimer = null,
+        chipAdjustment = null;
 
       // Foto profil bawaan (tanpa upload). Id harus sama dengan AVATARS di server.js
       const AV = {
@@ -1082,8 +1094,25 @@
               playEventSound(data.lastEvent);
             }
             if (!data.isHost && data.you == null && !leaving) {
+              if (data.resumeOffer) {
+                st = data;
+                render();
+                return;
+              }
+              const previousMe = (st && st.players ? st.players : []).find(
+                (p) => p.id === st.you,
+              );
+              const wasKicked =
+                previousMe &&
+                data.lastEvent ===
+                  `${previousMe.name} dikeluarkan oleh Bandar`;
               exitRoom();
-              flash("Kamu sudah tidak duduk di meja ini");
+              if (wasKicked)
+                showAlert(
+                  "Kamu telah dikeluarkan",
+                  "Bandar telah mengeluarkan kamu dari room.",
+                );
+              else flash("Kamu sudah tidak duduk di meja ini");
               return;
             }
             if (st && !data.isHost) {
@@ -1378,6 +1407,7 @@
         <button class="g" onclick="toggleMute()">${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}</button>
       </div>
     </div>
+    <button class="b" style="width:100%;margin-bottom:8px" onclick="installApp()">${translateText("Install App")}</button>
     <button class="ok" style="width:100%" onclick="closeSettings()">${translateText("Simpan")}</button>
   </div></div>`;
         localizeTree($("#modal"));
@@ -1391,7 +1421,8 @@
         roomCode = "";
         localStorage.cb_room = "";
         st = null;
-        hostOpen = false;
+        dealerControlsOpen = false;
+        chipAdjustment = null;
         closeProfile();
         render();
       }
@@ -1415,6 +1446,62 @@
           const j = await api("leaveHost");
           if (j && j.ok) exitRoom();
         } finally {
+          leaving = false;
+        }
+        function openDealerControls() {
+          dealerControlsOpen = true;
+          renderDealerControls();
+        }
+        function closeDealerControls() {
+          dealerControlsOpen = false;
+          $("#modal").innerHTML = "";
+        }
+        function renderDealerControls() {
+          if (!dealerControlsOpen || !st || !st.isHost) return;
+          $("#modal").innerHTML = `<div class="modal" onclick="if(event.target===this)closeDealerControls()"><div class="mbox">
+    <div class="row sp"><div style="font-size:18px;font-weight:800">👑 Kontrol Bandar</div><button class="g s" aria-label="Tutup" onclick="closeDealerControls()">×</button></div>
+    ${hostPanel()}
+  </div></div>`;
+          localizeTree($("#modal"));
+        }
+        function openChipAdjustment(id, direction) {
+          chipAdjustment = { id, direction };
+          renderChipAdjustment();
+        }
+        function closeChipAdjustment() {
+          chipAdjustment = null;
+          if (dealerControlsOpen) renderDealerControls();
+          else $("#modal").innerHTML = "";
+        }
+        function renderChipAdjustment() {
+          if (!chipAdjustment) return;
+          const player = (st.players || []).find(
+            (p) => p.id === chipAdjustment.id,
+          );
+          if (!player) return closeChipAdjustment();
+          const adding = chipAdjustment.direction > 0;
+          $("#modal").innerHTML = `<div class="modal" onclick="if(event.target===this)closeChipAdjustment()"><div class="mbox">
+    <div class="row sp"><div style="font-size:18px;font-weight:800">${adding ? "+ Chip" : "- Chip"} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
+    <div class="mut" style="margin:10px 0 4px">Masukkan jumlah chip</div>
+    <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Jumlah chip" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
+    <div class="row" style="margin-top:12px"><button class="g f" onclick="closeChipAdjustment()">Batal</button><button class="${adding ? "ok" : "r"} f" onclick="submitChipAdjustment()">Simpan</button></div>
+  </div></div>`;
+          localizeTree($("#modal"));
+        }
+        async function submitChipAdjustment() {
+          const amount = Number(($("#chipAmount") || {}).value);
+          if (!Number.isSafeInteger(amount) || amount < 1) {
+            flash("Masukkan jumlah chip bulat lebih dari nol");
+            return;
+          }
+          const { id, direction } = chipAdjustment;
+          const j = await api("adjust", { id, delta: direction * amount });
+          if (j && j.ok) closeChipAdjustment();
+        }
+        async function declineResume() {
+          leaving = true;
+          const j = await api("declineResume");
+          if (j && j.ok) exitRoom();
           leaving = false;
         }
       }
@@ -1589,22 +1676,11 @@
 
         h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || "-")}</div></div></div></div>`;
 
-        if (
-          st.isHost &&
-          k.active &&
-          !st.dealerConfirmedStage &&
-          k.stage !== "showdown"
-        ) {
-          h += `<div class="card" style="border-color:var(--gold)">
-      <h3>Aksi Bandar (Dealer)</h3>
-      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${(k.stage || "").toUpperCase()}</b> di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.</div>
-      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${(k.stage || "").toUpperCase()}</button>
-    </div>`;
-        }
-
         h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
 
-        if (me && k.active && k.turn === me.id) {
+        if (me && me.chips === 0) {
+          h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
+        } else if (me && k.active && k.turn === me.id) {
           if (!st.dealerConfirmedStage) {
             h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3><div class="mut">Tunggu Bandar mengonfirmasi pembukaan kartu ${(k.stage || "").toUpperCase()} di meja fisik...</div></div>`;
           } else {
@@ -1710,7 +1786,9 @@
             .join("") +
           "</div>";
 
-        if (me && bj.phase === "betting") {
+        if (me && me.chips === 0) {
+          h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
+        } else if (me && bj.phase === "betting") {
           h +=
             `<div class="card"><h3>Taruhanmu: ${fmt(me.bjBet)}</h3><div class="chips">` +
             [5, 10, 25, 100, 500]
@@ -1730,17 +1808,6 @@
       <button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button></div></div>`;
         }
 
-        if (st.isHost) {
-          h +=
-            `<div class="card"><h3>Kontrol Bandar</h3><div class="row">` +
-            (playing
-              ? `<button class="ok f s" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
-       <button class="g f s" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
-       <button class="r f s" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
-       <button class="g s" onclick="if(confirm(translateText('Batalkan ronde?')))api('bjCancel')">Batal</button>`
-              : `<button class="y f" onclick="api('bjDeal')">Kunci Taruhan & Bagi Kartu</button>`) +
-            `</div></div>`;
-        }
         return h;
       }
 
@@ -1753,27 +1820,69 @@
     <div style="flex:1"><div class="mut">Big Blind</div><input id="bb" type="number" value="${d("bb", st.bb)}" oninput="setD('bb',this.value)"></div>` : ""}</div>
     <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),${st.mode === "poker" ? "sb:num('sb'),bb:num('bb')" : ""}})">Simpan Pengaturan</button></div>
     
+    ${
+      st.mode === "poker" &&
+      st.poker.active &&
+      !st.dealerConfirmedStage &&
+      st.poker.stage !== "showdown"
+        ? `<div class="card" style="border-color:var(--gold)"><h3>Aksi Bandar</h3>
+      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${(st.poker.stage || "").toUpperCase()}</b> di meja fisik, lalu konfirmasi agar pemain bisa bertaruh.</div>
+      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${(st.poker.stage || "").toUpperCase()}</button></div>`
+        : ""
+    }
+    ${
+      st.mode === "blackjack"
+        ? `<div class="card"><h3>Kontrol Blackjack</h3><div class="row">${
+            st.bj.phase === "playing"
+              ? `<button class="ok f s" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
+       <button class="g f s" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
+       <button class="r f s" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
+       <button class="g s" onclick="if(confirm(translateText('Batalkan ronde?')))api('bjCancel')">Batal</button>`
+              : `<div class="mut">Gunakan tombol mulai ronde di bawah profil Bandar.</div>`
+          }</div></div>`
+        : ""
+    }
     <div class="card"><h3>Kelola Pemain</h3>` +
           (st.players || [])
             .map(
               (
-                p,
+                p, index,
               ) => `<div class="pl"><div class="row" style="flex-wrap:nowrap;gap:8px">${avatar(p.avatar, 28)}<div><b data-player-name>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div></div>
       <div class="row">
+      <button class="g s" aria-label="Naikkan pemain" ${index === 0 ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
+      <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
       <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
-      <button class="ok s" onclick="api('adjust',{id:${p.id},delta:100})">+100</button>
-      <button class="r s" onclick="api('adjust',{id:${p.id},delta:-100})">-100</button>
+      <button class="ok s" onclick="openChipAdjustment(${p.id},1)">+ Chip</button>
+      <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
       <button class="r s" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
             )
             .join("") +
           `<button class="g" style="width:100%;margin-top:8px" onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button></div>`;
         return h;
       }
+      function movePlayer(id, offset) {
+        const order = (st.players || []).map((p) => p.id);
+        const index = order.indexOf(id);
+        const target = index + offset;
+        if (index < 0 || target < 0 || target >= order.length) return;
+        [order[index], order[target]] = [order[target], order[index]];
+        api("reorderPlayers", { newOrder: order });
+      }
+      function roundStartControl() {
+        if (!st.isHost) return "";
+        if (st.mode === "poker" && st.poker && !st.poker.active)
+          return `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
+        if (st.mode === "blackjack" && st.bj.phase !== "playing") {
+          const hasBets = (st.players || []).some((p) => p.bjBet > 0);
+          return `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
+        }
+        return "";
+      }
 
       function render() {
         if (!roomCode) {
           $("#app").innerHTML = `
-      <div class="top"><div class="logo-box">${logoHTML(36)}<div class="logo">Chips-<b>in</b></div></div><div class="row">${settingsButtonHTML()}<button class="b s" onclick="installApp()">Install App</button></div></div>
+      <div class="top"><div class="logo-box">${logoHTML(36)}<div class="logo">Chips-<b>in</b></div></div><div class="row">${settingsButtonHTML()}</div></div>
       <div class="card">
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.</p>
@@ -1805,9 +1914,7 @@
     </div>
     <div class="row">
       ${settingsButtonHTML()}
-      <button class="b s" onclick="installApp()">Install App</button>
-      ${st.isHost ? `<button class="g s" onclick="leaveHostRoom()">Keluar Room</button>` : ""}
-      ${st.isHost ? `<button class="y s" onclick="hostOpen=!hostOpen;render()">${hostOpen ? "Tutup Kontrol" : "👑 Bandar"}</button>` : ""}
+      ${st.isHost ? `<button class="y s" onclick="openDealerControls()">👑 Kontrol Dealer</button>` : ""}
     </div>
   </div>`;
 
@@ -1818,7 +1925,8 @@
         if (st.isHost) {
           const hp = st.host || {};
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar</div></div></div></div>
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar</div></div></div>
+      <button class="g s" onclick="leaveHostRoom()">Keluar</button></div>
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
         } else if (me) {
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
@@ -1833,15 +1941,9 @@
       <button class="g s" onclick="api('cancelHostOffer')">Batalkan</button></div></div>`;
         }
 
-        if (hostOpen && st.isHost) h += hostPanel();
-
-        if (st.mode === "poker") {
-          if (st.isHost && st.poker && !st.poker.active)
-            h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
-          h += pokerView(me);
-        } else {
-          h += bjView(me);
-        }
+        h += roundStartControl();
+        if (st.mode === "poker") h += pokerView(me);
+        else h += bjView(me);
 
         h += `<div class="card"><h3>Riwayat Permainan</h3><div class="log">${(st.log || []).map((l) => `<div>${esc(l)}</div>`).join("") || "—"}</div></div>`;
 
@@ -1872,6 +1974,18 @@
     </div>`;
         }
 
+        if (st.resumeOffer) {
+          h += `<div class="winner-modal" style="z-index:10000">
+      <div style="font-size:48px">${st.resumeOffer.role === "host" ? "👑" : "🪙"}</div>
+      <h1 style="color:var(--gold);font-size:28px;margin:10px 0">Lanjutkan ke room sebelumnya?</h1>
+      <p style="color:#fff;max-width:320px">Kembali sebagai ${st.resumeOffer.role === "host" ? "Bandar" : `pemain ${esc(st.resumeOffer.name)}`}${st.resumeOffer.chips == null ? "" : ` dengan ${fmt(st.resumeOffer.chips)} chip`}.</p>
+      <div class="row" style="margin-top:14px;justify-content:center">
+        <button class="ok" onclick="api('resumeSession')">Lanjutkan</button>
+        <button class="g" onclick="declineResume()">Tidak</button>
+      </div>
+    </div>`;
+        }
+
         if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
         $("#app").innerHTML = h;
         localizeTree($("#app"));
@@ -1880,6 +1994,8 @@
         if (prof && !prof.ready && !pfOpen) openProfile("full");
         else if (pfOpen && pf.mode === "full" && (!prof || prof.ready))
           closeProfile();
+        if (chipAdjustment) renderChipAdjustment();
+        else if (dealerControlsOpen && st.isHost) renderDealerControls();
       }
 
       // PENTING: tampilkan UI dulu, baru sambungkan (kalau tidak, layar kosong saat belum ada room)
