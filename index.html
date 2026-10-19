@@ -144,6 +144,7 @@ function connect() {
   if (!roomCode) return;
   if (es) es.close();
   es = new EventSource(`/events?token=${token}&room=${roomCode}`);
+  es.onerror = () => { if (!st) render(); };
   es.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
@@ -413,6 +414,8 @@ function render() {
   $('#app').innerHTML = h;
 }
 
+// PENTING: tampilkan UI dulu, baru sambungkan (kalau tidak, layar kosong saat belum ada room)
+render();
 connect();
 </script>
 </body>

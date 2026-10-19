@@ -237,7 +237,7 @@ function handleDisconnect(token) {
       if (activePlayers.length > 0) {
         room.hostToken = activePlayers[0].token;
         logRoom(room, `Bandar keluar. Peran bandar otomatis dialihkan ke ${activePlayers[0].name}`);
-      } else {
+      } else if (![...clients].some(x => x.roomCode === code)) {
         delete rooms[code];
       }
     }
@@ -344,7 +344,8 @@ function handle(b) {
       needHost();
       if (room.poker.active) throw 'Tidak bisa mengubah urutan saat hand berjalan';
       if (Array.isArray(b.newOrder)) {
-        room.players.sort((a, b) => b.newOrder.indexOf(a.id) - b.newOrder.indexOf(b.id));
+        const order = b.newOrder;
+        room.players.sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
         logRoom(room, 'Bandar merubah urutan tempat duduk pemain');
       }
       break;
@@ -448,7 +449,7 @@ function view(token, roomCode) {
 }
 
 const send = c => {
-  if (c.roomCode && rooms[c.roomCode]) {
+  if (c.roomCode) {
     c.res.write('data: ' + JSON.stringify(view(c.token, c.roomCode)) + '\n\n');
   }
 };
@@ -475,12 +476,18 @@ http.createServer((req, res) => {
   }
 
   if (u.pathname === '/events') {
-    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     const c = { res, token: u.searchParams.get('token') || '', roomCode: u.searchParams.get('room') || '' };
     clients.add(c); 
     res.write('retry: 1500\n\n'); 
     send(c);
-    req.on('close', () => { clients.delete(c); handleDisconnect(c.token); }); 
+    req.on('close', () => {
+      clients.delete(c);
+      // Beri waktu 60 detik: refresh / layar HP mati / sinyal putus jangan langsung menghapus room atau memindah bandar
+      setTimeout(() => {
+        if (![...clients].some(x => x.token === c.token)) handleDisconnect(c.token);
+      }, 60000);
+    }); 
     return;
   }
 
