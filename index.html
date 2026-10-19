@@ -7,8 +7,8 @@
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="/logo.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="icon" href="/assets/logo/logo-small.png" />
+    <link rel="apple-touch-icon" href="/assets/logo/logo-small.png" />
     <meta name="theme-color" content="#0a1a13" />
     <title>Chips-in - Virtual Casino Chips</title>
     <style>
@@ -364,6 +364,15 @@
         align-items: center;
         z-index: 9999;
         text-align: center;
+        padding: 24px;
+      }
+      .notice-close {
+        position: absolute;
+        top: max(16px, env(safe-area-inset-top));
+        right: 16px;
+        font-size: 24px;
+        line-height: 1;
+        padding: 8px 12px;
       }
       .confetti-box {
         font-size: 50px;
@@ -470,7 +479,7 @@
       document.documentElement.setAttribute("data-theme", currentTheme);
       syncThemeColor();
 
-      const APP_VER = "3.2.0";
+      const APP_VER = "3.3.0";
       let st = null,
         draft = { w: {} },
         toastMsg = "",
@@ -478,7 +487,11 @@
         deferredPrompt = null;
       let pfOpen = false,
         pf = {},
-        leaving = false;
+        leaving = false,
+        pendingRoomCode = "",
+        pendingEntrySound = false,
+        notice = null,
+        noticeTimer = null;
 
       // Foto profil bawaan (tanpa upload). Id harus sama dengan AVATARS di server.js
       const AV = {
@@ -540,11 +553,55 @@
       function playSFX(file) {
         try {
           if (!sfxCache[file])
-            sfxCache[file] = new Audio("/sounds/" + file + ".mp3");
+            sfxCache[file] = new Audio("/assets/sounds/" + file + ".mp3");
           const a = sfxCache[file];
           a.currentTime = 0;
           a.play().catch(() => {});
         } catch (e) {}
+      }
+
+      function playEventSound(event) {
+        if (event.includes("ALL-IN")) playSFX("allin");
+        else if (event.includes("Raise")) playSFX("raise");
+        else if (event.includes("Call")) playSFX("call");
+        else if (event.includes("Check")) playSFX("check");
+        else if (event.includes("Fold")) playSFX("fold");
+        else if (event.includes("Showdown")) playSFX("showdown");
+        else if (
+          event.includes("FLOP") ||
+          event.includes("TURN") ||
+          event.includes("RIVER") ||
+          event.includes("Kartu dikocok")
+        )
+          playSFX("stage");
+        else if (event.includes("dikirim ke") || event.includes("menang"))
+          playSFX("award");
+        else if (event.includes("LOSE") || event.includes("Kalah"))
+          playSFX("bjlose");
+        else if (event.includes("WIN") || event.includes("BJ"))
+          playSFX("bjwin");
+        else if (event.includes("Double")) playSFX("double");
+        else if (event.includes("SPLIT")) playSFX("split");
+        else if (event.includes("taruhan") || event.includes("Blind"))
+          playSFX("bet");
+        else if (event.includes("dikeluarkan")) playSFX("kick");
+        else if (event.includes("direset") || event.includes("reset"))
+          playSFX("reset");
+        else if (event.includes("Bandar")) playSFX("transfer");
+        else playSFX("stage");
+      }
+
+      function showNotice(type, name) {
+        clearTimeout(noticeTimer);
+        notice = { type, name };
+        noticeTimer = setTimeout(closeNotice, 5000);
+      }
+
+      function closeNotice() {
+        clearTimeout(noticeTimer);
+        noticeTimer = null;
+        notice = null;
+        render();
       }
 
       async function api(type, extra = {}) {
@@ -611,38 +668,47 @@
               );
               return;
             }
-            if (st && data.winnerName && !st.winnerName) playSFX("win");
-            if (st && data.lastEvent && st.lastEvent !== data.lastEvent) {
-              const ev = data.lastEvent;
-              if (ev.includes("taruhan")) playSFX("bet");
-              else if (ev.includes("Raise")) playSFX("raise");
-              else if (ev.includes("ALL-IN")) playSFX("allin");
-              else if (ev.includes("Call")) playSFX("call");
-              else if (ev.includes("Check")) playSFX("check");
-              else if (ev.includes("Fold")) playSFX("fold");
-              else if (ev.includes("Showdown")) playSFX("showdown");
-              else if (
-                ev.includes("FLOP") ||
-                ev.includes("TURN") ||
-                ev.includes("RIVER") ||
-                ev.includes("Kartu dikocok")
-              )
-                playSFX("stage");
-              else if (ev.includes("dikirim ke") || ev.includes("menang"))
-                playSFX("award");
-              else if (ev.includes("WIN") || ev.includes("BJ"))
-                playSFX("bjwin");
-              else if (ev.includes("LOSE")) playSFX("bjlose");
-              else if (ev.includes("Double")) playSFX("double");
-              else if (ev.includes("SPLIT")) playSFX("split");
-              else if (ev.includes("dikeluarkan")) playSFX("kick");
-              else if (ev.includes("direset")) playSFX("reset");
-              else if (ev.includes("menjadi Bandar")) playSFX("transfer");
+            if (!st && pendingEntrySound && data.lastEvent) {
+              playEventSound(data.lastEvent);
+              pendingEntrySound = false;
+            } else if (
+              st &&
+              data.lastEvent &&
+              st.lastEventId !== data.lastEventId
+            ) {
+              playEventSound(data.lastEvent);
             }
             if (!data.isHost && data.you == null && !leaving) {
               exitRoom();
               flash("Kamu sudah tidak duduk di meja ini");
               return;
+            }
+            if (st && !data.isHost) {
+              const previousMe = (st.players || []).find(
+                (p) => p.id === st.you,
+              );
+              const currentMe = (data.players || []).find(
+                (p) => p.id === data.you,
+              );
+              const pokerFinished = st.poker.active && !data.poker.active;
+              const blackjackFinished =
+                st.bj.phase === "playing" && data.bj.phase !== "playing";
+              const lostAllChips =
+                previousMe &&
+                currentMe &&
+                currentMe.chips === 0 &&
+                ((previousMe.chips > 0 &&
+                  (!data.poker.active || currentMe.folded) &&
+                  data.bj.phase !== "playing" &&
+                  !currentMe.bjBet &&
+                  !currentMe.bjSplitBet) ||
+                  ((pokerFinished || blackjackFinished) &&
+                    previousMe.chips === 0));
+              if (lostAllChips) showNotice("loser", currentMe.name);
+              else if (data.winnerName && !st.winnerName) {
+                playSFX("win");
+                showNotice("winner", data.winnerName);
+              }
             }
             st = data;
             render();
@@ -658,7 +724,7 @@
       };
       const num = (id) => Math.floor(+($("#" + id) || {}).value || 0);
 
-      // Logo: pakai /logo.png kalau ada. Kalau belum ada, tampil placeholder ♠ (otomatis berubah saat logo.png diupload ke GitHub)
+      // Logo utama dipakai di halaman; logo kecil khusus ikon tab dan layar utama.
       let logoOk = false;
       (function () {
         const im = new Image();
@@ -669,12 +735,12 @@
         im.onerror = () => {
           logoOk = false;
         };
-        im.src = "/logo.png";
+        im.src = "/assets/logo/logo-main.png";
       })();
       function logoHTML(size) {
         size = size || 34;
         return logoOk
-          ? `<img class="logo-pic" src="/logo.png" alt="Chips-in" style="width:${size}px;height:${size}px">`
+          ? `<img class="logo-pic" src="/assets/logo/logo-main.png" alt="Chips-in" style="width:${size}px;height:${size}px">`
           : `<span class="logo-ph" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">♠</span>`;
       }
 
@@ -736,6 +802,25 @@
         $("#alert").innerHTML = "";
       }
 
+      async function installApp() {
+        if (!deferredPrompt) {
+          showAlert(
+            "Install Chips-in",
+            "Di Android, buka menu browser lalu pilih 'Install app' atau 'Tambahkan ke layar utama'. Di iPhone, buka menu Bagikan lalu pilih 'Add to Home Screen'.",
+          );
+          return;
+        }
+        await deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+      }
+
+      function beginHostCreation() {
+        pf = { mode: "createHost", name: "", avatar: "crown" };
+        pfOpen = true;
+        renderProfile();
+      }
+
       async function joinRoom() {
         const v = (($("#rc") || {}).value || "").trim().toUpperCase();
         if (v.length !== 6) {
@@ -745,12 +830,12 @@
           );
           return;
         }
-        const j = await api("checkRoom", { roomCode: v }); // kalau room tidak ada -> pop up "Room tidak ditemukan"
+        const j = await api("checkRoom", { roomCode: v });
         if (j && j.ok) {
-          roomCode = v;
-          localStorage.cb_room = v;
-          connect();
-          render();
+          pendingRoomCode = v;
+          pf = { mode: "join", name: "", avatar: "spade" };
+          pfOpen = true;
+          renderProfile();
         }
       }
 
@@ -771,6 +856,7 @@
       }
       function closeProfile() {
         pfOpen = false;
+        if (pf.mode === "join") pendingRoomCode = "";
         const m = $("#modal");
         if (m) m.innerHTML = "";
       }
@@ -781,19 +867,23 @@
         renderProfile();
       }
       function renderProfile() {
-        const full = pf.mode === "full",
+        const full = ["full", "join", "createHost"].includes(pf.mode),
           showName = pf.mode !== "avatar",
           showAv = pf.mode !== "name";
         const title = full
-          ? st && st.isHost
-            ? "Kamu jadi Bandar! 👑"
-            : "Selamat datang di meja! 🎉"
+          ? pf.mode === "createHost"
+            ? "Buat Meja Baru 👑"
+            : pf.mode === "join"
+              ? "Siapkan Profil Pemain"
+              : st && st.isHost
+                ? "Kamu jadi Bandar! 👑"
+                : "Selamat datang di meja! 🎉"
           : pf.mode === "name"
             ? "Ganti Nama"
             : "Ganti Foto Profil";
         $("#modal").innerHTML = `<div class="modal"><div class="mbox">
     <div style="font-size:18px;font-weight:800">${title}</div>
-    ${full ? `<div class="mut" style="margin-top:4px">${st && st.isHost ? "Pilih nama dan foto profil Bandar dulu sebelum mengatur room. Pemain lain akan melihatnya." : "Pilih foto profil dan isi namamu. Bisa diubah lagi kapan saja saat bermain."}</div>` : ""}
+    ${full ? `<div class="mut" style="margin-top:4px">${pf.mode === "createHost" ? "Pilih nama dan foto profil Bandar. Room baru dibuat setelah menekan Lanjutkan." : pf.mode === "join" ? "Pemain lain baru melihatmu setelah kamu menekan Lanjutkan." : st && st.isHost ? "Pilih nama dan foto profil Bandar dulu sebelum mengatur room. Pemain lain akan melihatnya." : "Pilih foto profil dan isi namamu. Bisa diubah lagi kapan saja saat bermain."}</div>` : ""}
     ${showAv ? `<div class="avgrid">${AV_IDS.map((id) => `<button class="avbtn ${pf.avatar === id ? "sel" : ""}" onclick="pickAvatar('${id}')">${avatar(id, 44)}</button>`).join("")}</div>` : ""}
     ${
       showName
@@ -802,14 +892,31 @@
         : ""
     }
     <div class="row" style="margin-top:14px">
-      ${full ? "" : '<button class="g f" onclick="closeProfile()">Batal</button>'}
-      <button class="ok f" onclick="saveProfile()">${full ? (st && st.isHost ? "Lanjut" : "Mulai Main") : "Simpan"}</button>
+      <button class="g f" onclick="closeProfile()">Batal</button>
+      <button class="ok f" onclick="saveProfile()">${pf.mode === "createHost" || pf.mode === "join" ? "Lanjutkan" : full ? (st && st.isHost ? "Lanjut" : "Mulai Main") : "Simpan"}</button>
     </div></div></div>`;
       }
       async function saveProfile() {
         const payload = {};
         if (pf.mode !== "avatar") payload.name = ($("#pfName") || {}).value;
         if (pf.mode !== "name") payload.avatar = pf.avatar;
+        if (pf.mode === "createHost") {
+          pendingEntrySound = true;
+          const j = await api("hostRoom", payload);
+          if (j && j.ok) closeProfile();
+          else pendingEntrySound = false;
+          return;
+        }
+        if (pf.mode === "join") {
+          pendingEntrySound = true;
+          const j = await api("joinRoom", {
+            ...payload,
+            roomCode: pendingRoomCode,
+          });
+          if (j && j.ok) closeProfile();
+          else pendingEntrySound = false;
+          return;
+        }
         const j = await api("profile", payload);
         if (j && j.ok) closeProfile();
       }
@@ -1041,13 +1148,14 @@
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital lokal untuk Poker & Blackjack IRL bersama teman.</p>
         <div class="row" style="margin-top:12px">
-          <button class="y f" onclick="api('hostRoom')">Host Room (Buat Meja Baru)</button>
+          <button class="y f" onclick="beginHostCreation()">Host Room (Buat Meja Baru)</button>
         </div>
         <div style="margin:16px 0;text-align:center" class="mut">— ATAU —</div>
         <div class="row">
           <input id="rc" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6" onkeydown="if(event.key==='Enter')joinRoom()">
           <button class="ok" onclick="joinRoom()">Join Room</button>
         </div>
+        <button class="b" style="width:100%;margin-top:10px" onclick="installApp()">Install App</button>
       </div>`;
           return;
         }
@@ -1066,7 +1174,7 @@
     </div>
     <div class="row">
       ${themeSelect()}
-      ${deferredPrompt ? `<button class="b s" onclick="deferredPrompt.prompt()">Install App</button>` : ""}
+      <button class="b s" onclick="installApp()">Install App</button>
       ${st.isHost ? `<button class="g s" onclick="if(confirm('Keluar dari room? Peran Bandar akan dialihkan otomatis ke pemain lain jika kamu tidak kembali dalam 1 menit.'))exitRoom()">Keluar Room</button>` : ""}
       ${st.isHost ? `<button class="y s" onclick="hostOpen=!hostOpen;render()">${hostOpen ? "Tutup Kontrol" : "👑 Bandar"}</button>` : ""}
     </div>
@@ -1079,8 +1187,7 @@
         if (st.isHost) {
           const hp = st.host || {};
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar • tidak ikut bermain</div></div></div></div>
-      <div class="mut" style="margin-top:8px">Bandar mengatur permainan. Semua orang lain yang masuk room otomatis duduk di meja.</div>
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar</div></div></div></div>
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
         } else if (me) {
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
@@ -1107,22 +1214,18 @@
 
         h += `<div class="card"><h3>Riwayat Permainan</h3><div class="log">${(st.log || []).map((l) => `<div>${esc(l)}</div>`).join("") || "—"}</div></div>`;
 
-        if (
-          me &&
-          me.chips === 0 &&
-          (!st.poker || !st.poker.active || me.folded)
-        ) {
-          h += `<div class="overlay">
-      <h1>CHIPS KAMU HABIS!</h1>
-      <p style="color:#fff">Minta Bandar mengisi chip kamu untuk bermain kembali.</p>
-    </div>`;
-        }
-
-        if (st.winnerName) {
+        if (notice && !st.isHost) {
           h += `<div class="winner-modal">
-      <div class="confetti-box">🎉 🪙 👑 🪙 🎉</div>
-      <h1 style="color:var(--gold);font-size:36px;margin:10px 0">${esc(st.winnerName)} MENANG KASINO!</h1>
-      <p style="color:#fff">Menjadi satu-satunya pemenang yang menguasai semua chip!</p>
+      <button class="g notice-close" aria-label="Tutup" onclick="closeNotice()">×</button>
+      ${
+        notice.type === "winner"
+          ? `<div class="confetti-box">🎉 🪙 👑 🪙 🎉</div>
+      <h1 style="color:var(--gold);font-size:36px;margin:10px 0">${esc(notice.name)} MENANG KASINO!</h1>
+      <p style="color:#fff">Menjadi satu-satunya pemenang yang menguasai semua chip!</p>`
+          : `<div class="confetti-box">🪙</div>
+      <h1 style="color:var(--red);font-size:32px;margin:10px 0">CHIPS KAMU HABIS</h1>
+      <p style="color:#fff">Minta Bandar mengisi chip kamu untuk bermain kembali.</p>`
+      }
     </div>`;
         }
 
@@ -1141,7 +1244,6 @@
         if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
         $("#app").innerHTML = h;
 
-        // Pemain baru yang belum isi profil -> langsung muncul pop up nama + foto
         const prof = myProfile(); // berlaku juga untuk Bandar: wajib pilih nama & foto sebelum memegang kontrol room
         if (prof && !prof.ready && !pfOpen) openProfile("full");
         else if (pfOpen && pf.mode === "full" && (!prof || prof.ready))

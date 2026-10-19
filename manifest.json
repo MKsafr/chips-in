@@ -3,7 +3,7 @@
   "name": "Chips-in - Digital Casino Chips",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "/assets/logo/logo-small.png",
       "type": "image/png",
       "sizes": "192x192 512x512"
     }

@@ -3,7 +3,7 @@ const http = require("http"),
   path = require("path"),
   crypto = require("crypto");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.2.0"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.3.0"; // klien yang versinya beda akan otomatis refresh
 
 // Foto profil yang tersedia (tanpa upload). Harus sama dengan daftar di index.html
 const AVATARS = [
@@ -54,6 +54,7 @@ function logRoom(room, msg) {
   );
   room.log.length = Math.min(room.log.length, 30);
   room.lastEvent = msg;
+  room.lastEventId = (room.lastEventId || 0) + 1;
 }
 
 function initRoom(code) {
@@ -68,9 +69,10 @@ function initRoom(code) {
     players: [],
     log: [],
     lastEvent: "Room berhasil dibuat.",
+    lastEventId: 0,
     dealerConfirmedStage: true,
     pendingHost: null,
-    hostProfile: { name: "Bandar", avatar: "crown", ready: false }, // Bandar juga punya nama & foto (tidak ikut bermain)
+    hostProfile: { name: "Bandar", avatar: "crown", ready: false },
     stash: {}, // chip & nama pemain yang sedang tidak duduk (supaya tidak bisa dapat chip baru dengan keluar-masuk)
     touched: Date.now(),
     poker: {
@@ -345,7 +347,7 @@ function bjResolve(room, p, res) {
     room.bj.phase = "betting";
 }
 
-// ---------- Meja: semua orang di room (selain Bandar) otomatis jadi pemain ----------
+// ---------- Meja: pemain hanya duduk setelah mengonfirmasi profil ----------
 // except: objek pemain yang dikecualikan, atau 'host' kalau yang dicek adalah nama Bandar sendiri
 const nameTaken = (room, name, except) => {
   const n = name.toLowerCase();
@@ -363,7 +365,7 @@ function defaultName(room) {
     if (!nameTaken(room, "Pemain " + i)) return "Pemain " + i;
 }
 
-function seatPlayer(room, token) {
+function seatPlayer(room, token, profile) {
   if (
     !token ||
     room.hostToken === token ||
@@ -371,8 +373,9 @@ function seatPlayer(room, token) {
   )
     return null;
   const old = room.stash[token];
-  let name =
-    old && old.name && !nameTaken(room, old.name)
+  let name = profile
+    ? profile.name
+    : old && old.name && !nameTaken(room, old.name)
       ? old.name
       : defaultName(room);
   const id = room.nextId++;
@@ -380,8 +383,12 @@ function seatPlayer(room, token) {
     id,
     token,
     name,
-    avatar: old && old.avatar ? old.avatar : AVATARS[(id - 1) % AVATARS.length],
-    ready: !!(old && old.ready), // false = belum mengisi nama/foto -> klien menampilkan pop up profil
+    avatar: profile
+      ? profile.avatar
+      : old && old.avatar
+        ? old.avatar
+        : AVATARS[(id - 1) % AVATARS.length],
+    ready: profile ? true : !!(old && old.ready),
     chips: old ? old.chips : room.startChips,
     bet: 0,
     contrib: 0,
@@ -395,7 +402,6 @@ function seatPlayer(room, token) {
   };
   room.players.push(p);
   delete room.stash[token];
-  logRoom(room, `${p.name} duduk di meja (${p.chips} chip)`);
   return p;
 }
 
@@ -503,9 +509,16 @@ function handle(b) {
   const { token, type, roomCode } = b;
 
   if (type === "hostRoom") {
+    const name = String(b.name || "")
+      .trim()
+      .slice(0, 16);
+    if (!name) throw "Nama tidak boleh kosong";
+    if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
     const code = generateRoomCode();
     rooms[code] = initRoom(code);
     rooms[code].hostToken = token;
+    rooms[code].hostProfile = { name, avatar: b.avatar, ready: true };
+    logRoom(rooms[code], `${name} membuat room sebagai Bandar`);
     return { ok: 1, roomCode: code };
   }
 
@@ -528,6 +541,30 @@ function handle(b) {
   switch (type) {
     case "checkRoom":
       break; // hanya untuk memastikan room ada (error ditangani di atas)
+    case "joinRoom": {
+      if (isHost) throw "Bandar tidak dapat bergabung sebagai pemain";
+      const name = String(b.name || "")
+        .trim()
+        .slice(0, 16);
+      if (!name) throw "Nama tidak boleh kosong";
+      if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
+      if (nameTaken(room, name, me || null)) throw "Nama sudah dipakai";
+      const player =
+        me ||
+        seatPlayer(room, token, {
+          name,
+          avatar: b.avatar,
+        });
+      if (!player) throw "Tidak dapat bergabung ke meja";
+      if (me) {
+        player.name = name;
+        player.avatar = b.avatar;
+        player.ready = true;
+      } else {
+        logRoom(room, `${player.name} join meja`);
+      }
+      break;
+    }
     case "profile": {
       const m = isHost ? room.hostProfile : needMe(); // Bandar mengatur profilnya sendiri
       if (b.name !== undefined) {
@@ -537,11 +574,7 @@ function handle(b) {
         if (!name) throw "Nama tidak boleh kosong";
         if (nameTaken(room, name, isHost ? "host" : m))
           throw "Nama sudah dipakai";
-        if (name !== m.name) {
-          const o = m.name;
-          m.name = name;
-          logRoom(room, `${o} mengganti nama menjadi ${name}`);
-        }
+        m.name = name;
       }
       if (b.avatar !== undefined) {
         if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
@@ -576,10 +609,12 @@ function handle(b) {
         throw "Belum saatnya bertaruh";
       const oldBet = me.bjBet;
       setBet(room, me, Math.floor(+b.amount || 0));
-      if (me.bjBet > oldBet)
+      if (me.bjBet !== oldBet)
         logRoom(
           room,
-          `${me.name} memasang taruhan ${me.bjBet.toLocaleString("id-ID")}`,
+          me.bjBet > oldBet
+            ? `${me.name} memasang taruhan ${me.bjBet.toLocaleString("id-ID")}`
+            : `${me.name} mengubah taruhan menjadi ${me.bjBet.toLocaleString("id-ID")}`,
         );
       break;
     case "add": {
@@ -612,10 +647,20 @@ function handle(b) {
         room.log = [];
         logRoom(room, `Mode game diubah ke ${b.mode.toUpperCase()}`);
       }
-      if (b.startChips)
+      const oldStartChips = room.startChips;
+      const oldSb = room.sb;
+      const oldBb = room.bb;
+      if (b.startChips !== undefined)
         room.startChips = Math.max(1, Math.floor(+b.startChips || 0));
-      if (b.sb) room.sb = Math.max(1, Math.floor(+b.sb || 0));
-      if (b.bb) room.bb = Math.max(room.sb, Math.floor(+b.bb || 0));
+      if (b.sb !== undefined) room.sb = Math.max(1, Math.floor(+b.sb || 0));
+      if (b.bb !== undefined) room.bb = Math.max(1, Math.floor(+b.bb || 0));
+      room.bb = Math.max(room.sb, room.bb);
+      const changes = [];
+      if (oldSb !== room.sb) changes.push(`Small Blind menjadi ${room.sb}`);
+      if (oldBb !== room.bb) changes.push(`Big Blind menjadi ${room.bb}`);
+      if (oldStartChips !== room.startChips)
+        changes.push(`Chip Awal menjadi ${room.startChips}`);
+      if (changes.length) logRoom(room, changes.join(" • "));
       break;
     case "reorderPlayers": {
       needHost();
@@ -768,7 +813,7 @@ function handle(b) {
     default:
       throw "Perintah tidak dikenal";
   }
-  return { ok: 1 };
+  return { ok: 1, ...(type === "joinRoom" ? { roomCode: room.code } : {}) };
 }
 
 function view(token, roomCode) {
@@ -794,6 +839,7 @@ function view(token, roomCode) {
     bb: room.bb,
     log: room.log,
     lastEvent: room.lastEvent,
+    lastEventId: room.lastEventId,
     dealerConfirmedStage: room.dealerConfirmedStage,
     winnerName,
     players: room.players.map(({ token, ...r }) => r),
@@ -836,29 +882,54 @@ http
       });
       return res.end(fs.readFileSync(path.join(__dirname, "sw.js")));
     }
-    if (u.pathname.startsWith("/sounds/")) {
-      const p = path.join(__dirname, u.pathname);
-      if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+    if (
+      u.pathname.startsWith("/assets/sound/") ||
+      u.pathname.startsWith("/assets/sounds/") ||
+      u.pathname.startsWith("/sounds/")
+    ) {
+      const file = path.basename(decodeURIComponent(u.pathname));
+      const soundLocations = [
+        path.join(__dirname, "assets", "sounds", file),
+        path.join(__dirname, "assets", "sound", file),
+        path.join(__dirname, "sounds", file),
+      ];
+      const soundPath = soundLocations.find(
+        (candidate) =>
+          fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+      );
+      if (soundPath) {
         res.writeHead(200, {
           "Content-Type": "audio/mpeg",
           "Cache-Control": "public, max-age=86400",
         });
-        return fs.createReadStream(p).pipe(res);
+        return fs.createReadStream(soundPath).pipe(res);
       }
     }
 
-    if (u.pathname === "/logo.png") {
-      const p = path.join(__dirname, "logo.png");
-      if (fs.existsSync(p)) {
+    if (
+      u.pathname === "/logo.png" ||
+      u.pathname === "/assets/logo/logo-main.png" ||
+      u.pathname === "/assets/logo/logo-small.png"
+    ) {
+      const requestedLogo =
+        u.pathname === "/assets/logo/logo-small.png"
+          ? "logo-small.png"
+          : "logo-main.png";
+      const p = path.join(__dirname, "assets", "logo", requestedLogo);
+      const fallback =
+        requestedLogo === "logo-small.png"
+          ? path.join(__dirname, "assets", "logo", "logo-main.png")
+          : path.join(__dirname, "logo.png");
+      const logoPath = fs.existsSync(p) ? p : fallback;
+      if (fs.existsSync(logoPath)) {
         res.writeHead(200, {
           "Content-Type": "image/png",
           "Cache-Control": "no-cache",
         });
-        return fs.createReadStream(p).pipe(res);
+        return fs.createReadStream(logoPath).pipe(res);
       }
-      // Belum ada logo.png -> 404 (jangan kirim index.html), klien akan memakai placeholder
       res.writeHead(404, { "Content-Type": "text/plain" });
-      return res.end("logo.png belum ada");
+      return res.end("Logo belum ada");
     }
 
     if (u.pathname === "/events") {
@@ -875,12 +946,9 @@ http
       };
       clients.add(c);
       res.write("retry: 1500\n\n");
-      // Siapa pun yang masuk room (selain Bandar) otomatis duduk di meja sebagai pemain
       const rm = rooms[c.roomCode];
-      const seated = rm ? seatPlayer(rm, c.token) : null;
       if (rm) rm.touched = Date.now();
-      if (seated) broadcast(c.roomCode);
-      else send(c);
+      send(c);
       req.on("close", () => {
         clients.delete(c);
         // Beri waktu 60 detik: refresh / layar HP mati / sinyal putus jangan langsung menghapus room atau memindah bandar
