@@ -164,6 +164,11 @@ function connect() {
         else if (data.lastEvent.includes('Fold')) playSFX('fold');
         else if (data.lastEvent.includes('FLOP') || data.lastEvent.includes('TURN') || data.lastEvent.includes('RIVER')) playSFX('stage');
       }
+      if (!data.isHost && data.you == null && !leaving) {
+        exitRoom();
+        flash('Kamu sudah tidak duduk di meja ini');
+        return;
+      }
       st = data;
       render();
     } catch(err) {
@@ -197,10 +202,18 @@ function exitRoom() {
   roomCode = ''; localStorage.cb_room = ''; st = null; hostOpen = false;
   render();
 }
+let leaving = false;
 async function leaveSeat() {
-  const wasHost = st && st.isHost;
+  leaving = true;
   const j = await api('leave');
-  if (j && j.ok && !wasHost) exitRoom();
+  if (j && j.ok) exitRoom();
+  leaving = false;
+}
+function renameMe() {
+  const me = (st && st.players || []).find(p => p.id === st.you);
+  if (!me) return;
+  const n = prompt('Nama baru (maks 16 karakter):', me.name);
+  if (n !== null && n.trim()) api('rename', { name: n });
 }
 
 function pRow(p, extra = '') {
@@ -389,18 +402,18 @@ function render() {
     <div class="row">
       ${themeSelect()}
       ${deferredPrompt ? `<button class="b s" onclick="deferredPrompt.prompt()">Install App</button>` : ''}
-      ${!me ? `<button class="g s" onclick="if(confirm('${st.isHost ? 'Keluar dari room? Peran Bandar akan dialihkan otomatis jika kamu tidak kembali dalam 1 menit.' : 'Keluar dari room?'}'))exitRoom()">Keluar Room</button>` : ''}
+      ${st.isHost ? `<button class="g s" onclick="if(confirm('Keluar dari room? Peran Bandar akan dialihkan otomatis ke pemain lain jika kamu tidak kembali dalam 1 menit.'))exitRoom()">Keluar Room</button>` : ''}
       ${st.isHost ? `<button class="y s" onclick="hostOpen=!hostOpen;render()">${hostOpen ? 'Tutup Kontrol' : '👑 Bandar'}</button>` : ''}
     </div>
   </div>`;
 
-  if (!me) {
-    h += `<div class="card"><h3>${st.isHost ? 'Ikut Bermain Sebagai Pemain (Bandar boleh ikut main)' : 'Gabung ke Meja Ini'}</h3><div class="row"><input id="nm" placeholder="Nama Kamu" maxlength="16" value="${d('nm','')}" oninput="setD('nm',this.value)">
-      <button class="y" onclick="api('join',{name:$('#nm').value})">Gabung</button></div></div>`;
-  } else {
+  if (st.isHost) {
+    h += `<div class="card"><div class="mut">👑 Kamu adalah <b>Bandar</b></div>
+      <div class="mut" style="margin-top:4px">Bandar mengatur permainan dan <b>tidak ikut bermain</b>. Semua orang lain yang masuk room otomatis duduk di meja.</div></div>`;
+  } else if (me) {
     h += `<div class="card row sp">
-      <div><div class="mut">${esc(me.name)} ${st.isHost ? '👑 (Bandar)' : ''}</div><div class="big">${fmt(me.chips)}</div></div>
-      <button class="g s" onclick="if(confirm('${st.isHost ? 'Berhenti ikut bermain? Kamu tetap jadi Bandar.' : 'Keluar dari room?'}'))leaveSeat()">${st.isHost ? 'Berhenti Main' : 'Keluar'}</button>
+      <div><div class="mut">${esc(me.name)} <button class="g s" style="padding:2px 8px" onclick="renameMe()">✎ Ganti Nama</button></div><div class="big">${fmt(me.chips)}</div></div>
+      <button class="g s" onclick="if(confirm('Keluar dari room?'))leaveSeat()">Keluar</button>
     </div>`;
   }
 
@@ -440,7 +453,7 @@ function render() {
     h += `<div class="winner-modal" style="z-index:10000">
       <div style="font-size:48px">👑</div>
       <h1 style="color:var(--gold);font-size:28px;margin:10px 0">Jadi Bandar?</h1>
-      <p style="color:#fff;max-width:320px"><b>${esc(ph.fromName)}</b> menawarkan peran <b>Bandar</b> kepadamu. Bandar bisa mengatur chip, memulai hand, dan menentukan pemenang.</p>
+      <p style="color:#fff;max-width:320px">Bandar menawarkan peran <b>Bandar</b> kepadamu. Jika kamu terima, kamu <b>keluar dari meja</b> dan tidak ikut bermain lagi (chipmu disimpan), sedangkan Bandar lama otomatis duduk sebagai pemain.</p>
       <div class="row" style="margin-top:14px;justify-content:center">
         <button class="ok" onclick="api('respondHost',{accept:true})">Terima</button>
         <button class="r" onclick="api('respondHost',{accept:false})">Tolak</button>

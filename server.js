@@ -34,6 +34,7 @@ function initRoom(code) {
     lastEvent: 'Room berhasil dibuat.',
     dealerConfirmedStage: true,
     pendingHost: null,
+    stash: {},   // chip & nama pemain yang sedang tidak duduk (supaya tidak bisa dapat chip baru dengan keluar-masuk)
     touched: Date.now(),
     poker: { active: false, stage: 'idle', dealer: null, turn: null, currentBet: 0, minRaise: 0, order: [], sbId: null, bbId: null },
     bj: { phase: 'betting' }
@@ -231,6 +232,67 @@ function bjResolve(room, p, res) {
   if (!room.players.some(q => q.bjBet > 0 || q.bjSplitBet > 0)) room.bj.phase = 'betting';
 }
 
+// ---------- Meja: semua orang di room (selain Bandar) otomatis jadi pemain ----------
+const nameTaken = (room, name, except) => room.players.some(p => p !== except && p.name.toLowerCase() === name.toLowerCase());
+
+function defaultName(room) {
+  for (let i = 1; ; i++) if (!nameTaken(room, 'Pemain ' + i)) return 'Pemain ' + i;
+}
+
+function seatPlayer(room, token) {
+  if (!token || room.hostToken === token || room.players.some(p => p.token === token)) return null;
+  const old = room.stash[token];
+  let name = old && old.name && !nameTaken(room, old.name) ? old.name : defaultName(room);
+  const p = {
+    id: room.nextId++, token, name,
+    chips: old ? old.chips : room.startChips,
+    bet: 0, contrib: 0, folded: false, allin: false, acted: false, inHand: false,
+    bjBet: 0, bjSplitBet: 0, last: 0
+  };
+  room.players.push(p);
+  delete room.stash[token];
+  logRoom(room, `${p.name} duduk di meja (${p.chips} chip)`);
+  return p;
+}
+
+// Pemain meninggalkan meja. Chip disimpan, jadi kalau kembali chipnya sama (bukan chip baru).
+function unseatPlayer(room, p) {
+  p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0);   // taruhan blackjack yang belum dikunci dikembalikan
+  p.bjBet = p.bjSplitBet = 0;
+  room.stash[p.token] = { name: p.name, chips: p.chips };
+  room.players = room.players.filter(q => q !== p);
+  if (room.pendingHost && room.pendingHost.targetId === p.id) clearOffer(room);
+}
+
+function cancelRound(room, why) {
+  if (room.poker.active) {
+    room.players.forEach(p => { p.chips += p.contrib; });
+    endHand(room);
+  }
+  if (room.bj.phase === 'playing' || room.players.some(p => p.bjBet || p.bjSplitBet)) {
+    room.players.forEach(p => { p.chips += (p.bjBet + p.bjSplitBet); p.bjBet = p.bjSplitBet = 0; });
+    room.bj.phase = 'betting';
+  }
+  logRoom(room, why);
+}
+
+// Bandar baru turun dari meja (keluar sebagai pemain). Bandar lama otomatis duduk di meja kalau masih online.
+function promote(room, newToken) {
+  const np = room.players.find(p => p.token === newToken);
+  if (!np) return;
+  const oldToken = room.hostToken;
+  if (room.poker.active || room.bj.phase === 'playing') {
+    cancelRound(room, 'Ronde dibatalkan karena pergantian Bandar. Semua chip dikembalikan');
+  }
+  clearOffer(room);
+  const newName = np.name;
+  unseatPlayer(room, np);
+  room.hostToken = newToken;
+  const online = [...clients].some(c => c.token === oldToken && c.roomCode === room.code);
+  const seated = online ? seatPlayer(room, oldToken) : null;
+  logRoom(room, `${newName} sekarang menjadi Bandar${seated ? ` • Bandar sebelumnya duduk sebagai ${seated.name}` : ''}`);
+}
+
 // Dipakai untuk tawaran Bandar (perlu persetujuan pemain)
 const offerTimers = {};
 function clearOffer(room) {
@@ -249,9 +311,8 @@ function handleDisconnect(token) {
     const online = others.filter(p => [...clients].some(c => c.token === p.token && c.roomCode === code));
     const next = online[0] || others[0];
     if (next) {
-      clearOffer(room);
-      room.hostToken = next.token;
-      logRoom(room, `Bandar terputus. Peran Bandar otomatis dialihkan ke ${next.name}`);
+      logRoom(room, 'Bandar terputus. Mencari Bandar baru secara otomatis…');
+      promote(room, next.token);
       broadcast(code);
     } else if (![...clients].some(x => x.roomCode === code)) {
       clearOffer(room);
@@ -281,38 +342,21 @@ function handle(b) {
   const needMe = () => { if (!me) throw 'Kamu belum bergabung di room ini!'; return me; };
 
   switch (type) {
-    case 'join': {
-      if (me) break;
-      let name = String(b.name || '').trim().slice(0, 16);
+    case 'rename': {
+      const m = needMe();
+      const name = String(b.name || '').trim().slice(0, 16);
       if (!name) throw 'Nama tidak boleh kosong';
-      if (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-        name += ' ' + room.nextId;
-      }
-      room.players.push({ 
-        id: room.nextId++, 
-        token, 
-        name, 
-        chips: room.startChips, 
-        bet: 0, 
-        contrib: 0, 
-        folded: false, 
-        allin: false, 
-        acted: false, 
-        inHand: false, 
-        bjBet: 0, 
-        bjSplitBet: 0, 
-        last: 0 
-      });
-      logRoom(room, `${name} bergabung dengan ${room.startChips} chip`);
+      if (nameTaken(room, name, m)) throw 'Nama sudah dipakai pemain lain';
+      const oldName = m.name;
+      m.name = name;
+      logRoom(room, `${oldName} mengganti nama menjadi ${name}`);
       break;
     }
     case 'leave': {
       if (!me) break;
       if (me.inHand || me.bjBet > 0) throw 'Tunggu hingga ronde selesai sebelum keluar';
-      room.players = room.players.filter(p => p !== me);
-      if (room.pendingHost && room.pendingHost.targetId === me.id) clearOffer(room);
-      // Bandar yang berhenti main TETAP jadi Bandar
-      logRoom(room, isHost ? `${me.name} berhenti ikut bermain (tetap Bandar)` : `${me.name} telah meninggalkan meja`);
+      unseatPlayer(room, me);
+      logRoom(room, `${me.name} telah meninggalkan meja`);
       break;
     }
     case 'act': act(room, needMe(), b.a, b.amount); break;
@@ -372,9 +416,9 @@ function handle(b) {
       needHost();
       const target = P(room, b.targetId);
       if (!target) throw 'Pemain tidak ditemukan';
-      if (target.token === token) throw 'Kamu sudah menjadi Bandar';
+      if (room.poker.active || room.bj.phase === 'playing') throw 'Selesaikan ronde yang berjalan sebelum mengganti Bandar';
       clearOffer(room);
-      room.pendingHost = { targetId: target.id, targetName: target.name, fromName: me ? me.name : 'Bandar' };
+      room.pendingHost = { targetId: target.id, targetName: target.name };
       offerTimers[room.code] = setTimeout(() => {
         if (rooms[room.code] && room.pendingHost) {
           logRoom(room, `Tawaran Bandar ke ${room.pendingHost.targetName} kedaluwarsa`);
@@ -394,17 +438,18 @@ function handle(b) {
       if (!o) throw 'Tawaran Bandar sudah tidak berlaku';
       const m = needMe();
       if (m.id !== o.targetId) throw 'Tawaran ini bukan untukmu';
-      clearOffer(room);
       if (b.accept) {
-        room.hostToken = m.token;
-        logRoom(room, `${m.name} menerima peran Bandar`);
+        if (room.poker.active || room.bj.phase === 'playing') { clearOffer(room); throw 'Ronde sedang berjalan, tawaran dibatalkan'; }
+        promote(room, m.token);
       } else {
+        clearOffer(room);
         logRoom(room, `${m.name} menolak peran Bandar`);
       }
       break;
     }
     case 'start': 
       needHost(); 
+      clearOffer(room);
       room.log = [];
       startHand(room); 
       break;
@@ -431,8 +476,7 @@ function handle(b) {
       const p = P(room, b.id); 
       if (!p) break;
       if (p.inHand || p.bjBet) throw 'Tunggu hingga ronde selesai';
-      room.players = room.players.filter(q => q !== p); 
-      if (room.pendingHost && room.pendingHost.targetId === p.id) clearOffer(room);
+      unseatPlayer(room, p);
       logRoom(room, `${p.name} dikeluarkan oleh Bandar`); 
       break;
     }
@@ -440,6 +484,7 @@ function handle(b) {
       needHost(); 
       if (room.poker.active) throw 'Hand masih berjalan';
       room.players.forEach(p => { p.chips = room.startChips; p.bjBet = p.bjSplitBet = 0; }); 
+      Object.values(room.stash).forEach(s => { s.chips = room.startChips; });
       room.bj.phase = 'betting'; 
       room.log = [];
       logRoom(room, 'Semua chip pemain berhasil direset'); 
@@ -448,6 +493,7 @@ function handle(b) {
       needHost(); 
       if (room.mode !== 'blackjack') throw 'Mode bukan Blackjack';
       if (!room.players.some(p => p.bjBet > 0)) throw 'Belum ada pemain yang memasang taruhan';
+      clearOffer(room);
       room.players.forEach(p => { p.last = p.bjBet || p.last; }); 
       room.bj.phase = 'playing'; 
       logRoom(room, 'Kartu dikocok & taruhan dikunci'); 
@@ -527,7 +573,11 @@ http.createServer((req, res) => {
     const c = { res, token: u.searchParams.get('token') || '', roomCode: u.searchParams.get('room') || '' };
     clients.add(c); 
     res.write('retry: 1500\n\n'); 
-    send(c);
+    // Siapa pun yang masuk room (selain Bandar) otomatis duduk di meja sebagai pemain
+    const rm = rooms[c.roomCode];
+    const seated = rm ? seatPlayer(rm, c.token) : null;
+    if (rm) rm.touched = Date.now();
+    if (seated) broadcast(c.roomCode); else send(c);
     req.on('close', () => {
       clients.delete(c);
       // Beri waktu 60 detik: refresh / layar HP mati / sinyal putus jangan langsung menghapus room atau memindah bandar
