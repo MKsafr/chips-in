@@ -32,7 +32,7 @@ function initRoom(code) {
     players: [],
     log: [],
     lastEvent: 'Room berhasil dibuat.',
-    dealerConfirmedStage: true, // Lock aksi sebelum dealer konfirm flop/river
+    dealerConfirmedStage: true,
     poker: { active: false, stage: 'idle', dealer: null, turn: null, currentBet: 0, minRaise: 0, order: [], sbId: null, bbId: null },
     bj: { phase: 'betting' }
   };
@@ -41,7 +41,6 @@ function initRoom(code) {
 const P = (room, id) => room.players.find(p => p.id === id);
 const pot = (room) => room.players.reduce((a, p) => a + (p.contrib || 0), 0);
 
-/* ---------- LOGIKA POKER ---------- */
 function put(p, a) { p.chips -= a; p.bet += a; p.contrib += a; if (p.chips === 0) p.allin = true; }
 function post(p, a) { put(p, Math.min(a, p.chips)); }
 
@@ -98,7 +97,7 @@ function nextStage(room) {
   }
   
   k.turn = nextActor(room, k.order.indexOf(k.dealer) + 1);
-  room.dealerConfirmedStage = false; // Kunci aksi pemain sampai dealer menekan konfirmasi kartu
+  room.dealerConfirmedStage = false;
   logRoom(room, `Menunggu Bandar menampilkan kartu ${k.stage.toUpperCase()} di meja fisik.`);
 }
 
@@ -178,7 +177,6 @@ function award(room, winners) {
   if (!k.active || k.stage !== 'showdown') throw 'Belum tahap Showdown';
   const ls = layers(room);
   
-  // Fitur Otomatisasi Side Pot: Jika pemenang Pot Utama ada di Side Pot, pilih otomatis
   if (winners[0] && winners[0].length === 1) {
     const mainWinnerId = winners[0][0];
     for (let i = 1; i < ls.length; i++) {
@@ -204,7 +202,6 @@ function award(room, winners) {
   endHand(room);
 }
 
-/* ---------- LOGIKA BLACKJACK ---------- */
 function setBet(room, p, amt) {
   p.chips += p.bjBet; 
   amt = Math.min(amt, p.chips);
@@ -232,7 +229,6 @@ function bjResolve(room, p, res) {
   if (!room.players.some(q => q.bjBet > 0 || q.bjSplitBet > 0)) room.bj.phase = 'betting';
 }
 
-/* ---------- DISCONNECT & HOST AUTO-TRANSFER ---------- */
 function handleDisconnect(token) {
   for (const code in rooms) {
     const room = rooms[code];
@@ -242,13 +238,12 @@ function handleDisconnect(token) {
         room.hostToken = activePlayers[0].token;
         logRoom(room, `Bandar keluar. Peran bandar otomatis dialihkan ke ${activePlayers[0].name}`);
       } else {
-        delete rooms[code]; // Hapus room jika kosong
+        delete rooms[code];
       }
     }
   }
 }
 
-/* ---------- REQUEST HANDLER ---------- */
 function handle(b) {
   const { token, type, roomCode } = b;
   
@@ -338,7 +333,7 @@ function handle(b) {
       if (room.poker.active || room.bj.phase === 'playing') throw 'Selesaikan ronde yang berjalan terlebih dahulu!';
       if (b.mode && b.mode !== room.mode) {
         room.mode = b.mode;
-        room.log = []; // Reset riwayat saat ubah mode
+        room.log = [];
         logRoom(room, `Mode game diubah ke ${b.mode.toUpperCase()}`);
       }
       if (b.startChips) room.startChips = Math.max(1, Math.floor(+b.startChips || 0));
@@ -364,7 +359,7 @@ function handle(b) {
     }
     case 'start': 
       needHost(); 
-      room.log = []; // Reset riwayat tiap sesi hand poker baru
+      room.log = [];
       startHand(room); 
       break;
     case 'award': needHost(); award(room, b.winners); break;
@@ -423,7 +418,6 @@ function handle(b) {
   return { ok: 1 };
 }
 
-/* ---------- SERVER INITIALIZATION ---------- */
 function view(token, roomCode) {
   const room = rooms[roomCode];
   if (!room) return { error: 'ROOM_NOT_FOUND' };
@@ -432,7 +426,6 @@ function view(token, roomCode) {
   const k = room.poker;
   const isHost = room.hostToken === token;
 
-  // Cek Pemenang Utama (Jika hanya tersisa 1 orang yang punya chip)
   const activeChipHolders = room.players.filter(p => p.chips > 0);
   const winnerName = (room.players.length > 1 && activeChipHolders.length === 1) ? activeChipHolders[0].name : null;
 
@@ -465,7 +458,6 @@ const broadcast = (code) => clients.forEach(c => { if (c.roomCode === code) send
 http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
 
-  // Serve static asset (manifest, logo, sw.js)
   if (u.pathname === '/manifest.json') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(fs.readFileSync(path.join(__dirname, 'manifest.json')));
@@ -518,7 +510,7 @@ http.createServer((req, res) => {
     res.end(err ? 'index.html tidak ditemukan' : html);
   });
 }).listen(PORT, '0.0.0.0', () => {
-  console.log(`\n♠ ChipBank V2 Multi-Room berjalan di port ${PORT}\n`);
+  console.log(`\n♠ Chips-in Multi-Room berjalan di port ${PORT}\n`);
 });
 
 setInterval(() => clients.forEach(c => c.res.write(': ping\n\n')), 20000);
