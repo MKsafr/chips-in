@@ -331,23 +331,30 @@ function setBet(room, p, amt) {
   p.bjBet = amt;
 }
 
-function bjResolve(room, p, res) {
+function bjResolve(room, p, res, betSlot) {
   const mult = { win: 2, bj: 2.5, push: 1, lose: 0 };
   if (!(res in mult)) throw "Hasil tidak valid";
+  if (betSlot !== undefined && betSlot !== "main" && betSlot !== "split")
+    throw "Taruhan tidak valid";
   if (!p.bjBet && !p.bjSplitBet) return;
 
   let totalPay = 0;
-  if (p.bjBet > 0) {
+  if ((!betSlot || betSlot === "main") && p.bjBet > 0) {
     totalPay += Math.floor(p.bjBet * mult[res]);
     p.bjBet = 0;
   }
-  if (p.bjSplitBet > 0) {
+  if ((!betSlot || betSlot === "split") && p.bjSplitBet > 0) {
     totalPay += Math.floor(p.bjSplitBet * mult[res]);
     p.bjSplitBet = 0;
   }
 
   p.chips += totalPay;
-  logRoom(room, `${p.name}: ${res.toUpperCase()} (Menerima ${totalPay} chip)`);
+  const betLabel =
+    betSlot === "main" ? " (Bet 1)" : betSlot === "split" ? " (Bet 2)" : "";
+  logRoom(
+    room,
+    `${p.name}${betLabel}: ${res.toUpperCase()} (Menerima ${totalPay} chip)`,
+  );
   if (!room.players.some((q) => q.bjBet > 0 || q.bjSplitBet > 0))
     room.bj.phase = "betting";
 }
@@ -367,7 +374,7 @@ const nameTaken = (room, name, except) => {
 
 function defaultName(room) {
   for (let i = 1; ; i++)
-    if (!nameTaken(room, "Pemain " + i)) return "Pemain " + i;
+    if (!nameTaken(room, "Player " + i)) return "Player " + i;
 }
 
 function seatPlayer(room, token, profile) {
@@ -661,7 +668,7 @@ function handle(b) {
     }
     case "leave": {
       if (!me) break;
-      if (me.inHand || me.bjBet > 0)
+      if (me.inHand || me.bjBet > 0 || me.bjSplitBet > 0)
         throw "Tunggu hingga ronde selesai sebelum keluar";
       unseatPlayer(room, me);
       logRoom(room, `${me.name} telah meninggalkan meja`);
@@ -723,7 +730,7 @@ function handle(b) {
     }
     case "splitBJ": {
       needMe();
-      if (room.bj.phase !== "playing" || !me.bjBet)
+      if (room.bj.phase !== "playing" || !me.bjBet || me.bjSplitBet)
         throw "Tidak dapat melakukan split";
       if (me.chips < me.bjBet) throw "Chip tidak cukup untuk Melakukan Split";
       me.chips -= me.bjBet;
@@ -858,7 +865,8 @@ function handle(b) {
       needHost();
       const p = P(room, b.id);
       if (!p) break;
-      if (p.inHand || p.bjBet) throw "Tunggu hingga ronde selesai";
+      if (p.inHand || p.bjBet || p.bjSplitBet)
+        throw "Tunggu hingga ronde selesai";
       unseatPlayer(room, p);
       logRoom(room, `${p.name} dikeluarkan oleh Bandar`);
       break;
@@ -893,7 +901,7 @@ function handle(b) {
       needHost();
       {
         const p = P(room, b.id);
-        if (p) bjResolve(room, p, b.result);
+        if (p) bjResolve(room, p, b.result, b.betSlot);
       }
       break;
     case "bjAll":
@@ -914,7 +922,11 @@ function handle(b) {
     default:
       throw "Perintah tidak dikenal";
   }
-  return { ok: 1, ...(type === "joinRoom" ? { roomCode: room.code } : {}) };
+  return {
+    ok: 1,
+    ...(type === "joinRoom" ? { roomCode: room.code } : {}),
+    ...(type === "checkRoom" ? { suggestedName: defaultName(room) } : {}),
+  };
 }
 
 function view(token, roomCode) {

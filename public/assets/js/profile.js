@@ -1,5 +1,5 @@
       function beginHostCreation() {
-        pf = { mode: "createHost", name: "", avatar: "crown" };
+        pf = { mode: "createHost", name: "Dealer", avatar: "crown" };
         pfOpen = true;
         renderProfile();
       }
@@ -16,7 +16,11 @@
         const j = await api("checkRoom", { roomCode: v });
         if (j && j.ok) {
           pendingRoomCode = v;
-          pf = { mode: "join", name: "", avatar: "spade" };
+          pf = {
+            mode: "join",
+            name: j.suggestedName || "Player 1",
+            avatar: "spade",
+          };
           pfOpen = true;
           renderProfile();
         }

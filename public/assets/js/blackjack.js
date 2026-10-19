@@ -9,20 +9,27 @@
         h +=
           `<div class="card"><h3>Daftar Taruhan Pemain</h3>` +
           (st.players || [])
-            .map((p) => {
-              let ex = "";
-              if (
-                st.isHost &&
-                playing &&
-                ((p.bjBet || 0) > 0 || (p.bjSplitBet || 0) > 0)
-              ) {
-                ex = `<div class="row" style="margin-top:6px">
-        <button class="ok s" onclick="api('bjResolve',{id:${p.id},result:'win'})">Menang</button>
-        <button class="y s" onclick="api('bjResolve',{id:${p.id},result:'bj'})">BJ 3:2</button>
-        <button class="g s" onclick="api('bjResolve',{id:${p.id},result:'push'})">Seri</button>
-        <button class="r s" onclick="api('bjResolve',{id:${p.id},result:'lose'})">Kalah</button></div>`;
-              }
-              return pRow(p, ex);
+            .flatMap((p) => {
+              const hands = [
+                p.bjBet > 0
+                  ? { label: "Bet 1", amount: p.bjBet, betSlot: "main" }
+                  : null,
+                p.bjSplitBet > 0
+                  ? { label: "Bet 2", amount: p.bjSplitBet, betSlot: "split" }
+                  : null,
+              ].filter(Boolean);
+              if (!hands.length) return [pRow(p)];
+              return hands.map((hand) => {
+                const ex =
+                  st.isHost && playing
+                    ? `<div class="row" style="margin-top:6px">
+        <button class="ok s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'win'})">Menang</button>
+        <button class="y s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'bj'})">BJ 3:2</button>
+        <button class="g s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'push'})">Seri</button>
+        <button class="r s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'lose'})">Kalah</button></div>`
+                    : "";
+                return pRow(p, ex, hand);
+              });
             })
             .join("") +
           "</div>";
@@ -46,7 +53,16 @@
         if (me && playing && (me.bjBet || 0) > 0) {
           h += `<div class="card"><h3>Opsi Tambahan</h3>
       <div class="row"><button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>
-      <button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button></div></div>`;
+      ${me.bjSplitBet ? "" : `<button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button>`}</div></div>`;
+        }
+
+        if (st.isHost && playing) {
+          h += `<div class="card"><h3>Kontrol Blackjack</h3><div class="bj-dealer-controls">
+      <button class="ok" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
+      <button class="g" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
+      <button class="r" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
+      <button class="g" onclick="if(confirm(translateText('Batalkan ronde?')))api('bjCancel')">Batal</button>
+    </div></div>`;
         }
 
         return h;

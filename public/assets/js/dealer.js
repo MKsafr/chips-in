@@ -17,31 +17,21 @@
       <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${(st.poker.stage || "").toUpperCase()}</button></div>`
         : ""
     }
-    ${
-      st.mode === "blackjack"
-        ? `<div class="card"><h3>Kontrol Blackjack</h3><div class="row">${
-            st.bj.phase === "playing"
-              ? `<button class="ok f s" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
-       <button class="g f s" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
-       <button class="r f s" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
-       <button class="g s" onclick="if(confirm(translateText('Batalkan ronde?')))api('bjCancel')">Batal</button>`
-              : `<div class="mut">Gunakan tombol mulai ronde di bawah profil Bandar.</div>`
-          }</div></div>`
-        : ""
-    }
     <div class="card"><h3>Kelola Pemain</h3>` +
           (st.players || [])
             .map(
               (
                 p, index,
-              ) => `<div class="pl"><div class="row" style="flex-wrap:nowrap;gap:8px">${avatar(p.avatar, 28)}<div><b data-player-name>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div></div>
-      <div class="row">
+              ) => `<div class="manage-player">
+      <div class="manage-player-summary">${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmt(p.chips)} chip</span></div></div>
+      <div class="manage-player-actions manage-player-actions-primary">
       <button class="g s" aria-label="Naikkan pemain" ${index === 0 ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
       <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
       <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
+      </div><div class="manage-player-actions manage-player-actions-secondary">
       <button class="ok s" onclick="openChipAdjustment(${p.id},1)">+ Chip</button>
       <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
-      <button class="r s" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
+      <button class="r s" aria-label="Keluarkan ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
             )
             .join("") +
           `<button class="g" style="width:100%;margin-top:8px" onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button></div>`;

@@ -1,4 +1,4 @@
-      function pRow(p, extra = "") {
+      function pRow(p, extra = "", blackjackHand = null) {
         if (!p) return "";
         const k = st.poker || {},
           pk = st.mode === "poker";
@@ -17,12 +17,15 @@
           ? p.bet
             ? `<div class="mut">bet ${fmt(p.bet)}</div>`
             : ""
-          : p.bjBet
-            ? `<div class="mut">bet ${fmt(p.bjBet)}${p.bjSplitBet ? " | split " + fmt(p.bjSplitBet) : ""}</div>`
+          : blackjackHand
+            ? `<div class="mut">${blackjackHand.label}: ${fmt(blackjackHand.amount)}</div>`
+            : p.bjBet || p.bjSplitBet
+            ? `<div class="mut">${p.bjBet ? `Bet 1: ${fmt(p.bjBet)}` : ""}${p.bjBet && p.bjSplitBet ? "<br>" : ""}${p.bjSplitBet ? `Bet 2: ${fmt(p.bjSplitBet)}` : ""}</div>`
             : "";
         const out = pk && k.active && (!p.inHand || p.folded);
+        const name = `${esc(p.name)}${blackjackHand ? ` (${blackjackHand.label})` : ""}`;
 
         return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}">
-    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${esc(p.name)}</b>${t.join("")}${extra}</div></div>
+    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
     <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
       }

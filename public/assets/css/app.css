@@ -129,7 +129,12 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
         margin-bottom: 12px;
+      }
+      .top > .row {
+        justify-content: flex-end;
       }
       .logo-box {
         display: flex;
@@ -192,6 +197,14 @@
         align-items: center;
         flex-wrap: wrap;
       }
+      .row > * {
+        min-width: 0;
+      }
+      .row > button {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
       .sp {
         justify-content: space-between;
       }
@@ -212,6 +225,7 @@
         border: 0;
         border-radius: 10px;
         padding: 11px 14px;
+        min-width: 0;
         background: var(--btn);
         color: var(--tx);
         cursor: pointer;
@@ -279,6 +293,82 @@
       }
       .pl.me {
         background: rgba(232, 195, 90, 0.1);
+      }
+      .manage-player {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 8px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .manage-player-summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .manage-player-identity {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        min-width: 0;
+      }
+      .manage-player-identity [data-player-name] {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .manage-player-chips {
+        flex: none;
+        color: var(--gold);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .manage-player-actions {
+        display: grid;
+        gap: 6px;
+      }
+      .manage-player-actions-primary {
+        grid-template-columns: 42px 42px minmax(0, 1fr);
+      }
+      .manage-player-actions-secondary {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 42px;
+      }
+      .manage-player-actions button {
+        width: 100%;
+        min-height: 36px;
+        padding: 7px 8px;
+        font-size: 12px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+      .dealer-controls-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      .dealer-controls-heading > div {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .dealer-controls-heading > button {
+        flex: none;
+      }
+      .bj-dealer-controls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .bj-dealer-controls button {
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
 
       .tag {
@@ -441,6 +531,7 @@
         justify-content: center;
         padding: 16px;
         overflow-y: auto;
+        overscroll-behavior: contain;
       }
       .mbox {
         background: var(--card);
@@ -449,7 +540,8 @@
         padding: 16px;
         width: 100%;
         max-width: 420px;
-        max-height: 100%;
+        max-height: calc(100vh - 32px);
+        max-height: calc(100dvh - 32px);
         overflow-y: auto;
       }
       .settings-grid {
@@ -488,4 +580,42 @@
         border-color: var(--gold);
         background: rgba(232, 195, 90, 0.15);
       }
-
+      @media (max-width: 480px) {
+        .top {
+          align-items: flex-start;
+        }
+        .top > .row {
+          justify-content: flex-start;
+        }
+        .manage-player {
+          padding: 10px;
+        }
+        .card > .row[style*="flex-wrap:nowrap"] {
+          flex-wrap: wrap !important;
+        }
+        .card > .row[style*="flex-wrap:nowrap"] > .row {
+          flex-wrap: wrap !important;
+        }
+      }
+      @media (max-width: 360px) {
+        #app {
+          padding: 8px;
+        }
+        .manage-player-identity {
+          flex-wrap: wrap;
+          gap: 2px 8px;
+        }
+        .manage-player-actions-primary {
+          grid-template-columns: 36px 36px minmax(0, 1fr);
+        }
+        .manage-player-actions-secondary {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+        }
+        .chip {
+          width: 42px;
+          height: 42px;
+        }
+        .bj-dealer-controls {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }

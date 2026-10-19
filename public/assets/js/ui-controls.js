@@ -100,7 +100,7 @@
       function renderDealerControls() {
         if (!dealerControlsOpen || !st || !st.isHost) return;
         $("#modal").innerHTML = `<div class="modal" onclick="if(event.target===this)closeDealerControls()"><div class="mbox">
-    <div class="row sp"><div style="font-size:18px;font-weight:800">👑 Kontrol Bandar</div><button class="g s" aria-label="Tutup" onclick="closeDealerControls()">×</button></div>
+    <div class="dealer-controls-heading"><div style="font-size:18px;font-weight:800">👑 Kontrol Bandar</div><button class="g s" aria-label="Tutup" onclick="closeDealerControls()">×</button></div>
     ${hostPanel()}
   </div></div>`;
         localizeTree($("#modal"));
