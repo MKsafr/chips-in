@@ -606,12 +606,108 @@
       }
       .volume-control {
         display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
+        grid-template-columns: minmax(0, 1fr) 38px;
+        gap: 4px 10px;
         align-items: center;
       }
-      .volume-control input {
+      .volume-control input[type="range"] {
+        grid-column: 1;
+        grid-row: 1;
+        appearance: none;
+        width: 100%;
+        height: 24px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        cursor: pointer;
+        touch-action: pan-y;
+      }
+      .volume-control input[type="range"]::-webkit-slider-runnable-track {
+        width: calc(100% - 18px);
+        height: 6px;
+        margin: 0 auto;
+        border-radius: 999px;
+        background: linear-gradient(
+          to right,
+          var(--blu) 0%,
+          var(--blu) var(--volume-level),
+          var(--line) var(--volume-level),
+          var(--line) 100%
+        );
+      }
+      .volume-control input[type="range"]::-moz-range-track {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--line);
+      }
+      .volume-control input[type="range"]::-moz-range-progress {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--blu);
+      }
+      .volume-control input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        margin-top: -6px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--blu);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+      }
+      .volume-control input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--blu);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+      }
+      .mute-toggle {
+        grid-column: 2;
+        grid-row: 1;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        padding: 8px;
+        color: var(--tx);
+      }
+      .mute-toggle svg {
+        width: 20px;
+        height: 20px;
+        overflow: visible;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .mute-toggle svg path:first-child {
+        fill: currentColor;
+        stroke: currentColor;
+      }
+      .mute-toggle .mute-slash {
+        stroke: var(--red);
+        stroke-width: 2.5;
+      }
+      .volume-control > span {
         grid-column: 1 / -1;
+        grid-row: 2;
+      }
+      .install-app-button {
+        display: block;
+        width: max-content;
+        max-width: 100%;
+        margin: 0 auto 8px;
+        opacity: 0.72;
+        font-weight: 600;
+      }
+      .install-app-button:hover,
+      .install-app-button:focus-visible {
+        opacity: 1;
       }
       .avgrid {
         display: grid;

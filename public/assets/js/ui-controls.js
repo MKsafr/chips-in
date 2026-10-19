@@ -24,6 +24,8 @@
       function setVolume(value) {
         currentVolume = Math.max(0, Math.min(Number(value) / 100, 1));
         localStorage.cb_volume = String(currentVolume);
+        const slider = $("#volumeSlider");
+        if (slider) slider.style.setProperty("--volume-level", `${currentVolume * 100}%`);
         const label = $("#volumeValue");
         if (label) label.textContent = `${Math.round(currentVolume * 100)}%`;
       }
@@ -43,11 +45,16 @@
         <select onchange="updateLanguage(this.value)">${Object.keys(LANGUAGES).map((key) => `<option value="${key}" ${key === currentLanguage ? "selected" : ""}>${LANGUAGES[key]}</option>`).join("")}</select>
       </label>
       <div class="settings-option"><span class="mut">${translateText("Volume Efek Suara")}</span>
-        <div class="volume-control"><input type="range" min="0" max="100" value="${Math.round(currentVolume * 100)}" aria-label="${translateText("Volume Efek Suara")}" oninput="setVolume(this.value)"><span id="volumeValue">${Math.round(currentVolume * 100)}%</span></div>
-        <button class="g" onclick="toggleMute()">${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}</button>
+        <div class="volume-control">
+          <input id="volumeSlider" type="range" min="0" max="100" step="1" value="${Math.round(currentVolume * 100)}" style="--volume-level:${currentVolume * 100}%" aria-label="${translateText("Volume Efek Suara")}" oninput="setVolume(this.value)">
+          <button class="g mute-toggle" aria-label="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" title="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" aria-pressed="${soundMuted}" onclick="toggleMute()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"></path>${soundMuted ? "" : '<path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path>'}${soundMuted ? '<path class="mute-slash" d="m4 4 16 16"></path>' : ""}</svg>
+          </button>
+          <span id="volumeValue">${Math.round(currentVolume * 100)}%</span>
+        </div>
       </div>
     </div>
-    <button class="b" style="width:100%;margin-bottom:8px" onclick="installApp()">${translateText("Install App")}</button>
+    <button class="g s install-app-button" onclick="installApp()">${translateText("Unduh App")}</button>
     <button class="ok" style="width:100%" onclick="closeSettings()">${translateText("Simpan")}</button>
   </div></div>`;
         localizeTree($("#modal"));

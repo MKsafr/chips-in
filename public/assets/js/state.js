@@ -39,7 +39,7 @@
         "— ATAU —": "— OR —",
         "Kode Room (6 Karakter)": "Room Code (6 characters)",
         "Join Room": "Join Room",
-        "Install App": "Install App",
+        "Unduh App": "Install App",
         "Lanjutkan ke room sebelumnya?": "Continue to your previous room?",
         "Kamu telah dikeluarkan": "You have been removed",
         "Bandar telah mengeluarkan kamu dari room.": "The dealer removed you from the room.",
