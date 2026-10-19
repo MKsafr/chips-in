@@ -294,6 +294,7 @@ function layers(room) {
 function award(room, winners) {
   const k = room.poker;
   if (!k.active || k.stage !== "showdown") throw "Belum tahap Showdown";
+  if (!Array.isArray(winners)) throw "Pilih pemenang untuk setiap pot";
   const ls = layers(room);
 
   if (winners[0] && winners[0].length === 1) {
@@ -307,9 +308,16 @@ function award(room, winners) {
     }
   }
 
+  const selectedWinners = ls.map((l, i) =>
+    Array.isArray(winners[i])
+      ? winners[i].filter((id) => l.elig.includes(id))
+      : [],
+  );
+  if (selectedWinners.some((selected) => !selected.length))
+    throw "Pilih pemenang untuk setiap pot";
+
   ls.forEach((l, i) => {
-    const w = (winners[i] || []).filter((id) => l.elig.includes(id));
-    if (!w.length) return;
+    const w = selectedWinners[i];
     const share = Math.floor(l.amount / w.length);
     let rem = l.amount - share * w.length;
     w.forEach((id) => {
@@ -873,7 +881,8 @@ function handle(b) {
     }
     case "resetAll":
       needHost();
-      if (room.poker.active) throw "Hand masih berjalan";
+      if (room.poker.active || room.bj.phase === "playing")
+        throw "Hand masih berjalan";
       room.players.forEach((p) => {
         p.chips = room.startChips;
         p.bjBet = p.bjSplitBet = 0;
@@ -938,8 +947,12 @@ function view(token, roomCode) {
   const isHost = room.hostToken === token;
 
   const activeChipHolders = room.players.filter((p) => p.chips > 0);
+  const roundInProgress =
+    room.poker.active || room.bj.phase === "playing";
   const winnerName =
-    room.players.length > 1 && activeChipHolders.length === 1
+    !roundInProgress &&
+    room.players.length > 1 &&
+    activeChipHolders.length === 1
       ? activeChipHolders[0].name
       : null;
 

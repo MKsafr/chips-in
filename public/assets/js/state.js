@@ -92,6 +92,9 @@
         "Taruhan saat ini": "Current bet",
         "Feed Terbaru": "Latest Update",
         "Aksi Bandar (Dealer)": "Dealer Action",
+        "Aksi Bandar": "Dealer Action",
+        "Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.":
+          "No players have joined yet. Share the room code so they can join.",
         "Buka kartu": "Reveal the",
         "di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.":
           "cards at the physical table, then press the button below to let players bet.",
@@ -229,6 +232,7 @@
         "Jumlah taruhan tidak valid": "Invalid bet amount",
         "Raise harus lebih besar dari taruhan saat ini": "Raise must exceed the current bet",
         "Belum tahap Showdown": "It is not showdown yet",
+        "Pilih pemenang untuk setiap pot": "Select a winner for every pot",
         "Perintah tidak dikenal": "Unknown command",
         "Room berhasil dibuat.": "Room created.",
         "Pemain dikeluarkan": "Player was removed",
@@ -240,6 +244,9 @@
         "duduk di meja": "joined the table",
         "Taruhan saat ini": "Current bet",
         "Aksi Bandar (Dealer)": "Dealer Action",
+        "Aksi Bandar": "Dealer Action",
+        "Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.":
+          "No players have joined yet. Share the room code so they can join.",
         "Buka kartu": "Reveal the",
         "di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.":
           "cards at the physical table, then press the button below to let players bet.",

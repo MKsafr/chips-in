@@ -212,6 +212,17 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
+        align-items: stretch;
+        margin-bottom: 10px;
+      }
+      .grid-2 > div {
+        display: flex;
+        min-width: 0;
+      }
+      .grid-2 > div > .card,
+      .grid-2 > .card {
+        flex: 1;
+        margin-bottom: 0;
       }
       @media (max-width: 480px) {
         .grid-2 {
@@ -436,6 +447,46 @@
       }
       .pot .big {
         font-size: 38px;
+      }
+      .showdown-card {
+        border-radius: 18px;
+        padding: 16px;
+      }
+      .showdown-pot {
+        margin-top: 12px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.14);
+      }
+      .showdown-pot-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 15px;
+      }
+      .showdown-pot-title span {
+        color: var(--gold);
+        font-weight: 800;
+      }
+      .winner-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .winner-choice {
+        flex: 1 1 140px;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        background: var(--btn2);
+        text-align: left;
+      }
+      .winner-choice.selected {
+        border: 2px solid var(--gold);
+        background: rgba(232, 195, 90, 0.2);
+        color: var(--gold);
+        box-shadow: 0 0 0 2px rgba(232, 195, 90, 0.12);
       }
       .log {
         max-height: 160px;

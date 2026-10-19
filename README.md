@@ -1,4 +1,4 @@
-# Chips-in
+<h1><img src="public/assets/logo/logo-main.png" alt="" width="48" align="center"> Chips-in</h1>
 
 Aplikasi chip digital untuk membantu bermain **Poker** dan **Blackjack** bersama teman. Buat room, bagikan kode kepada pemain, lalu kelola chip dan jalannya ronde dari satu meja bersama.
 
@@ -11,8 +11,10 @@ Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap
 - Room terpisah dengan kode unik untuk setiap meja.
 - Mode Poker dan Blackjack.
 - Saldo chip, taruhan, pot, dan riwayat permainan.
-- Kontrol dealer untuk memulai ronde, mengatur meja, dan mengelola pemain.
+- Panel dealer untuk mengatur meja dan mengelola pemain.
+- Pengelolaan pemain: ubah urutan duduk, tambah/kurangi chip, tawarkan peran dealer, dan keluarkan pemain.
 - Pemain dapat bergabung menggunakan kode room dan mengatur profil.
+- Pemulihan sesi pemain maupun dealer setelah koneksi terputus, selama room dan sesi masih tersedia.
 - Bisa dipasang sebagai aplikasi web progresif (PWA) pada browser/perangkat yang mendukung.
 - Antarmuka tersedia dalam Bahasa Indonesia dan English, dengan pilihan tema.
 
@@ -21,24 +23,25 @@ Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap
 ### Dealer
 
 1. Buka [Chips-in](https://online-poker-chips.onrender.com/) dan pilih **Host Room (Buat Meja Baru)**.
-2. Isi nama dan pilih avatar dealer.
+2. Ubah nama lalu pilih avatar.
 3. Bagikan kode room yang tampil kepada para pemain.
-4. Buka **Kontrol Dealer** untuk memilih Poker atau Blackjack dan mengatur chip awal. Untuk Poker, dealer juga dapat mengatur Small Blind dan Big Blind.
-5. Kelola pemain dari panel yang sama: ubah urutan tempat duduk, tambahkan atau kurangi chip, tawarkan peran dealer, atau keluarkan pemain.
-6. Mulai ronde dari tombol di bawah profil dealer:
-   - **Poker:** pilih **Mulai Hand Baru**. Dealer mengonfirmasi pembukaan kartu komunitas ketika diperlukan dan menentukan pemenang pada showdown.
-   - **Blackjack:** pemain memasang chip terlebih dahulu, lalu dealer memilih **Kunci Taruhan & Bagi Kartu**. Setelah permainan kartu fisik selesai, catat hasil pemain melalui kontrol Blackjack.
+4. Buka **Kontrol Dealer** untuk memilih Poker atau Blackjack, mengatur chip awal, dan—untuk Poker—mengatur Small Blind serta Big Blind.
+5. Kelola pemain melalui panel **Kontrol Dealer**: ubah urutan duduk, tambah/kurangi chip, tawarkan peran dealer, atau keluarkan pemain.
+6. Aksi ronde dilakukan langsung dari meja:
+   - **Poker:** pilih **Mulai Hand Baru**. Saat permainan meminta kartu komunitas dibuka, dealer membuka kartu di meja fisik lalu menekan tombol konfirmasi di meja aplikasi. Pada **Showdown**, pilih nama pemenang untuk setiap pot (termasuk side pot), lalu pilih **Kirim Pot**.
+   - **Blackjack:** pemain memasang taruhan terlebih dahulu. Dealer memilih **Kunci Taruhan & Bagi Kartu**, lalu setelah permainan kartu fisik selesai mencatat hasil tiap pemain. Tombol hasil massal tersedia untuk menyelesaikan semua taruhan dengan hasil yang sama; **Batal** mengembalikan taruhan ronde.
+7. Tombol **Reset Semua Chip** tersedia di meja saat ronde tidak sedang berjalan.
 
 ### Pemain
 
 1. Masukkan kode room dari dealer, lalu pilih **Join Room**.
-2. Isi nama dan pilih avatar.
+2. Ubah nama lalu pilih avatar.
 3. Ikuti permainan sesuai mode:
-   - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in.
-   - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer mengunci taruhan. Gunakan opsi tambahan yang tersedia selama ronde bila sesuai.
+   - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in. Jika chipmu habis saat all-in, tunggu sampai showdown dan dealer membagikan pot.
+   - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer membagikan kartu. Saat ronde berlangsung, gunakan opsi **Double** atau **Split** jika tersedia.
 4. Saldo chip, taruhan, dan pembaruan room akan tersinkron otomatis.
 
-Jika koneksi terputus, buka kembali room di browser dengan sesi yang sama untuk melanjutkan apabila sesi sebelumnya masih tersedia.
+Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang sama. Jika room dan sesi masih tersedia, akan muncul pilihan untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali mengambil lagi perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
 
 ## Menjalankan secara lokal
 
@@ -52,7 +55,7 @@ Buka [http://localhost:3000](http://localhost:3000). Untuk menggunakan port lain
 
 ## Struktur project
 
-Susunan folder terinspirasi CodeIgniter 4 dan disesuaikan untuk server Node.js tanpa framework:
+Susunan folder project:
 
 ```text
 app/
@@ -80,18 +83,23 @@ public/
       dealer.js
       app.js
     logo/
+      logo-main.png
+      logo-small.png
     sounds/
+      ...
   manifest.json
   sw.js
 server.js
+package.json
+start.bat
 ```
 
 - `server.js` adalah entry point aplikasi.
 - `app/Controllers/RoomController.js` menangani server HTTP, room, dan logika permainan.
 - `app/Views/index.html` adalah halaman utama.
 - `public/` berisi stylesheet, script browser, gambar, suara, manifest, dan service worker.
-
-Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
+- Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
+- Data room disimpan di memori server, sehingga room yang belum selesai tidak bertahan jika proses server dimulai ulang.
 
 ## Kredit
 

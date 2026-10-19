@@ -7,18 +7,9 @@
     <div style="flex:1"><div class="mut">Big Blind</div><input id="bb" type="number" value="${d("bb", st.bb)}" oninput="setD('bb',this.value)"></div>` : ""}</div>
     <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),${st.mode === "poker" ? "sb:num('sb'),bb:num('bb')" : ""}})">Simpan Pengaturan</button></div>
     
-    ${
-      st.mode === "poker" &&
-      st.poker.active &&
-      !st.dealerConfirmedStage &&
-      st.poker.stage !== "showdown"
-        ? `<div class="card" style="border-color:var(--gold)"><h3>Aksi Bandar</h3>
-      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${(st.poker.stage || "").toUpperCase()}</b> di meja fisik, lalu konfirmasi agar pemain bisa bertaruh.</div>
-      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${(st.poker.stage || "").toUpperCase()}</button></div>`
-        : ""
-    }
     <div class="card"><h3>Kelola Pemain</h3>` +
-          (st.players || [])
+          ((st.players || []).length
+            ? st.players
             .map(
               (
                 p, index,
@@ -33,8 +24,9 @@
       <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
       <button class="r s" aria-label="Keluarkan ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
             )
-            .join("") +
-          `<button class="g" style="width:100%;margin-top:8px" onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button></div>`;
+            .join("")
+            : `<div class="mut">${translateText("Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.")}</div>`) +
+          `</div>`;
         return h;
       }
       function movePlayer(id, offset) {
@@ -47,11 +39,19 @@
       }
       function roundStartControl() {
         if (!st.isHost) return "";
+        const roundActive =
+          st.mode === "poker"
+            ? st.poker && st.poker.active
+            : st.bj.phase === "playing";
+        if (roundActive) return "";
+
+        let h = "";
         if (st.mode === "poker" && st.poker && !st.poker.active)
-          return `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
+          h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
         if (st.mode === "blackjack" && st.bj.phase !== "playing") {
           const hasBets = (st.players || []).some((p) => p.bjBet > 0);
-          return `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
+          h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
         }
-        return "";
+        h += `<button class="g s" style="width:100%;margin-bottom:10px" onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button>`;
+        return h;
       }

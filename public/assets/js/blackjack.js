@@ -12,7 +12,11 @@
             .flatMap((p) => {
               const hands = [
                 p.bjBet > 0
-                  ? { label: "Bet 1", amount: p.bjBet, betSlot: "main" }
+                  ? {
+                      label: p.bjSplitBet > 0 ? "Bet 1" : "",
+                      amount: p.bjBet,
+                      betSlot: "main",
+                    }
                   : null,
                 p.bjSplitBet > 0
                   ? { label: "Bet 2", amount: p.bjSplitBet, betSlot: "split" }

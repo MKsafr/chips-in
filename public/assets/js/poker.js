@@ -7,6 +7,18 @@
 
         h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || "-")}</div></div></div></div>`;
 
+        if (
+          st.isHost &&
+          k.active &&
+          !st.dealerConfirmedStage &&
+          k.stage !== "showdown"
+        ) {
+          const stage = (k.stage || "").toUpperCase();
+          h += `<div class="card" style="border-color:var(--gold)"><h3>Aksi Bandar</h3>
+      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${stage}</b> di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.</div>
+      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${stage}</button></div>`;
+        }
+
         h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
 
         if (me && me.chips === 0) {
@@ -63,22 +75,29 @@
             const p = (st.players || []).find((x) => x.id === id);
             return p ? esc(p.name) : "Pemain";
           };
-        let h = `<div class="card" style="border-color:var(--gold)"><h3>Showdown — Tentukan Pemenang</h3>`;
+        let h = `<div class="card showdown-card" style="border-color:var(--gold)"><h3>Showdown — Tentukan Pemenang</h3>`;
         (k.layers || []).forEach((l, i) => {
-          h += `<div style="margin-top:8px"><b>${i === 0 ? "Pot Utama" : "Side Pot " + i}</b> <span style="color:var(--gold)">(${fmt(l.amount)})</span>`;
-          h += l.elig
-            .map((id) =>
-              st.isHost
-                ? `<label style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="checkbox" ${draft.w[i + "_" + id] ? "checked" : ""} onchange="draft.w['${i}_${id}']=this.checked"> ${nm(id)}</label>`
-                : `<div class="mut">• ${nm(id)}</div>`,
-            )
-            .join("");
+          h += `<div class="showdown-pot"><div class="showdown-pot-title"><b>${i === 0 ? "Pot Utama" : "Side Pot " + i}</b><span>${fmt(l.amount)}</span></div>`;
+          h += st.isHost
+            ? `<div class="winner-options">${l.elig
+                .map((id) => {
+                  const selected = !!draft.w[i + "_" + id];
+                  return `<button type="button" class="winner-choice ${selected ? "selected" : ""}" aria-pressed="${selected}" onclick="toggleWinner(${i},${id})">${nm(id)}</button>`;
+                })
+                .join("")}</div>`
+            : l.elig.map((id) => `<div class="mut">• ${nm(id)}</div>`).join("");
           h += "</div>";
         });
         h += st.isHost
           ? `<button class="ok" style="width:100%;margin-top:10px" onclick="doAward()">Kirim Pot</button>`
           : `<div class="mut" style="margin-top:8px">Menunggu Bandar memilih pemenang…</div>`;
         return h + "</div>";
+      }
+
+      function toggleWinner(layer, id) {
+        const key = layer + "_" + id;
+        draft.w[key] = !draft.w[key];
+        render();
       }
 
       function doAward() {
