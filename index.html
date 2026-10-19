@@ -8,11 +8,11 @@
 <title>Chips-in - Virtual Casino Chips</title>
 <style>
 :root{
-  --bg:#0a1a13;--card:#10291f;--line:#1f4f39;--tx:#eef6f0;--mut:#8fb3a1;--gold:#e8c35a;--red:#e5484d;--grn:#3ecf8e;--blu:#4c8dff;
+  --bg:#0a1a13;--card:#10291f;--line:#1f4f39;--tx:#eef6f0;--mut:#8fb3a1;--gold:#e8c35a;--red:#e5484d;--grn:#3ecf8e;--blu:#4c8dff;--inp:#07140f;--btn:#1d5a40;--btn2:#2a3d34;
 }
-[data-theme="dark"]{--bg:#121212;--card:#1e1e1e;--line:#333;--tx:#f0f0f0;--mut:#aaa;--gold:#ffd700;--red:#ff4d4d;--grn:#2ecc71;--blu:#3498db}
-[data-theme="blue"]{--bg:#0a121d;--card:#101c2e;--line:#1a2e4a;--tx:#edf2f7;--mut:#8fa3bf;--gold:#f6ad55;--red:#fc8181;--grn:#68d391;--blu:#63b3ed}
-[data-theme="crimson"]{--bg:#1a0a0a;--card:#291010;--line:#4f1f1f;--tx:#f6eeee;--mut:#b38f8f;--gold:#e8c35a;--red:#ff4d4d;--grn:#3ecf8e;--blu:#4c8dff}
+[data-theme="dark"]{--bg:#121212;--card:#1e1e1e;--line:#333;--tx:#f0f0f0;--mut:#aaa;--gold:#ffd700;--red:#ff4d4d;--grn:#2ecc71;--blu:#3498db;--inp:#0d0d0d;--btn:#3a3a3a;--btn2:#2c2c2c}
+[data-theme="blue"]{--bg:#0a121d;--card:#101c2e;--line:#1a2e4a;--tx:#edf2f7;--mut:#8fa3bf;--gold:#f6ad55;--red:#fc8181;--grn:#68d391;--blu:#63b3ed;--inp:#07101b;--btn:#1f4f86;--btn2:#1f3350}
+[data-theme="crimson"]{--bg:#1a0a0a;--card:#291010;--line:#4f1f1f;--tx:#f6eeee;--mut:#b38f8f;--gold:#e8c35a;--red:#ff4d4d;--grn:#3ecf8e;--blu:#4c8dff;--inp:#140707;--btn:#7a2424;--btn2:#4a2a2a}
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:radial-gradient(circle at 50% -10%,var(--line),var(--bg) 70%);color:var(--tx);font:15px/1.4 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;min-height:100vh;padding-bottom:40px}
@@ -31,16 +31,16 @@ h3{margin:0 0 8px;font-size:13px;color:var(--mut);text-transform:uppercase;lette
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:480px){.grid-2{grid-template-columns:1fr}}
 
-button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 14px;background:#1d5a40;color:var(--tx);cursor:pointer;transition:transform .1s}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 14px;background:var(--btn);color:var(--tx);cursor:pointer;transition:transform .1s}
 button:active{transform:scale(.96)}
-button.g{background:#2a3d34}button.r{background:var(--red)}button.y{background:var(--gold);color:#222}button.b{background:var(--blu)}button.ok{background:var(--grn);color:#062}
+button.g{background:var(--btn2)}button.r{background:var(--red)}button.y{background:var(--gold);color:#222}button.b{background:var(--blu)}button.ok{background:var(--grn);color:#062}
 button.s{padding:6px 10px;font-size:12px}button.f{flex:1}
 
-input,select{font:inherit;background:#07140f;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:10px;width:100%;min-width:0}
+input,select{font:inherit;background:var(--inp);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:10px;width:100%;min-width:0}
 .pl{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid transparent;margin-bottom:4px;background:rgba(0,0,0,.2)}
 .pl.turn{border-color:var(--gold);box-shadow:0 0 0 2px #e8c35a33}.pl.out{opacity:.45}.pl.me{background:rgba(232,195,90,.1)}
 
-.tag{font-size:10px;font-weight:800;padding:2px 5px;border-radius:5px;background:#2a3d34;margin-left:4px}
+.tag{font-size:10px;font-weight:800;padding:2px 5px;border-radius:5px;background:var(--btn2);margin-left:4px}
 .tag.d{background:var(--gold);color:#222}.tag.a{background:var(--red)}.tag.t{background:var(--grn);color:#052}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
@@ -69,8 +69,11 @@ const fmt=n=>Number(n||0).toLocaleString('id-ID');
 
 let token = localStorage.cb_token || (localStorage.cb_token = Math.random().toString(36).slice(2) + Date.now().toString(36));
 let roomCode = localStorage.cb_room || '';
-let currentTheme = localStorage.cb_theme || 'default';
+const THEMES = { default: 'Hijau Kasino', dark: 'Dark Mode', blue: 'Ocean Blue', crimson: 'Crimson Red' };
+// Tema disimpan di perangkat masing-masing (tidak dikirim ke server). Default: hijau.
+let currentTheme = THEMES[localStorage.cb_theme] ? localStorage.cb_theme : 'default';
 document.documentElement.setAttribute('data-theme', currentTheme);
+syncThemeColor();
 
 let st = null, draft = { w: {} }, toastMsg = '', hostOpen = false, deferredPrompt = null;
 let audioCtx = null;
@@ -173,10 +176,31 @@ const d = (k, def) => draft[k] !== undefined ? draft[k] : def;
 const setD = (k, v) => { draft[k] = v; };
 const num = id => Math.floor(+($('#' + id) || {}).value || 0);
 
+function syncThemeColor() {
+  const m = document.querySelector('meta[name=theme-color]');
+  if (m) m.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a1a13';
+}
 function changeTheme(th) {
+  if (!THEMES[th]) th = 'default';
   currentTheme = th;
   localStorage.cb_theme = th;
   document.documentElement.setAttribute('data-theme', th);
+  syncThemeColor();
+}
+function themeSelect() {
+  return `<select onchange="changeTheme(this.value)" title="Tampilan (hanya di perangkat ini)" style="width:auto;padding:4px 8px;font-size:12px">` +
+    Object.keys(THEMES).map(k => `<option value="${k}" ${currentTheme === k ? 'selected' : ''}>${THEMES[k]}</option>`).join('') + `</select>`;
+}
+
+function exitRoom() {
+  if (es) { es.close(); es = null; }
+  roomCode = ''; localStorage.cb_room = ''; st = null; hostOpen = false;
+  render();
+}
+async function leaveSeat() {
+  const wasHost = st && st.isHost;
+  const j = await api('leave');
+  if (j && j.ok && !wasHost) exitRoom();
 }
 
 function pRow(p, extra = '') {
@@ -324,7 +348,7 @@ function hostPanel() {
     <div class="card"><h3>Kelola Pemain</h3>` +
     (st.players || []).map(p => `<div class="pl"><div><b>${esc(p.name)}</b> <span class="mut">(${fmt(p.chips)})</span></div>
       <div class="row">
-      <button class="g s" onclick="api('transferHost',{targetId:${p.id}})">Oper Bandar</button>
+      <button class="g s" onclick="if(confirm('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.'))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
       <button class="ok s" onclick="api('adjust',{id:${p.id},delta:100})">+100</button>
       <button class="r s" onclick="api('adjust',{id:${p.id},delta:-100})">-100</button>
       <button class="r s" onclick="if(confirm('Keluarkan ${esc(p.name)}?'))api('kick',{id:${p.id}})">✕</button></div></div>`).join('') +
@@ -335,7 +359,7 @@ function hostPanel() {
 function render() {
   if (!roomCode) {
     $('#app').innerHTML = `
-      <div class="top"><div class="logo-box"><div class="logo">♠ Chips-<b>in</b></div></div></div>
+      <div class="top"><div class="logo-box"><div class="logo">♠ Chips-<b>in</b></div></div>${themeSelect()}</div>
       <div class="card">
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital lokal untuk Poker & Blackjack IRL bersama teman.</p>
@@ -363,25 +387,27 @@ function render() {
       <div class="logo">♠ Room: <b>${st.code || roomCode}</b></div>
     </div>
     <div class="row">
-      <select onchange="changeTheme(this.value)" style="width:auto;padding:4px 8px;font-size:12px">
-        <option value="default" ${currentTheme==='default'?'selected':''}>Hijau Kasino</option>
-        <option value="dark" ${currentTheme==='dark'?'selected':''}>Dark Mode</option>
-        <option value="blue" ${currentTheme==='blue'?'selected':''}>Ocean Blue</option>
-        <option value="crimson" ${currentTheme==='crimson'?'selected':''}>Crimson Red</option>
-      </select>
+      ${themeSelect()}
       ${deferredPrompt ? `<button class="b s" onclick="deferredPrompt.prompt()">Install App</button>` : ''}
+      ${!me ? `<button class="g s" onclick="if(confirm('${st.isHost ? 'Keluar dari room? Peran Bandar akan dialihkan otomatis jika kamu tidak kembali dalam 1 menit.' : 'Keluar dari room?'}'))exitRoom()">Keluar Room</button>` : ''}
       ${st.isHost ? `<button class="y s" onclick="hostOpen=!hostOpen;render()">${hostOpen ? 'Tutup Kontrol' : '👑 Bandar'}</button>` : ''}
     </div>
   </div>`;
 
   if (!me) {
-    h += `<div class="card"><h3>Gabung ke Meja Ini</h3><div class="row"><input id="nm" placeholder="Nama Kamu" maxlength="16" value="${d('nm','')}" oninput="setD('nm',this.value)">
+    h += `<div class="card"><h3>${st.isHost ? 'Ikut Bermain Sebagai Pemain (Bandar boleh ikut main)' : 'Gabung ke Meja Ini'}</h3><div class="row"><input id="nm" placeholder="Nama Kamu" maxlength="16" value="${d('nm','')}" oninput="setD('nm',this.value)">
       <button class="y" onclick="api('join',{name:$('#nm').value})">Gabung</button></div></div>`;
   } else {
     h += `<div class="card row sp">
       <div><div class="mut">${esc(me.name)} ${st.isHost ? '👑 (Bandar)' : ''}</div><div class="big">${fmt(me.chips)}</div></div>
-      <button class="g s" onclick="if(confirm('Keluar dari room?'))api('leave')">Keluar</button>
+      <button class="g s" onclick="if(confirm('${st.isHost ? 'Berhenti ikut bermain? Kamu tetap jadi Bandar.' : 'Keluar dari room?'}'))leaveSeat()">${st.isHost ? 'Berhenti Main' : 'Keluar'}</button>
     </div>`;
+  }
+
+  const ph = st.pendingHost;
+  if (ph && st.isHost) {
+    h += `<div class="card" style="border-color:var(--gold)"><div class="row sp"><div class="mut">Menunggu <b>${esc(ph.targetName)}</b> menerima peran Bandar…</div>
+      <button class="g s" onclick="api('cancelHostOffer')">Batalkan</button></div></div>`;
   }
 
   if (hostOpen && st.isHost) h += hostPanel();
@@ -407,6 +433,18 @@ function render() {
       <div class="confetti-box">🎉 🪙 👑 🪙 🎉</div>
       <h1 style="color:var(--gold);font-size:36px;margin:10px 0">${esc(st.winnerName)} MENANG KASINO!</h1>
       <p style="color:#fff">Menjadi satu-satunya pemenang yang menguasai semua chip!</p>
+    </div>`;
+  }
+
+  if (ph && me && ph.targetId === me.id) {
+    h += `<div class="winner-modal" style="z-index:10000">
+      <div style="font-size:48px">👑</div>
+      <h1 style="color:var(--gold);font-size:28px;margin:10px 0">Jadi Bandar?</h1>
+      <p style="color:#fff;max-width:320px"><b>${esc(ph.fromName)}</b> menawarkan peran <b>Bandar</b> kepadamu. Bandar bisa mengatur chip, memulai hand, dan menentukan pemenang.</p>
+      <div class="row" style="margin-top:14px;justify-content:center">
+        <button class="ok" onclick="api('respondHost',{accept:true})">Terima</button>
+        <button class="r" onclick="api('respondHost',{accept:false})">Tolak</button>
+      </div>
     </div>`;
   }
 

@@ -33,6 +33,8 @@ function initRoom(code) {
     log: [],
     lastEvent: 'Room berhasil dibuat.',
     dealerConfirmedStage: true,
+    pendingHost: null,
+    touched: Date.now(),
     poker: { active: false, stage: 'idle', dealer: null, turn: null, currentBet: 0, minRaise: 0, order: [], sbId: null, bbId: null },
     bj: { phase: 'betting' }
   };
@@ -229,17 +231,31 @@ function bjResolve(room, p, res) {
   if (!room.players.some(q => q.bjBet > 0 || q.bjSplitBet > 0)) room.bj.phase = 'betting';
 }
 
+// Dipakai untuk tawaran Bandar (perlu persetujuan pemain)
+const offerTimers = {};
+function clearOffer(room) {
+  clearTimeout(offerTimers[room.code]);
+  delete offerTimers[room.code];
+  room.pendingHost = null;
+}
+
+// Dipanggil HANYA kalau Bandar benar-benar terputus (sudah lewat masa tunggu).
+// Di sini pengalihan Bandar otomatis, tanpa persetujuan.
 function handleDisconnect(token) {
   for (const code in rooms) {
     const room = rooms[code];
-    if (room.hostToken === token) {
-      const activePlayers = room.players.filter(p => p.token !== token);
-      if (activePlayers.length > 0) {
-        room.hostToken = activePlayers[0].token;
-        logRoom(room, `Bandar keluar. Peran bandar otomatis dialihkan ke ${activePlayers[0].name}`);
-      } else if (![...clients].some(x => x.roomCode === code)) {
-        delete rooms[code];
-      }
+    if (room.hostToken !== token) continue;
+    const others = room.players.filter(p => p.token !== token);
+    const online = others.filter(p => [...clients].some(c => c.token === p.token && c.roomCode === code));
+    const next = online[0] || others[0];
+    if (next) {
+      clearOffer(room);
+      room.hostToken = next.token;
+      logRoom(room, `Bandar terputus. Peran Bandar otomatis dialihkan ke ${next.name}`);
+      broadcast(code);
+    } else if (![...clients].some(x => x.roomCode === code)) {
+      clearOffer(room);
+      delete rooms[code];
     }
   }
 }
@@ -257,6 +273,7 @@ function handle(b) {
   const room = rooms[roomCode];
   if (!room) throw 'Room tidak ditemukan atau telah ditutup!';
 
+  room.touched = Date.now();
   const me = room.players.find(p => p.token === token);
   const isHost = room.hostToken === token;
 
@@ -293,8 +310,9 @@ function handle(b) {
       if (!me) break;
       if (me.inHand || me.bjBet > 0) throw 'Tunggu hingga ronde selesai sebelum keluar';
       room.players = room.players.filter(p => p !== me);
-      logRoom(room, `${me.name} telah meninggalkan meja`);
-      if (isHost) handleDisconnect(token);
+      if (room.pendingHost && room.pendingHost.targetId === me.id) clearOffer(room);
+      // Bandar yang berhenti main TETAP jadi Bandar
+      logRoom(room, isHost ? `${me.name} berhenti ikut bermain (tetap Bandar)` : `${me.name} telah meninggalkan meja`);
       break;
     }
     case 'act': act(room, needMe(), b.a, b.amount); break;
@@ -354,8 +372,35 @@ function handle(b) {
       needHost();
       const target = P(room, b.targetId);
       if (!target) throw 'Pemain tidak ditemukan';
-      room.hostToken = target.token;
-      logRoom(room, `Peran Bandar telah diserahkan kepada ${target.name}`);
+      if (target.token === token) throw 'Kamu sudah menjadi Bandar';
+      clearOffer(room);
+      room.pendingHost = { targetId: target.id, targetName: target.name, fromName: me ? me.name : 'Bandar' };
+      offerTimers[room.code] = setTimeout(() => {
+        if (rooms[room.code] && room.pendingHost) {
+          logRoom(room, `Tawaran Bandar ke ${room.pendingHost.targetName} kedaluwarsa`);
+          room.pendingHost = null;
+          broadcast(room.code);
+        }
+      }, 60000);
+      logRoom(room, `Bandar menawarkan peran Bandar ke ${target.name}. Menunggu persetujuan…`);
+      break;
+    }
+    case 'cancelHostOffer':
+      needHost();
+      if (room.pendingHost) { clearOffer(room); logRoom(room, 'Tawaran Bandar dibatalkan'); }
+      break;
+    case 'respondHost': {
+      const o = room.pendingHost;
+      if (!o) throw 'Tawaran Bandar sudah tidak berlaku';
+      const m = needMe();
+      if (m.id !== o.targetId) throw 'Tawaran ini bukan untukmu';
+      clearOffer(room);
+      if (b.accept) {
+        room.hostToken = m.token;
+        logRoom(room, `${m.name} menerima peran Bandar`);
+      } else {
+        logRoom(room, `${m.name} menolak peran Bandar`);
+      }
       break;
     }
     case 'start': 
@@ -387,6 +432,7 @@ function handle(b) {
       if (!p) break;
       if (p.inHand || p.bjBet) throw 'Tunggu hingga ronde selesai';
       room.players = room.players.filter(q => q !== p); 
+      if (room.pendingHost && room.pendingHost.targetId === p.id) clearOffer(room);
       logRoom(room, `${p.name} dikeluarkan oleh Bandar`); 
       break;
     }
@@ -443,6 +489,7 @@ function view(token, roomCode) {
     players: room.players.map(({ token, ...r }) => r),
     poker: { ...k, pot: pot(room), layers: k.stage === 'showdown' ? layers(room) : [] },
     bj: room.bj,
+    pendingHost: room.pendingHost,
     you: me ? me.id : null,
     isHost
   };
@@ -521,3 +568,11 @@ http.createServer((req, res) => {
 });
 
 setInterval(() => clients.forEach(c => c.res.write(': ping\n\n')), 20000);
+
+// Hapus room yang tidak ada koneksi sama sekali selama 3 jam (hemat RAM 512MB)
+setInterval(() => {
+  for (const code in rooms) {
+    const idle = Date.now() - (rooms[code].touched || 0) > 3 * 3600 * 1000;
+    if (idle && ![...clients].some(c => c.roomCode === code)) delete rooms[code];
+  }
+}, 10 * 60 * 1000);
