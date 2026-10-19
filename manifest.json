@@ -1,0 +1,16 @@
+{
+  "short_name": "Chips-in",
+  "name": "Chips-in - Digital Casino Chips",
+  "icons": [
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a1a13",
+  "theme_color": "#0a1a13",
+  "display": "standalone",
+  "orientation": "portrait"
+}

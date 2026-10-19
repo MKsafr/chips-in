@@ -1,8 +1,12 @@
 {
-  "name": "chipbank",
-  "version": "1.0.0",
-  "description": "Chip digital untuk poker & blackjack",
+  "name": "Chips-in",
+  "version": "2.0.0",
+  "description": "Chips-in digital lokal untuk poker & blackjack (Multi-room & PWA)",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
