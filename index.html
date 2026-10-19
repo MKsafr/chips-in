@@ -335,7 +335,11 @@ function hostPanel() {
 function render() {
   if (!roomCode) {
     $('#app').innerHTML = `
-      <div class="top"><div class="logo-box"><img src="/logo.png" class="logo-img" onerror="this.style.display='none'"><div class="logo">♠ Chip<b>Bank</b></div></div></div>
+      <div class="top">
+        <div class="logo-box">
+          <div class="logo">♠ Chip<b>Bank</b></div>
+        </div>
+      </div>
       <div class="card">
         <h3>Selamat Datang di ChipBank</h3>
         <p class="mut">Aplikasi chip kasino digital lokal untuk Poker & Blackjack IRL bersama teman.</p>
@@ -345,20 +349,22 @@ function render() {
         <div style="margin:16px 0;text-align:center" class="mut">— ATAU —</div>
         <div class="row">
           <input id="rc" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6">
-          <button class="ok" onclick="roomCode=$('#rc').value.toUpperCase();localStorage.cb_room=roomCode;connect()">Join Room</button>
+          <button class="ok" onclick="let v=$('#rc').value.trim().toUpperCase(); if(v){ roomCode=v; localStorage.cb_room=v; connect(); }">Join Room</button>
         </div>
       </div>`;
     return;
   }
 
-  if (!st) { $('#app').innerHTML = '<div class="mut">Menghubungkan ke Room ' + roomCode + '…</div>'; return; }
+  if (!st) { 
+    $('#app').innerHTML = `<div class="card"><div class="mut">Menghubungkan ke Room ${roomCode}…</div><button class="g s" style="margin-top:10px" onclick="roomCode='';localStorage.cb_room='';render()">Batal / Ganti Room</button></div>`; 
+    return; 
+  }
 
-  const me = st.players.find(p => p.id === st.you);
+  const me = st.players ? st.players.find(p => p.id === st.you) : null;
   
   let h = `<div class="top">
     <div class="logo-box">
-      <img src="/logo.png" class="logo-img" onerror="this.style.display='none'">
-      <div class="logo">♠ Room: <b>${st.code}</b></div>
+      <div class="logo">♠ Room: <b>${st.code || roomCode}</b></div>
     </div>
     <div class="row">
       <select onchange="changeTheme(this.value)" style="width:auto;padding:4px 8px;font-size:12px">
@@ -385,13 +391,13 @@ function render() {
   if (hostOpen && st.isHost) h += hostPanel();
 
   if (st.mode === 'poker') {
-    if (st.isHost && !st.poker.active) h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
+    if (st.isHost && st.poker && !st.poker.active) h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
     h += pokerView(me);
   } else {
     h += bjView(me);
   }
 
-  h += `<div class="card"><h3>Riwayat Permainan</h3><div class="log">${st.log.map(l => `<div>${esc(l)}</div>`).join('') || '—'}</div></div>`;
+  h += `<div class="card"><h3>Riwayat Permainan</h3><div class="log">${(st.log || []).map(l => `<div>${esc(l)}</div>`).join('') || '—'}</div></div>`;
 
   // Modal Kalah (Chips Habis)
   if (me && me.chips === 0 && (!st.poker.active || me.folded)) {
@@ -401,7 +407,7 @@ function render() {
     </div>`;
   }
 
-  // Modal Pemenang Utama (Satu orang tersisa dengan chip)
+  // Modal Pemenang Utama
   if (st.winnerName) {
     h += `<div class="winner-modal">
       <div class="confetti-box">🎉 🪙 👑 🪙 🎉</div>
