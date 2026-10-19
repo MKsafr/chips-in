@@ -1,4 +1,4 @@
-<h1><img src="public/assets/logo/logo-main.png" alt="" width="48" align="center"> Chips-in</h1>
+<h1><img src="public/assets/logo/logo-main.png" alt="Chips-in logo" width="48" height="48" align="absmiddle"> Chips-in</h1>
 
 Aplikasi chip digital untuk membantu bermain **Poker** dan **Blackjack** bersama teman. Buat room, bagikan kode kepada pemain, lalu kelola chip dan jalannya ronde dari satu meja bersama.
 
