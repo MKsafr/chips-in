@@ -152,3 +152,5 @@ start.bat
 Diinisiasi oleh **Ado, Anoy, Isan, dan Kholid**.
 
 Kode dibuat sepenuhnya dengan menggunakan bantuan AI.
+
+https://canva.link/un0tf2zzl0s5jy0
