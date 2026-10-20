@@ -47,13 +47,57 @@ If your connection drops or the tab closes, reopen the site in the same browser.
 
 ## Run locally
 
-**Requirement:** Node.js 18 or later.
+Follow these steps to run the Chips-in server on your own computer (localhost).
+
+### 1. Install Node.js
+
+Download and install **Node.js 18 or later** from [nodejs.org](https://nodejs.org/). The Node.js installer also includes npm, which is used to run the app.
+
+When installation is complete, open a new terminal and verify both commands are available:
+
+```bash
+node --version
+npm --version
+```
+
+If either command is not recognized, close and reopen your terminal or VS Code after installing Node.js.
+
+### 2. Open the project folder in a terminal
+
+In VS Code, open the `online-poker-chips` project folder and select **Terminal → New Terminal**. Make sure the terminal is in the folder containing `package.json`. If it is not, change to that folder with `cd`, for example:
+
+```powershell
+cd "C:\path\to\online-poker-chips"
+```
+
+### 3. Start the server
+
+Run this command in the terminal:
 
 ```bash
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). To use another port, set the `PORT` environment variable before starting the server.
+When the server starts successfully, the terminal will show the server address/port. Keep the terminal open while using the app.
+
+### 4. Open the app
+
+Open a browser and visit [http://localhost:3000](http://localhost:3000). The `localhost` address is only accessible from the computer running the server.
+
+To stop the server, return to the terminal and press **Ctrl+C**.
+
+### Troubleshooting
+
+- **`npm` or `node` is not recognized:** make sure Node.js 18 or later is installed, then open a new terminal.
+- **Port 3000 is already in use:** start the server on another port. In PowerShell:
+
+  ```powershell
+  $env:PORT=3001
+  npm start
+  ```
+
+  Then visit [http://localhost:3001](http://localhost:3001).
+- **The page cannot be opened:** make sure `npm start` is still running and check the terminal for errors.
 
 ## Project structure
 
@@ -69,6 +113,8 @@ public/
   assets/
     css/
       app.css
+    images/
+      poker-felt-pattern.svg
     js/
       state.js
       sound.js

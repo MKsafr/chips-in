@@ -1047,7 +1047,7 @@ http
       });
       return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "sw.js")));
     }
-    const assetMatch = u.pathname.match(/^\/assets\/(css|js)\/(.+)$/);
+    const assetMatch = u.pathname.match(/^\/assets\/(css|js|images)\/(.+)$/);
     if (assetMatch) {
       let assetPath;
       try {
@@ -1067,10 +1067,18 @@ http
         assetMatch[1],
       );
       const relativePath = path.relative(assetRoot, assetPath);
+      const extension = path.extname(assetPath).toLowerCase();
+      const allowedExtensions =
+        assetMatch[1] === "images" ? [".svg"] : [`.${assetMatch[1]}`];
+      const contentTypes = {
+        ".css": "text/css; charset=utf-8",
+        ".js": "application/javascript; charset=utf-8",
+        ".svg": "image/svg+xml",
+      };
       if (
         relativePath.startsWith("..") ||
         path.isAbsolute(relativePath) ||
-        ![".css", ".js"].includes(path.extname(assetPath).toLowerCase()) ||
+        !allowedExtensions.includes(extension) ||
         !fs.existsSync(assetPath) ||
         !fs.statSync(assetPath).isFile()
       ) {
@@ -1078,10 +1086,7 @@ http
         return res.end("Asset tidak ditemukan");
       }
       res.writeHead(200, {
-        "Content-Type":
-          path.extname(assetPath).toLowerCase() === ".css"
-            ? "text/css; charset=utf-8"
-            : "application/javascript; charset=utf-8",
+        "Content-Type": contentTypes[extension],
         "Cache-Control": "no-cache",
       });
       return fs.createReadStream(assetPath).pipe(res);

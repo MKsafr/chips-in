@@ -11,6 +11,7 @@
         --inp: #07140f;
         --btn: #1d5a40;
         --btn2: #2a3d34;
+        --felt-tint: #008f48;
       }
       [data-theme="dark"] {
         --bg: #121212;
@@ -25,6 +26,7 @@
         --inp: #0d0d0d;
         --btn: #3a3a3a;
         --btn2: #2c2c2c;
+        --felt-tint: #999999;
       }
       [data-theme="blue"] {
         --bg: #0a121d;
@@ -39,6 +41,7 @@
         --inp: #07101b;
         --btn: #1f4f86;
         --btn2: #1f3350;
+        --felt-tint: #2679d8;
       }
       [data-theme="crimson"] {
         --bg: #1a0a0a;
@@ -53,6 +56,7 @@
         --inp: #140707;
         --btn: #7a2424;
         --btn2: #4a2a2a;
+        --felt-tint: #c72d3d;
       }
       [data-theme="purple"] {
         --bg: #110d1c;
@@ -67,6 +71,7 @@
         --inp: #0b0812;
         --btn: #533b7a;
         --btn2: #352848;
+        --felt-tint: #8050c8;
       }
       [data-theme="teal"] {
         --bg: #071817;
@@ -81,6 +86,7 @@
         --inp: #04110f;
         --btn: #17655d;
         --btn2: #244641;
+        --felt-tint: #168b83;
       }
       [data-theme="sunset"] {
         --bg: #1b100d;
@@ -95,6 +101,7 @@
         --inp: #140b09;
         --btn: #9a4d2d;
         --btn2: #55372e;
+        --felt-tint: #d66835;
       }
 
       * {
@@ -122,11 +129,20 @@
       body {
         margin: 0;
         overflow-x: clip;
-        background: radial-gradient(
-          circle at 50% -10%,
-          var(--line),
-          var(--bg) 70%
-        );
+        background-color: var(--bg);
+        background-image:
+          radial-gradient(
+            ellipse at 50% 32%,
+            transparent 28%,
+            var(--bg) 135%
+          ),
+          linear-gradient(var(--felt-tint), var(--felt-tint)),
+          url("/assets/images/poker-felt-pattern.svg");
+        background-blend-mode: multiply, color, normal;
+        background-position: center;
+        background-repeat: no-repeat, no-repeat, repeat;
+        background-size: cover, cover, 192px 192px;
+        background-attachment: fixed;
         color: var(--tx);
         font:
           15px/1.4 system-ui,
