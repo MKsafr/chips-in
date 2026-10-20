@@ -1,8 +1,10 @@
 <h1><img src="public/assets/logo/logo-main.png" alt="Chips-in logo" width="48" height="48" align="absmiddle"> Chips-in</h1>
 
+[Bahasa Indonesia](README.md) | [English](README.en.md)
+
 Aplikasi chip digital untuk membantu bermain **Poker** dan **Blackjack** bersama teman. Buat room, bagikan kode kepada pemain, lalu kelola chip dan jalannya ronde dari satu meja bersama.
 
-> **Link Website Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
+> **Mainkan Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
 
@@ -54,8 +56,6 @@ npm start
 Buka [http://localhost:3000](http://localhost:3000). Untuk menggunakan port lain, atur environment variable `PORT` sebelum menjalankan server.
 
 ## Struktur project
-
-Susunan folder project:
 
 ```text
 app/
