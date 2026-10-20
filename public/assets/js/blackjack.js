@@ -10,6 +10,7 @@
   </div>`;
 
         const playing = bj.phase === "playing";
+        h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
         h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
         if (!players.length) {
           h += `<div class="mut">Belum ada pemain</div>`;
@@ -45,9 +46,7 @@
         }
         h += "</div>";
 
-        if (me && me.chips === 0) {
-          h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
-        } else if (me && bj.phase === "betting") {
+        if (me && me.chips > 0 && bj.phase === "betting") {
           h +=
             `<div class="card"><h3>Taruhanmu: ${fmt(me.bjBet)}</h3><div class="chips">` +
             [5, 10, 25, 100, 500]
@@ -61,9 +60,14 @@
       ${me.last ? `<button class="g f" onclick="api('bet',{amount:${me.last}})">Ulang (${fmt(me.last)})</button>` : ""}</div></div>`;
         }
 
-        if (me && playing && (me.bjBet || 0) > 0) {
+        if (
+          me &&
+          playing &&
+          (me.bjBet || 0) > 0 &&
+          (!me.bjDoubled || !me.bjSplitBet)
+        ) {
           h += `<div class="card"><h3>Opsi Tambahan</h3>
-      <div class="row"><button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>
+      <div class="row">${me.bjDoubled ? "" : `<button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>`}
       ${me.bjSplitBet ? "" : `<button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button>`}</div></div>`;
         }
 

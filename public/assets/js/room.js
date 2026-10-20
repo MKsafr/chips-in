@@ -129,8 +129,23 @@
                   !currentMe.bjSplitBet) ||
                   ((pokerFinished || blackjackFinished) &&
                     previousMe.chips === 0));
-              if (lostAllChips) showNotice("loser", currentMe.name);
-              else if (data.winnerName && !st.winnerName) {
+              const playerKey = `${roomCode}:${data.you}`;
+              const winnerKey = `${roomCode}:${data.winnerName}`;
+              const blackjackWinner =
+                data.mode === "blackjack" &&
+                blackjackFinished &&
+                data.winnerName;
+              if (currentMe && currentMe.chips > 0)
+                noChipsNoticeKey = null;
+              if (!data.winnerName) casinoWinnerNoticeKey = null;
+              if (lostAllChips && noChipsNoticeKey !== playerKey) {
+                noChipsNoticeKey = playerKey;
+                showNotice("loser", currentMe.name);
+              } else if (
+                ((data.winnerName && !st.winnerName) || blackjackWinner) &&
+                casinoWinnerNoticeKey !== winnerKey
+              ) {
+                casinoWinnerNoticeKey = winnerKey;
                 playSFX("win");
                 showNotice("winner", data.winnerName);
               }

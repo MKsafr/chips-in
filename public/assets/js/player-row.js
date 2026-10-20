@@ -27,5 +27,5 @@
 
         return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}">
     <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
-    <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
+    <div style="text-align:right">${blackjackHand ? "" : `<b style="color:var(--gold)">${fmt(p.chips)}</b>`}${bet}</div></div>`;
       }

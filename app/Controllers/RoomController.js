@@ -440,6 +440,7 @@ function seatPlayer(room, token, profile) {
     inHand: false,
     bjBet: 0,
     bjSplitBet: 0,
+    bjDoubled: false,
     last: 0,
   };
   room.players.push(p);
@@ -451,6 +452,7 @@ function seatPlayer(room, token, profile) {
 function unseatPlayer(room, p) {
   p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0); // taruhan blackjack yang belum dikunci dikembalikan
   p.bjBet = p.bjSplitBet = 0;
+  p.bjDoubled = false;
   room.stash[p.token] = {
     name: p.name,
     chips: p.chips,
@@ -739,6 +741,7 @@ function handle(b) {
         throw "Belum saatnya bertaruh";
       const oldBet = me.bjBet;
       setBet(room, me, Math.floor(+b.amount || 0));
+      me.bjDoubled = false;
       if (me.bjBet !== oldBet)
         logRoom(
           room,
@@ -749,12 +752,13 @@ function handle(b) {
       break;
     case "add": {
       needMe();
-      if (room.bj.phase !== "playing" || !me.bjBet)
+      if (room.bj.phase !== "playing" || !me.bjBet || me.bjDoubled)
         throw "Tidak dapat menambah taruhan";
       const a = Math.min(Math.floor(+b.amount || 0), me.chips);
       if (!a) throw "Chip tidak mencukupi";
       me.chips -= a;
       me.bjBet += a;
+      me.bjDoubled = true;
       logRoom(room, `${me.name} Double taruhan +${a}`);
       break;
     }
@@ -908,6 +912,7 @@ function handle(b) {
       room.players.forEach((p) => {
         p.chips = room.startChips;
         p.bjBet = p.bjSplitBet = 0;
+        p.bjDoubled = false;
       });
       Object.values(room.stash).forEach((s) => {
         s.chips = room.startChips;
@@ -924,6 +929,7 @@ function handle(b) {
       clearOffer(room);
       room.players.forEach((p) => {
         p.last = p.bjBet || p.last;
+        p.bjDoubled = false;
       });
       room.bj.phase = "playing";
       logRoom(room, "Kartu dikocok & taruhan dikunci");
@@ -946,6 +952,7 @@ function handle(b) {
       room.players.forEach((p) => {
         p.chips += p.bjBet + p.bjSplitBet;
         p.bjBet = p.bjSplitBet = 0;
+        p.bjDoubled = false;
       });
       room.bj.phase = "betting";
       logRoom(room, "Ronde Blackjack dibatalkan");

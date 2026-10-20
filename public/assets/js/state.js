@@ -418,6 +418,8 @@
         pendingEntrySound = false,
         notice = null,
         noticeTimer = null,
+        noChipsNoticeKey = null,
+        casinoWinnerNoticeKey = null,
         chipAdjustment = null;
 
       // Avatar preset harus sama dengan daftar AVATARS di RoomController.js.
