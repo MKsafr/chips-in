@@ -1,14 +1,22 @@
       function bjView(me) {
-        const bj = st.bj || {};
+        const bj = st.bj || {},
+          players = st.players || [],
+          bettingPlayers = players.filter(
+            (p) => (p.bjBet || 0) > 0 || (p.bjSplitBet || 0) > 0,
+          );
         let h = `<div class="grid-2">
     <div class="card pot"><div class="mut">Blackjack</div><div class="big">${fmt((st.players || []).reduce((a, p) => a + (p.bjBet || 0) + (p.bjSplitBet || 0), 0))}</div><div class="mut">Total Taruhan</div></div>
     <div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || "-")}</div></div>
   </div>`;
 
         const playing = bj.phase === "playing";
-        h +=
-          `<div class="card"><h3>Daftar Taruhan Pemain</h3>` +
-          (st.players || [])
+        h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
+        if (!players.length) {
+          h += `<div class="mut">Belum ada pemain</div>`;
+        } else if (!bettingPlayers.length) {
+          h += `<div class="mut">Pemain belum memberikan taruhan</div>`;
+        } else {
+          h += bettingPlayers
             .flatMap((p) => {
               const hands = [
                 p.bjBet > 0
@@ -22,11 +30,9 @@
                   ? { label: "Bet 2", amount: p.bjSplitBet, betSlot: "split" }
                   : null,
               ].filter(Boolean);
-              if (!hands.length) return [pRow(p)];
               return hands.map((hand) => {
-                const ex =
-                  st.isHost && playing
-                    ? `<div class="row" style="margin-top:6px">
+                const ex = st.isHost && playing
+                  ? `<div class="row bj-result-actions" style="margin-top:6px">
         <button class="ok s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'win'})">Menang</button>
         <button class="y s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'bj'})">BJ 3:2</button>
         <button class="g s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'push'})">Seri</button>
@@ -35,8 +41,9 @@
                 return pRow(p, ex, hand);
               });
             })
-            .join("") +
-          "</div>";
+            .join("");
+        }
+        h += "</div>";
 
         if (me && me.chips === 0) {
           h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;

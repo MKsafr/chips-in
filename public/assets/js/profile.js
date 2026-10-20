@@ -1,6 +1,7 @@
       function beginHostCreation() {
-        pf = { mode: "createHost", name: "Dealer", avatar: "crown" };
+        pf = { mode: "createHost", name: "Dealer", avatar: "default" };
         pfOpen = true;
+        pfAvatarPickerOpen = false;
         renderProfile();
       }
 
@@ -19,9 +20,10 @@
           pf = {
             mode: "join",
             name: j.suggestedName || "Player 1",
-            avatar: "spade",
+            avatar: "default",
           };
           pfOpen = true;
+          pfAvatarPickerOpen = false;
           renderProfile();
         }
       }
@@ -37,26 +39,96 @@
       function openProfile(mode) {
         const me = myProfile();
         if (!me) return;
-        pf = { mode, name: me.name, avatar: me.avatar };
+        pf = { mode: mode || "edit", name: me.name, avatar: me.avatar || "default" };
         pfOpen = true;
+        pfAvatarPickerOpen = false;
         renderProfile();
+      }
+      let pfAvatarPickerOpen = false;
+      function captureProfileName() {
+        const el = $("#pfName");
+        if (el) pf.name = el.value;
       }
       function closeProfile() {
         pfOpen = false;
+        pfAvatarPickerOpen = false;
         if (pf.mode === "join") pendingRoomCode = "";
         const m = $("#modal");
         if (m) m.innerHTML = "";
       }
-      function pickAvatar(id) {
-        const el = $("#pfName");
-        if (el) pf.name = el.value;
-        pf.avatar = id;
+      function openAvatarPicker() {
+        captureProfileName();
+        pfAvatarPickerOpen = true;
         renderProfile();
+      }
+      function closeAvatarPicker() {
+        pfAvatarPickerOpen = false;
+        renderProfile();
+      }
+      function pickAvatar(id) {
+        captureProfileName();
+        pf.avatar = id;
+        pfAvatarPickerOpen = false;
+        renderProfile();
+      }
+      function uploadAvatar(input) {
+        const file = input.files && input.files[0];
+        input.value = "";
+        if (!file) return;
+        captureProfileName();
+        if (!file.type.startsWith("image/")) {
+          showAlert("Foto tidak valid", "Pilih file gambar untuk dijadikan avatar.");
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          showAlert("Foto terlalu besar", "Ukuran file foto maksimal 10 MB.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () =>
+          showAlert("Foto gagal dibuka", "Coba pilih file gambar yang lain.");
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () =>
+            showAlert("Foto gagal dibuka", "Coba pilih file gambar yang lain.");
+          image.onload = () => {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            if (!context || !image.naturalWidth || !image.naturalHeight) {
+              showAlert("Foto gagal diproses", "Coba pilih file gambar yang lain.");
+              return;
+            }
+            const side = Math.min(image.naturalWidth, image.naturalHeight);
+            const sx = (image.naturalWidth - side) / 2;
+            const sy = (image.naturalHeight - side) / 2;
+            let output = "";
+            for (const size of [128, 96, 72]) {
+              canvas.width = size;
+              canvas.height = size;
+              context.clearRect(0, 0, size, size);
+              context.drawImage(image, sx, sy, side, side, 0, 0, size, size);
+              for (const quality of [0.82, 0.68, 0.52, 0.38]) {
+                output = canvas.toDataURL("image/jpeg", quality);
+                if (output.length <= 48 * 1024) break;
+              }
+              if (output.length <= 48 * 1024) break;
+            }
+            if (!output || output.length > 48 * 1024) {
+              showAlert("Foto terlalu besar", "Foto ini tidak dapat dikompres ke ukuran avatar.");
+              return;
+            }
+            pf.avatar = output;
+            pfAvatarPickerOpen = false;
+            renderProfile();
+          };
+          image.src = String(reader.result);
+        };
+        reader.readAsDataURL(file);
       }
       function renderProfile() {
         const full = ["full", "join", "createHost"].includes(pf.mode),
-          showName = pf.mode !== "avatar",
-          showAv = pf.mode !== "name";
+          showName = pf.mode !== "avatar";
         const title = full
           ? pf.mode === "createHost"
             ? "Buat Meja Baru 👑"
@@ -65,29 +137,48 @@
               : st && st.isHost
                 ? "Kamu jadi Bandar! 👑"
                 : "Selamat datang di meja! 🎉"
-          : pf.mode === "name"
-            ? "Ganti Nama"
-            : "Ganti Foto Profil";
-        $("#modal").innerHTML = `<div class="modal"><div class="mbox">
-    <div style="font-size:18px;font-weight:800">${title}</div>
-    ${full ? `<div class="mut" style="margin-top:4px">${pf.mode === "createHost" ? "Pilih nama dan foto profil Bandar. Room baru dibuat setelah menekan Lanjutkan." : pf.mode === "join" ? "Pemain lain baru melihatmu setelah kamu menekan Lanjutkan." : st && st.isHost ? "Pilih nama dan foto profil Bandar dulu sebelum mengatur room. Pemain lain akan melihatnya." : "Pilih foto profil dan isi namamu. Bisa diubah lagi kapan saja saat bermain."}</div>` : ""}
-    ${showAv ? `<div class="avgrid">${AV_IDS.map((id) => `<button class="avbtn ${pf.avatar === id ? "sel" : ""}" onclick="pickAvatar('${id}')">${avatar(id, 44)}</button>`).join("")}</div>` : ""}
-    ${
-      showName
-        ? `<div class="mut" style="margin:10px 0 4px">Nama (maks 16 karakter)</div>
-      <input id="pfName" maxlength="16" value="${esc(pf.name)}" onkeydown="if(event.key==='Enter')saveProfile()">`
-        : ""
-    }
-    <div class="row" style="margin-top:14px">
+          : "Edit Profil";
+        const helper = pf.mode === "createHost"
+          ? "Pilih nama dan avatar Bandar."
+          : pf.mode === "join"
+            ? "Pemain lain baru melihat profilmu setelah kamu menekan Lanjutkan."
+            : full
+              ? "Lengkapi profilmu sebelum mulai bermain."
+              : "Perbarui nama dan avatar profilmu.";
+        $("#modal").innerHTML = `<div class="modal"><div class="mbox profile-box">
+    <div class="profile-title">${title}</div>
+    <div class="mut profile-helper">${helper}</div>
+    <div class="profile-editor">
+      <div class="profile-avatar-wrap">
+        <button class="profile-avatar-trigger" aria-label="Pilih avatar" onclick="openAvatarPicker()">
+          ${avatar(pf.avatar, 104)}<span class="profile-avatar-plus" aria-hidden="true"></span>
+        </button>
+        <span class="mut">Pilih avatar</span>
+      </div>
+      <div class="profile-fields">
+        ${showName ? `<label class="profile-label" for="pfName">Nama</label><input id="pfName" maxlength="16" value="${esc(pf.name)}" autocomplete="nickname" placeholder="Masukkan nama" onkeydown="if(event.key==='Enter')saveProfile()">` : ""}
+        <div class="mut profile-avatar-hint">${pf.avatar && pf.avatar !== "default" ? "Avatar siap digunakan" : "Avatar default"}</div>
+      </div>
+    </div>
+    <div class="row profile-actions">
       <button class="g f" onclick="closeProfile()">Batal</button>
-      <button class="ok f" onclick="saveProfile()">${pf.mode === "createHost" || pf.mode === "join" ? "Lanjutkan" : full ? (st && st.isHost ? "Lanjut" : "Mulai Main") : "Simpan"}</button>
-    </div></div></div>`;
+      <button class="ok f" onclick="saveProfile()">${pf.mode === "createHost" || pf.mode === "join" ? "Lanjutkan" : "Simpan"}</button>
+    </div>
+    </div></div>
+    ${pfAvatarPickerOpen ? `<div class="modal avatar-picker-modal" onclick="if(event.target===this)closeAvatarPicker()"><div class="mbox avatar-picker-box" role="dialog" aria-modal="true" aria-label="Pilih avatar">
+      <div class="row sp avatar-picker-heading"><div><div class="profile-title">Pilih Avatar</div><div class="mut">Pilih emoji atau gunakan foto sendiri.</div></div><button class="g s" aria-label="Tutup" onclick="closeAvatarPicker()">✕</button></div>
+      <div class="avgrid">${AV_IDS.map((id) => `<button class="avbtn ${pf.avatar === id ? "sel" : ""}" aria-label="${id === "default" ? "Avatar default" : id}" onclick="pickAvatar('${id}')">${avatar(id, 42)}</button>`).join("")}</div>
+      <div class="avatar-picker-actions">
+        <label class="g avatar-upload-button">📷 Upload Foto<input type="file" accept="image/*" onchange="uploadAvatar(this)"></label>
+      </div>
+    </div></div>` : ""}`;
         localizeTree($("#modal"));
       }
       async function saveProfile() {
         const payload = {};
+        captureProfileName();
         if (pf.mode !== "avatar") payload.name = ($("#pfName") || {}).value;
-        if (pf.mode !== "name") payload.avatar = pf.avatar;
+        if (pf.mode !== "name") payload.avatar = pf.avatar || "default";
         if (pf.mode === "createHost") {
           pendingEntrySound = true;
           const j = await api("hostRoom", payload);

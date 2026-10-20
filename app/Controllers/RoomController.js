@@ -7,10 +7,11 @@ const {
   VIEW_PATH,
 } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.5.0"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.6.0"; // klien yang versinya beda akan otomatis refresh
 
-// Foto profil yang tersedia (tanpa upload). Harus sama dengan daftar di app/Views/index.html
+// Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
+  "default",
   "spade",
   "heart",
   "club",
@@ -38,6 +39,23 @@ const AVATARS = [
   "rocket",
   "money",
 ];
+
+function isValidAvatar(avatar) {
+  if (AVATARS.includes(avatar)) return true;
+  if (typeof avatar !== "string" || avatar.length > 48 * 1024) return false;
+  const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(avatar);
+  if (!match) return false;
+  const image = Buffer.from(match[1], "base64");
+  return (
+    image.length > 4 &&
+    image.length <= 36 * 1024 &&
+    image.toString("base64") === match[1] &&
+    image[0] === 0xff &&
+    image[1] === 0xd8 &&
+    image[image.length - 2] === 0xff &&
+    image[image.length - 1] === 0xd9
+  );
+}
 
 // In-Memory Multi-Room Storage
 const rooms = {};
@@ -358,7 +376,11 @@ function bjResolve(room, p, res, betSlot) {
 
   p.chips += totalPay;
   const betLabel =
-    betSlot === "main" ? " (Bet 1)" : betSlot === "split" ? " (Bet 2)" : "";
+    betSlot === "main" && p.bjSplitBet > 0
+      ? " (Bet 1)"
+      : betSlot === "split"
+        ? " (Bet 2)"
+        : "";
   logRoom(
     room,
     `${p.name}${betLabel}: ${res.toUpperCase()} (Menerima ${totalPay} chip)`,
@@ -590,7 +612,7 @@ function handle(b) {
       .trim()
       .slice(0, 16);
     if (!name) throw "Nama tidak boleh kosong";
-    if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
+    if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
     const code = generateRoomCode();
     rooms[code] = initRoom(code);
     rooms[code].hostToken = token;
@@ -638,7 +660,7 @@ function handle(b) {
         .trim()
         .slice(0, 16);
       if (!name) throw "Nama tidak boleh kosong";
-      if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
+      if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
       if (nameTaken(room, name, me || null)) throw "Nama sudah dipakai";
       const player =
         me ||
@@ -668,7 +690,7 @@ function handle(b) {
         m.name = name;
       }
       if (b.avatar !== undefined) {
-        if (!AVATARS.includes(b.avatar)) throw "Foto profil tidak valid";
+        if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
         m.avatar = b.avatar;
       }
       m.ready = true;

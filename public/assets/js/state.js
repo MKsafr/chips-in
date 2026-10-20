@@ -70,6 +70,25 @@
         "✎ Ganti Nama": "✎ Change Name",
         "Ganti Foto": "Change Avatar",
         "🖼 Ganti Foto": "🖼 Change Avatar",
+        "✎ Edit Profil": "✎ Edit Profile",
+        "Edit Profil": "Edit Profile",
+        "Pilih avatar": "Choose avatar",
+        "Pilih Avatar": "Choose Avatar",
+        "Perbarui nama dan avatar profilmu.": "Update your name and profile avatar.",
+        "Lengkapi profilmu sebelum mulai bermain.": "Complete your profile before playing.",
+        "Avatar siap digunakan": "Avatar ready",
+        "Avatar default": "Default avatar",
+        "Pilih emoji atau gunakan foto sendiri.": "Choose an emoji or use your own photo.",
+        "Upload Foto": "Upload Photo",
+        "Foto tidak valid": "Invalid photo",
+        "Foto terlalu besar": "Photo too large",
+        "Foto gagal dibuka": "Could not open photo",
+        "Foto gagal diproses": "Could not process photo",
+        "Pilih file gambar untuk dijadikan avatar.": "Choose an image file for your avatar.",
+        "Ukuran file foto maksimal 10 MB.": "Photo file size must be 10 MB or less.",
+        "Coba pilih file gambar yang lain.": "Try choosing another image file.",
+        "Foto ini tidak dapat dikompres ke ukuran avatar.":
+          "This photo cannot be compressed to avatar size.",
         "Selamat datang di meja! 🎉": "Welcome to the table! 🎉",
         "Kamu jadi Bandar! 👑": "You are the Dealer! 👑",
         "Buat Meja Baru 👑": "Create a New Table 👑",
@@ -101,6 +120,7 @@
         "Tampilkan Kartu": "Confirm",
         "Daftar Pemain": "Players",
         "Belum ada pemain": "No players yet",
+        "Pemain belum memberikan taruhan": "Players have not placed bets yet",
         "Giliranmu": "Your Turn",
         "Tunggu Bandar mengonfirmasi pembukaan kartu": "Wait for the dealer to confirm the",
         "di meja fisik...": "cards at the physical table...",
@@ -259,6 +279,7 @@
         "Tampilkan Kartu": "Confirm Cards",
         "Daftar Pemain": "Players",
         "Belum ada pemain": "No players yet",
+        "Pemain belum memberikan taruhan": "Players have not placed bets yet",
         "Giliranmu": "Your Turn",
         "Showdown — Tentukan Pemenang": "Showdown — Select the Winner",
         "Menunggu Bandar memilih pemenang…": "Waiting for the dealer to select the winner…",
@@ -384,7 +405,7 @@
         : "default";
       document.documentElement.setAttribute("data-theme", currentTheme);
 
-      const APP_VER = "3.5.0";
+      const APP_VER = "3.6.0";
       let st = null,
         draft = { w: {} },
         toastMsg = "",
@@ -399,8 +420,9 @@
         noticeTimer = null,
         chipAdjustment = null;
 
-      // Foto profil bawaan (tanpa upload). Id harus sama dengan AVATARS di server.js
+      // Avatar preset harus sama dengan daftar AVATARS di RoomController.js.
       const AV = {
+        default: { default: 1 },
         spade: { t: "♠", bg: "#222" },
         heart: { t: "♥", bg: "#c0392b" },
         club: { t: "♣", bg: "#1e9a5a" },
@@ -431,9 +453,13 @@
       const AV_IDS = Object.keys(AV);
       function avatar(id, size) {
         size = size || 36;
-        const a = AV[id] || AV.spade,
+        if (typeof id === "string" && id.startsWith("data:image/jpeg;base64,"))
+          return `<img class="av av-photo" src="${id}" alt="" style="width:${size}px;height:${size}px">`;
+        const a = AV[id] || AV.default,
           wh = `width:${size}px;height:${size}px;`,
           bw = Math.max(2, Math.round(size / 11));
+        if (a.default)
+          return `<span class="av av-default" style="${wh}" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8H4z"></path></svg></span>`;
         if (a.e)
           return `<span class="av" style="${wh}font-size:${Math.round(size * 0.55)}px;background:var(--btn2)">${a.e}</span>`;
         if (a.allin)

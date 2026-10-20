@@ -2,7 +2,7 @@
 
 Aplikasi chip digital untuk membantu bermain **Poker** dan **Blackjack** bersama teman. Buat room, bagikan kode kepada pemain, lalu kelola chip dan jalannya ronde dari satu meja bersama.
 
-> **Buka Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
+> **Link Website Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
 

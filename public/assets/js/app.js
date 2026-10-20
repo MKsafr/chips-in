@@ -46,12 +46,12 @@
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar</div></div></div>
       <button class="g s" onclick="leaveHostRoom()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
         } else if (me) {
           h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="big">${fmt(me.chips)}</div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('name')">✎ Ganti Nama</button><button class="g s" onclick="openProfile('avatar')">🖼 Ganti Foto</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
         }
 
         const ph = st.pendingHost;
