@@ -1,5 +1,163 @@
+let pendingAllInConfirmation = null;
+let roomScanner = null;
+let roomScanHandled = false;
+
+function openRoomScanner() {
+  roomScanHandled = false;
+  $("#modal").innerHTML =
+    `<div class="modal" onclick="if(event.target===this)closeRoomScanner()"><div class="mbox room-scanner-modal" role="dialog" aria-modal="true" aria-label="${translateText("Scan QR Room dengan Kamera")}">
+    <div class="row sp"><h2>${translateText("Scan QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomScanner()">×</button></div>
+    <p class="mut">${translateText("Arahkan kamera ke QR room.")}</p>
+    <div id="roomQrReader"></div>
+    <p id="roomScannerStatus" class="mut room-scanner-status" role="status">${translateText("Meminta akses kamera…")}</p>
+    <button class="g" style="width:100%" onclick="closeRoomScanner()">${translateText("Batal")}</button>
+  </div></div>`;
+  localizeTree($("#modal"));
+  startRoomScanner();
+}
+
+async function startRoomScanner() {
+  if (!window.Html5Qrcode) {
+    setRoomScannerStatus("Pemindai QR tidak dapat dimuat.");
+    return;
+  }
+  const scanner = new Html5Qrcode("roomQrReader");
+  roomScanner = scanner;
+  try {
+    await scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        aspectRatio: 1,
+        qrbox: (width, height) => {
+          const size = Math.floor(Math.min(width, height, 280) * 0.82);
+          return { width: size, height: size };
+        },
+      },
+      async (decodedText) => {
+        if (roomScanHandled) return;
+        const code = roomCodeFromScan(decodedText);
+        if (!code) {
+          setRoomScannerStatus("QR bukan kode atau link room yang valid.");
+          return;
+        }
+        roomScanHandled = true;
+        await closeRoomScanner();
+        const input = $("#rc");
+        if (input) {
+          input.value = code;
+          joinRoom();
+        }
+      },
+      () => {},
+    );
+    if (roomScanner !== scanner) {
+      await scanner.stop();
+      scanner.clear();
+    }
+  } catch {
+    if (roomScanner === scanner) {
+      roomScanner = null;
+      try {
+        scanner.clear();
+      } catch {}
+      setRoomScannerStatus(
+        "Kamera tidak dapat dibuka. Izinkan akses kamera dan gunakan HTTPS.",
+      );
+    }
+  }
+}
+
+function roomCodeFromScan(value) {
+  const text = String(value || "").trim();
+  if (/^[A-Z0-9]{6}$/i.test(text)) return text.toUpperCase();
+  try {
+    const url = new URL(text);
+    if (url.origin !== window.location.origin) return "";
+    const code = (url.searchParams.get("room") || "").trim().toUpperCase();
+    return /^[A-Z0-9]{6}$/.test(code) ? code : "";
+  } catch {
+    return "";
+  }
+}
+
+function setRoomScannerStatus(message) {
+  const status = $("#roomScannerStatus");
+  if (status) status.textContent = translateText(message);
+}
+
+async function closeRoomScanner() {
+  const scanner = roomScanner;
+  roomScanner = null;
+  if (scanner) {
+    try {
+      await scanner.stop();
+    } catch {}
+    try {
+      scanner.clear();
+    } catch {}
+  }
+  $("#modal").innerHTML = "";
+}
+
+function askAllInConfirmation(mode, amount) {
+  pendingAllInConfirmation = { mode, amount };
+  $("#modal").innerHTML =
+    `<div class="modal" onclick="if(event.target===this)cancelAllInConfirmation()"><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="allInConfirmationTitle" style="text-align:center">
+    <h2 id="allInConfirmationTitle">${translateText("Konfirmasi All-in")}</h2>
+    <p class="mut">${translateText("Apakah kamu yakin ingin All-in?")}</p>
+    <p style="font-size:20px;font-weight:800;color:var(--gold)">${translateText("Jumlah All-in")}: ${fmt(amount)}</p>
+    <div class="row"><button class="g f" onclick="cancelAllInConfirmation()">${translateText("Batal")}</button><button class="r f" onclick="confirmAllIn()">${translateText("Ya, All-in")}</button></div>
+  </div></div>`;
+  localizeTree($("#modal"));
+}
+
+function cancelAllInConfirmation() {
+  pendingAllInConfirmation = null;
+  $("#modal").innerHTML = "";
+}
+
+function confirmAllIn() {
+  const confirmation = pendingAllInConfirmation;
+  pendingAllInConfirmation = null;
+  $("#modal").innerHTML = "";
+  if (!confirmation) return;
+  if (confirmation.mode === "poker") api("act", { a: "allin" });
+  else api("bet", { amount: confirmation.amount });
+}
+
 function settingsButtonHTML() {
   return `<button class="g s" aria-label="${translateText("Pengaturan")}" onclick="openSettings()">⚙ ${translateText("Pengaturan")}</button>`;
+}
+function openRoomQr() {
+  const code = String((st && st.code) || roomCode || "").toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(code)) return;
+  const inviteUrl = new URL("/", window.location.origin);
+  inviteUrl.searchParams.set("room", code);
+  const link = inviteUrl.toString();
+  $("#modal").innerHTML =
+    `<div class="modal" onclick="if(event.target===this)closeRoomQr()"><div class="mbox room-qr-modal" role="dialog" aria-modal="true" aria-label="${translateText("QR Room")}">
+    <div class="row sp"><h2>${translateText("QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomQr()">×</button></div>
+    <p class="mut">${translateText("Scan QR ini untuk membuka room.")}</p>
+    <img class="room-qr-image" src="/room-qr?room=${encodeURIComponent(code)}" alt="${translateText("QR Room")}">
+    <div class="room-qr-code"><span class="mut">${translateText("Kode Room")}</span><b>${esc(code)}</b></div>
+    <div class="room-qr-link"><input id="roomInviteUrl" type="url" value="${esc(link)}" readonly aria-label="${translateText("Link Undangan Room")}"><button class="ok" onclick="copyRoomInviteLink()">${translateText("Salin Link")}</button></div>
+  </div></div>`;
+  localizeTree($("#modal"));
+}
+function closeRoomQr() {
+  $("#modal").innerHTML = "";
+}
+async function copyRoomInviteLink() {
+  const input = $("#roomInviteUrl");
+  if (!input) return;
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch {
+    input.select();
+    if (!document.execCommand("copy")) return;
+  }
+  flash("Link room disalin");
 }
 function themeSelect() {
   return (

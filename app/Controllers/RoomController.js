@@ -2,10 +2,8 @@ const http = require("http"),
   fs = require("fs"),
   path = require("path"),
   crypto = require("crypto");
-const {
-  PUBLIC_PATH,
-  VIEW_PATH,
-} = require("../Config/paths");
+const QRCode = require("qrcode");
+const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
 const VERSION = "3.6.0"; // klien yang versinya beda akan otomatis refresh
 
@@ -109,7 +107,7 @@ function initRoom(code) {
       sbId: null,
       bbId: null,
     },
-    bj: { phase: "betting" },
+    bj: { phase: "betting", resolved: false },
   };
 }
 
@@ -375,6 +373,7 @@ function bjResolve(room, p, res, betSlot) {
   }
 
   p.chips += totalPay;
+  room.bj.resolved = true;
   const betLabel =
     betSlot === "main" && p.bjSplitBet > 0
       ? " (Bet 1)"
@@ -479,6 +478,7 @@ function cancelRound(room, why) {
       p.bjBet = p.bjSplitBet = 0;
     });
     room.bj.phase = "betting";
+    room.bj.resolved = false;
   }
   logRoom(room, why);
 }
@@ -520,9 +520,7 @@ function promote(room, newToken, returnFormerHostToSeat = true) {
   room.hostProfile = newProf;
   const online =
     returnFormerHostToSeat &&
-    [...clients].some(
-      (c) => c.token === oldToken && c.roomCode === room.code,
-    );
+    [...clients].some((c) => c.token === oldToken && c.roomCode === room.code);
   const seated = online ? seatPlayer(room, oldToken) : null;
   logRoom(
     room,
@@ -918,6 +916,7 @@ function handle(b) {
         s.chips = room.startChips;
       });
       room.bj.phase = "betting";
+      room.bj.resolved = false;
       room.log = [];
       logRoom(room, "Semua chip pemain berhasil direset");
       break;
@@ -931,6 +930,7 @@ function handle(b) {
         p.last = p.bjBet || p.last;
         p.bjDoubled = false;
       });
+      room.bj.resolved = false;
       room.bj.phase = "playing";
       logRoom(room, "Kartu dikocok & taruhan dikunci");
       break;
@@ -949,12 +949,15 @@ function handle(b) {
       break;
     case "bjCancel":
       needHost();
+      if (room.bj.phase !== "playing" || room.bj.resolved)
+        throw "Ronde tidak dapat dibatalkan";
       room.players.forEach((p) => {
         p.chips += p.bjBet + p.bjSplitBet;
         p.bjBet = p.bjSplitBet = 0;
         p.bjDoubled = false;
       });
       room.bj.phase = "betting";
+      room.bj.resolved = false;
       logRoom(room, "Ronde Blackjack dibatalkan");
       break;
     default:
@@ -976,8 +979,7 @@ function view(token, roomCode) {
   const isHost = room.hostToken === token;
 
   const activeChipHolders = room.players.filter((p) => p.chips > 0);
-  const roundInProgress =
-    room.poker.active || room.bj.phase === "playing";
+  const roundInProgress = room.poker.active || room.bj.phase === "playing";
   const winnerName =
     !roundInProgress &&
     room.players.length > 1 &&
@@ -1036,6 +1038,49 @@ http
   .createServer((req, res) => {
     const u = new URL(req.url, "http://x");
 
+    if (req.method === "GET" && u.pathname === "/room-qr") {
+      const roomCode = (u.searchParams.get("room") || "").toUpperCase();
+      if (!/^[A-Z0-9]{6}$/.test(roomCode) || !rooms[roomCode]) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        return res.end("Room tidak ditemukan");
+      }
+      const forwardedProtocol = String(req.headers["x-forwarded-proto"] || "")
+        .split(",")[0]
+        .trim();
+      const forwardedHost = String(req.headers["x-forwarded-host"] || "")
+        .split(",")[0]
+        .trim();
+      const protocol =
+        forwardedProtocol || (req.socket.encrypted ? "https" : "http");
+      const host = forwardedHost || req.headers.host;
+      let origin;
+      try {
+        origin = new URL(process.env.PUBLIC_ORIGIN || `${protocol}://${host}`)
+          .origin;
+      } catch {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        return res.end("Origin tidak valid");
+      }
+      const inviteUrl = new URL("/", origin);
+      inviteUrl.searchParams.set("room", roomCode);
+      return QRCode.toBuffer(inviteUrl.toString(), {
+        width: 320,
+        margin: 2,
+        errorCorrectionLevel: "M",
+      })
+        .then((image) => {
+          res.writeHead(200, {
+            "Content-Type": "image/png",
+            "Cache-Control": "no-store",
+          });
+          res.end(image);
+        })
+        .catch(() => {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end("QR gagal dibuat");
+        });
+    }
+
     if (u.pathname === "/manifest.json") {
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "manifest.json")));
@@ -1061,11 +1106,7 @@ http
         res.writeHead(400, { "Content-Type": "text/plain" });
         return res.end("Invalid asset path");
       }
-      const assetRoot = path.resolve(
-        PUBLIC_PATH,
-        "assets",
-        assetMatch[1],
-      );
+      const assetRoot = path.resolve(PUBLIC_PATH, "assets", assetMatch[1]);
       const relativePath = path.relative(assetRoot, assetPath);
       const extension = path.extname(assetPath).toLowerCase();
       const allowedExtensions =

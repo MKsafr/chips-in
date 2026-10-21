@@ -18,7 +18,13 @@ let token =
   localStorage.cb_token ||
   (localStorage.cb_token =
     Math.random().toString(36).slice(2) + Date.now().toString(36));
-let roomCode = localStorage.cb_room || "";
+const inviteCodeParam = new URLSearchParams(window.location.search).get("room");
+const invitedRoomCode = /^[A-Z0-9]{6}$/.test(
+  (inviteCodeParam || "").trim().toUpperCase(),
+)
+  ? inviteCodeParam.trim().toUpperCase()
+  : "";
+let roomCode = invitedRoomCode ? "" : localStorage.cb_room || "";
 const THEMES = {
   default: "Default",
   dark: "Dark Mode",
@@ -36,7 +42,23 @@ const EN_TEXT = {
   "Host Room (Buat Meja Baru)": "Create Room",
   "— ATAU —": "— OR —",
   "Kode Room (6 Karakter)": "Room Code (6 characters)",
+  "Tampilkan QR Room": "Show Room QR",
+  "QR Room": "Room QR",
+  "Scan QR ini untuk membuka room.": "Scan this QR code to open the room.",
+  "Kode Room": "Room Code",
+  "Link Undangan Room": "Room Invite Link",
+  "Salin Link": "Copy Link",
+  "Link room disalin": "Room link copied",
   "Join Room": "Join Room",
+  "Scan QR Room dengan Kamera": "Scan Room QR with Camera",
+  "Scan QR Room": "Scan Room QR",
+  "Arahkan kamera ke QR room.": "Point the camera at the room QR code.",
+  "Meminta akses kamera…": "Requesting camera access…",
+  "Pemindai QR tidak dapat dimuat.": "QR scanner could not be loaded.",
+  "QR bukan kode atau link room yang valid.":
+    "This QR code does not contain a valid room code or link.",
+  "Kamera tidak dapat dibuka. Izinkan akses kamera dan gunakan HTTPS.":
+    "Camera could not be opened. Allow camera access and use HTTPS.",
   "Unduh App": "Install App",
   "Lanjutkan ke room sebelumnya?": "Continue to your previous room?",
   "Kamu telah dikeluarkan": "You have been removed",
@@ -55,6 +77,10 @@ const EN_TEXT = {
   Bahasa: "Language",
   "Volume Efek Suara": "Sound Effects Volume",
   "Volume Musik Latar": "Background Music Volume",
+  "Konfirmasi All-in": "Confirm All-in",
+  "Apakah kamu yakin ingin All-in?": "Are you sure you want to go all-in?",
+  "Jumlah All-in": "All-in Amount",
+  "Ya, All-in": "Yes, go all-in",
   "Matikan Suara": "Mute",
   "Nyalakan Suara": "Unmute",
   "Matikan Musik": "Mute Music",
@@ -158,6 +184,7 @@ const EN_TEXT = {
   "Semua Menang": "All Win",
   "Semua Seri": "All Push",
   "Semua Kalah": "All Lose",
+  "Batalkan Hand & Kembalikan Chip": "Cancel Hand & Refund Chips",
   "Batalkan ronde?": "Cancel this round?",
   "Kunci Taruhan & Bagi Kartu": "Lock Bets & Deal",
   "Pengaturan Meja": "Table Settings",
@@ -386,6 +413,7 @@ const EN_TEXT = {
   "Hand masih berjalan": "A hand is still in progress",
   "Belum ada pemain yang memasang taruhan": "No players have placed bets yet",
   "Ronde Blackjack dibatalkan": "Blackjack round cancelled",
+  "Ronde tidak dapat dibatalkan": "This round can no longer be canceled",
   "Tawaran Bandar dibatalkan": "Dealer offer cancelled",
   "Hand dibatalkan. Chip dikembalikan":
     "Hand cancelled. Chips have been returned",
@@ -430,10 +458,6 @@ let pfOpen = false,
   leaving = false,
   pendingRoomCode = "",
   pendingEntrySound = false,
-  notice = null,
-  noticeTimer = null,
-  noChipsNoticeKey = null,
-  casinoWinnerNoticeKey = null,
   chipAdjustment = null;
 
 // Avatar preset harus sama dengan daftar AVATARS di RoomController.js.
