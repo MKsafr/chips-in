@@ -18,7 +18,7 @@
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
 
-Versi aplikasi saat ini: **3.6.6** (versi klien/server, terpisah dari versi paket Node.js).
+Versi aplikasi saat ini: **3.7.2** (versi klien/server, terpisah dari versi paket Node.js).
 
 ## Daftar isi
 
@@ -39,6 +39,9 @@ Versi aplikasi saat ini: **3.6.6** (versi klien/server, terpisah dari versi pake
 - Pemulihan sesi pemain maupun dealer setelah koneksi terputus, selama room dan sesi masih tersedia.
 - Bisa dipasang sebagai aplikasi web progresif (PWA) pada browser/perangkat yang mendukung.
 - Antarmuka tersedia dalam Bahasa Indonesia dan English, dengan pilihan tema.
+- FAQ dan formulir pelaporan bug tersedia dari tombol bantuan di lobby.
+- Kontak dukungan: chips.in.support@gmail.com.
+- Laporan bug dibuka sebagai GitHub Issue yang dapat dilihat publik; pengguna harus login dan mengirimkannya dari GitHub.
 
 ## Cara menggunakan
 

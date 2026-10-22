@@ -35,7 +35,8 @@ function render() {
           <button class="ok" onclick="joinRoom()">${translateText("Gabung Room")}</button>
           <button class="g room-camera-button" aria-label="${translateText("Scan QR Room dengan Kamera")}" title="${translateText("Scan QR Room dengan Kamera")}" onclick="openRoomScanner()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h-4L8.5 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14 5Z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
         </div>
-      </div>`;
+      </div>
+      <button class="lobby-help-button" aria-label="${translateText("Bantuan dan FAQ")}" title="${translateText("Bantuan dan FAQ")}" onclick="openHelp()">?</button>`;
     localizeTree($("#app"));
     return;
   }

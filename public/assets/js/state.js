@@ -42,6 +42,39 @@ const THEMES = {
 };
 const LANGUAGES = { id: "Bahasa Indonesia", en: "English" };
 const EN_TEXT = {
+  "Bantuan dan FAQ": "Help & FAQ",
+  "Pertanyaan Umum": "Frequently Asked Questions",
+  "Bagaimana cara membuat atau bergabung ke room?":
+    "How do I create or join a room?",
+  "Pilih Buat Ruangan untuk menjadi Bandar, atau masukkan kode room dari Bandar lalu pilih Gabung Room. Kamu juga bisa memindai QR room.":
+    "Choose Create Room to become the dealer, or enter the room code from the dealer and choose Join Room. You can also scan the room QR code.",
+  "Apakah kartu dimainkan di aplikasi?":
+    "Are cards played in the app?",
+  "Tidak. Kartu dimainkan secara fisik. Aplikasi membantu mencatat pemain, chip, taruhan, pot, dan hasil permainan.":
+    "No. Cards are played physically. The app helps track players, chips, bets, pots, and game results.",
+  "Bagaimana cara kerja chip?": "How do chips work?",
+  "Chip hanya untuk mencatat permainan sosial. Chip tidak memiliki nilai uang, tidak dapat dibeli, dan tidak dapat dicairkan.":
+    "Chips are only for tracking social games. They have no monetary value, cannot be purchased, and cannot be cashed out.",
+  "Pengaturan suara saya tidak tersimpan di perangkat lain, kenapa?":
+    "Why aren't my sound settings available on my other devices?",
+  "Pengaturan suara disimpan di browser dan perangkat yang kamu gunakan, jadi tidak otomatis dibagikan ke perangkat lain.":
+    "Sound settings are saved in the browser and device you use, so they are not automatically shared with other devices.",
+  "Apa yang harus dilakukan jika koneksi terputus?":
+    "What should I do if my connection drops?",
+  "Kembali ke tab Chips-in dan tunggu browser menyambungkan ulang. Sesi room dapat dipulihkan selama room masih tersedia.":
+    "Return to the Chips-in tab and wait for the browser to reconnect. The room session can be restored while the room is still available.",
+  "Laporkan Bug": "Report a Bug",
+  "Isi judul dan langkah untuk mengulangi masalah. Kamu akan diarahkan ke GitHub untuk meninjau dan mengirim laporan.":
+    "Enter a title and steps to reproduce the problem. You will be redirected to GitHub to review and submit the report.",
+  "Judul masalah": "Issue title",
+  "Contoh: Suara tidak bisa diatur di Safari":
+    "Example: Cannot adjust sound in Safari",
+  "Langkah atau keterangan": "Steps or details",
+  "Apa yang kamu lakukan, apa yang terjadi, dan apa yang seharusnya terjadi?":
+    "What did you do, what happened, and what did you expect to happen?",
+  "GitHub akan menampilkan laporan secara publik. Login dan tekan Submit new issue untuk mengirim. Jangan sertakan kata sandi atau informasi pribadi.":
+    "GitHub will display the report publicly. Sign in and click Submit new issue to send it. Do not include passwords or personal information.",
+  "Lanjutkan ke GitHub": "Continue to GitHub",
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
   "Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.":
     "A virtual chip app for tracking Poker & Blackjack games with friends.",
@@ -584,7 +617,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.6.6";
+const APP_VER = "3.7.2";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

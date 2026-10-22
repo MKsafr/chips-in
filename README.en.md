@@ -18,7 +18,7 @@
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
 
-Current app version: **3.6.6** (the client/server version, separate from the Node.js package version).
+Current app version: **3.7.2** (the client/server version, separate from the Node.js package version).
 
 ## Table of contents
 
@@ -39,6 +39,9 @@ Current app version: **3.6.6** (the client/server version, separate from the Nod
 - Player and dealer sessions can be resumed after a connection loss, while the room and session are still available.
 - Installable as a progressive web app (PWA) on supported browsers and devices.
 - Indonesian and English interface, with theme options.
+- FAQ and a bug-report form are available from the lobby help button.
+- Support contact: chips.in.support@gmail.com.
+- Bug reports open as public GitHub Issues; users must sign in and submit the report on GitHub.
 
 ## How to use
 

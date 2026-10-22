@@ -98,6 +98,11 @@ function connect() {
         if ((data.winnerName && !st.winnerName) || blackjackWinner)
           playSFX("win");
       }
+      if (
+        data.poker.stage === "showdown" &&
+        (!st || st.poker.stage !== "showdown")
+      )
+        draft.w = {};
       st = data;
       render();
     } catch (err) {
@@ -105,3 +110,7 @@ function connect() {
     }
   };
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) connect();
+});

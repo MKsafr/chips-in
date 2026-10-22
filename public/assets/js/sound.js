@@ -63,6 +63,10 @@ function syncSoundEffects() {
 
 function unlockAudio() {
   const context = getAudioContext();
+  if (context) {
+    syncBackgroundMusic();
+    syncSoundEffects();
+  }
   if (context && context.state === "suspended")
     context.resume().catch(() => {});
   startBackgroundMusic();
@@ -88,7 +92,6 @@ function startBackgroundMusic() {
     });
 }
 
-syncBackgroundMusic();
 document.addEventListener("pointerdown", unlockAudio);
 document.addEventListener("touchend", unlockAudio);
 document.addEventListener("keydown", unlockAudio);

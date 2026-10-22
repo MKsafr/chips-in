@@ -5,7 +5,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.6.6"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.7.2"; // klien yang versinya beda akan otomatis refresh
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -58,6 +58,12 @@ function isValidAvatar(avatar) {
 // In-Memory Multi-Room Storage
 const rooms = {};
 const clients = new Set();
+const disconnectTimers = new Map();
+const DISCONNECT_GRACE_MS = 2 * 60 * 1000;
+
+function disconnectKey(token, roomCode) {
+  return JSON.stringify([token, roomCode]);
+}
 
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1321,6 +1327,9 @@ http
         token: u.searchParams.get("token") || "",
         roomCode: u.searchParams.get("room") || "",
       };
+      const key = disconnectKey(c.token, c.roomCode);
+      clearTimeout(disconnectTimers.get(key));
+      disconnectTimers.delete(key);
       clients.add(c);
       res.write("retry: 1500\n\n");
       const rm = rooms[c.roomCode];
@@ -1328,7 +1337,14 @@ http
       send(c);
       res.on("close", () => {
         clients.delete(c);
-        setTimeout(() => handleDisconnect(c.token, c.roomCode), 1000);
+        clearTimeout(disconnectTimers.get(key));
+        disconnectTimers.set(
+          key,
+          setTimeout(() => {
+            disconnectTimers.delete(key);
+            handleDisconnect(c.token, c.roomCode);
+          }, DISCONNECT_GRACE_MS),
+        );
       });
       return;
     }
