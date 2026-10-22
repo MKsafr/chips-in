@@ -64,44 +64,77 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 ## Struktur project
 
 ```text
-app/
-  Config/paths.js
-  Controllers/RoomController.js
-  Views/index.html
-public/
-  assets/
-    css/app.css
-    images/poker-felt-pattern.svg
-    js/
-      app.js
-      blackjack.js
-      dealer.js
-      display.js
-      html5-qrcode.min.js
-      i18n.js
-      player-row.js
-      poker.js
-      profile.js
-      room.js
-      sound.js
-      state.js
-      ui-controls.js
-    logo/
-      logo-main.png
-      logo-small.png
-    sounds/*.mp3
-  manifest.json
-  sw.js
-server.js
-package.json
-package-lock.json
-start.bat
+.
+├── app/
+│   ├── Config/
+│   │   └── paths.js
+│   ├── Controllers/
+│   │   └── RoomController.js
+│   └── Views/
+│       └── index.html
+├── public/
+│   ├── assets/
+│   │   ├── css/
+│   │   │   ├── app.css
+│   │   │   └── legal.css
+│   │   ├── images/
+│   │   │   └── poker-felt-pattern.svg
+│   │   ├── js/
+│   │   │   ├── app.js
+│   │   │   ├── blackjack.js
+│   │   │   ├── dealer.js
+│   │   │   ├── display.js
+│   │   │   ├── html5-qrcode.min.js
+│   │   │   ├── i18n.js
+│   │   │   ├── legal.js
+│   │   │   ├── player-row.js
+│   │   │   ├── poker.js
+│   │   │   ├── profile.js
+│   │   │   ├── room.js
+│   │   │   ├── sound.js
+│   │   │   ├── state.js
+│   │   │   └── ui-controls.js
+│   │   ├── logo/
+│   │   │   ├── logo-main.png
+│   │   │   └── logo-small.png
+│   │   └── sounds/
+│   │       ├── allin.mp3
+│   │       ├── award.mp3
+│   │       ├── bet.mp3
+│   │       ├── bgmusic.mp3
+│   │       ├── bjlose.mp3
+│   │       ├── bjwin.mp3
+│   │       ├── call.mp3
+│   │       ├── check.mp3
+│   │       ├── double.mp3
+│   │       ├── fold.mp3
+│   │       ├── kick.mp3
+│   │       ├── raise.mp3
+│   │       ├── reset.mp3
+│   │       ├── showdown.mp3
+│   │       ├── split.mp3
+│   │       ├── stage.mp3
+│   │       ├── transfer.mp3
+│   │       └── win.mp3
+│   ├── pages/
+│   │   ├── about.html
+│   │   ├── privacy.html
+│   │   └── terms.html
+│   ├── manifest.json
+│   └── sw.js
+├── package-lock.json
+├── package.json
+├── README.en.md
+├── README.md
+├── server.js
+└── start.bat
 ```
 
 - `server.js` adalah entry point aplikasi.
 - `app/Controllers/RoomController.js` menangani server HTTP, room, dan logika permainan.
 - `app/Views/index.html` adalah halaman utama.
-- `public/` berisi stylesheet, script browser, QR scanner, gambar, suara, manifest, dan service worker.
+- `public/pages/` berisi halaman About, Privacy, dan Terms; `public/assets/css/legal.css` dan `public/assets/js/legal.js` mendukung halaman-halaman tersebut.
+- `public/assets/` berisi stylesheet, script browser, QR scanner, gambar, logo, dan suara.
 - Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
 - Data room disimpan di memori server, sehingga room yang belum selesai tidak bertahan jika proses server dimulai ulang.
 

@@ -119,44 +119,77 @@ To stop the server, return to the terminal and press **Ctrl+C**.
 ## Project structure
 
 ```text
-app/
-  Config/paths.js
-  Controllers/RoomController.js
-  Views/index.html
-public/
-  assets/
-    css/app.css
-    images/poker-felt-pattern.svg
-    js/
-      app.js
-      blackjack.js
-      dealer.js
-      display.js
-      html5-qrcode.min.js
-      i18n.js
-      player-row.js
-      poker.js
-      profile.js
-      room.js
-      sound.js
-      state.js
-      ui-controls.js
-    logo/
-      logo-main.png
-      logo-small.png
-    sounds/*.mp3
-  manifest.json
-  sw.js
-server.js
-package.json
-package-lock.json
-start.bat
+.
+├── app/
+│   ├── Config/
+│   │   └── paths.js
+│   ├── Controllers/
+│   │   └── RoomController.js
+│   └── Views/
+│       └── index.html
+├── public/
+│   ├── assets/
+│   │   ├── css/
+│   │   │   ├── app.css
+│   │   │   └── legal.css
+│   │   ├── images/
+│   │   │   └── poker-felt-pattern.svg
+│   │   ├── js/
+│   │   │   ├── app.js
+│   │   │   ├── blackjack.js
+│   │   │   ├── dealer.js
+│   │   │   ├── display.js
+│   │   │   ├── html5-qrcode.min.js
+│   │   │   ├── i18n.js
+│   │   │   ├── legal.js
+│   │   │   ├── player-row.js
+│   │   │   ├── poker.js
+│   │   │   ├── profile.js
+│   │   │   ├── room.js
+│   │   │   ├── sound.js
+│   │   │   ├── state.js
+│   │   │   └── ui-controls.js
+│   │   ├── logo/
+│   │   │   ├── logo-main.png
+│   │   │   └── logo-small.png
+│   │   └── sounds/
+│   │       ├── allin.mp3
+│   │       ├── award.mp3
+│   │       ├── bet.mp3
+│   │       ├── bgmusic.mp3
+│   │       ├── bjlose.mp3
+│   │       ├── bjwin.mp3
+│   │       ├── call.mp3
+│   │       ├── check.mp3
+│   │       ├── double.mp3
+│   │       ├── fold.mp3
+│   │       ├── kick.mp3
+│   │       ├── raise.mp3
+│   │       ├── reset.mp3
+│   │       ├── showdown.mp3
+│   │       ├── split.mp3
+│   │       ├── stage.mp3
+│   │       ├── transfer.mp3
+│   │       └── win.mp3
+│   ├── pages/
+│   │   ├── about.html
+│   │   ├── privacy.html
+│   │   └── terms.html
+│   ├── manifest.json
+│   └── sw.js
+├── package-lock.json
+├── package.json
+├── README.en.md
+├── README.md
+├── server.js
+└── start.bat
 ```
 
 - `server.js` is the application entry point.
 - `app/Controllers/RoomController.js` handles the HTTP server, rooms, and game logic.
 - `app/Views/index.html` is the main page.
-- `public/` contains stylesheets, browser scripts, the QR scanner, images, sounds, the manifest, and the service worker.
+- `public/pages/` contains the About, Privacy, and Terms pages; `public/assets/css/legal.css` and `public/assets/js/legal.js` support those pages.
+- `public/assets/` contains stylesheets, browser scripts, the QR scanner, images, logos, and sounds.
 - Browser scripts are loaded in order from `app/Views/index.html` because some files use state and helpers defined by earlier files.
 - Room data is stored in server memory, so unfinished rooms do not persist when the server process restarts.
 
