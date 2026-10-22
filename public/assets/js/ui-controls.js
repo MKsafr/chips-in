@@ -190,7 +190,7 @@ function openChipTransfer() {
   $("#modal").innerHTML =
     `<div class="modal" onclick="if(event.target===this)closeChipTransfer()"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
     <div class="row sp"><h2 id="chipTransferTitle">${translateText("Kirim Chip")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeChipTransfer()">×</button></div>
-    <div class="chip-transfer-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmt(me.chips)} chip</b></div>
+    <div class="chip-transfer-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
     <label class="chip-transfer-field"><span>${translateText("Penerima")}</span><select id="chipTransferTarget"><option value="">${translateText("Pilih pemain")}</option>${recipients.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select></label>
     <label class="chip-transfer-field"><span>${translateText("Jumlah Chip")}</span><input id="chipTransferAmount" type="number" min="1" max="${me.chips}" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}"></label>
     <div class="row chip-transfer-actions"><button class="g f" onclick="closeChipTransfer()">${translateText("Batal")}</button><button class="ok f" onclick="submitChipTransfer()">${translateText("Kirim Chip")}</button></div>
@@ -222,7 +222,7 @@ async function submitChipTransfer() {
   }
   if (
     !confirm(
-      `${translateText("Kirim")} ${fmt(amount)} chip ${translateText("ke")} ${recipient.name}?`,
+      `${translateText("Kirim")} ${fmtChips(amount)} ${translateText("ke")} ${recipient.name}?`,
     )
   )
     return;
@@ -410,9 +410,9 @@ function renderChipAdjustment() {
   const adding = chipAdjustment.direction > 0;
   setModalContent(
     `<div class="modal" onclick="if(event.target===this)closeChipAdjustment()"><div class="mbox">
-    <div class="row sp"><div style="font-size:18px;font-weight:800">${adding ? "+ Chip" : "- Chip"} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
+    <div class="row sp"><div style="font-size:18px;font-weight:800">${translateText(adding ? "+ Chip" : "- Chip")} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
     <div class="mut" style="margin:10px 0 4px">Masukkan jumlah chip</div>
-    <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Jumlah chip" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
+    <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
     <div class="row" style="margin-top:12px"><button class="g f" onclick="closeChipAdjustment()">Batal</button><button class="${adding ? "ok" : "r"} f" onclick="submitChipAdjustment()">Simpan</button></div>
   </div></div>`,
   );

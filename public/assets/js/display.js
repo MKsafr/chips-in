@@ -99,19 +99,23 @@ function translateEvent(text) {
   if (match)
     return `${match[1] === "Pot Utama" ? "Main Pot" : match[1]} (${match[2]}) awarded to: ${match[3]}`;
   match = text.match(/^(.+) menang (\d+) chip \(semua pemain fold\)$/);
-  if (match) return `${match[1]} won ${match[2]} chips (everyone folded)`;
+  if (match)
+    return `${match[1]} won ${match[2]} ${chipUnit(match[2])} (everyone folded)`;
   match = text.match(/^(.+): (WIN|BJ|PUSH|LOSE) \(Menerima (\d+) chip\)$/);
-  if (match) return `${match[1]}: ${match[2]} (Received ${match[3]} chips)`;
+  if (match)
+    return `${match[1]}: ${match[2]} (Received ${match[3]} ${chipUnit(match[3])})`;
   match = text.match(/^(.+) memasang taruhan ([\d.,]+)$/);
   if (match) return `${match[1]} placed a bet of ${match[2]}`;
   match = text.match(/^(.+) mengubah taruhan menjadi ([\d.,]+)$/);
   if (match) return `${match[1]} changed their bet to ${match[2]}`;
   match = text.match(/^(.+) mengirim ([\d.,]+) chip kepada (.+)$/);
-  if (match) return `${match[1]} sent ${match[2]} chips to ${match[3]}`;
+  if (match)
+    return `${match[1]} sent ${match[2]} ${chipUnit(match[2])} to ${match[3]}`;
   match = text.match(/^(.+) Double taruhan \+(\d+)$/);
   if (match) return `${match[1]} doubled their bet (+${match[2]})`;
   match = text.match(/^(.+) Melakukan SPLIT \(\+(\d+) chip\)$/);
-  if (match) return `${match[1]} split (+${match[2]} chips)`;
+  if (match)
+    return `${match[1]} split (+${match[2]} ${chipUnit(match[2])})`;
   match = text.match(
     /^Bandar menawarkan peran Bandar ke (.+)\. Menunggu persetujuan…$/,
   );
@@ -125,7 +129,7 @@ function translateEvent(text) {
   if (match) return `${match[1]} was removed by the dealer`;
   match = text.match(/^Bandar (menambah|mengurangi) (\d+) chip untuk (.+)$/);
   if (match)
-    return `Dealer ${match[1] === "menambah" ? "added" : "removed"} ${match[2]} chips ${match[1] === "menambah" ? "for" : "from"} ${match[3]}`;
+    return `Dealer ${match[1] === "menambah" ? "added" : "removed"} ${match[2]} ${chipUnit(match[2])} ${match[1] === "menambah" ? "for" : "from"} ${match[3]}`;
   match = text.match(/^Mode game diubah ke (.+)$/);
   if (match) return `Game mode changed to ${match[1]}`;
   match = text.match(/^(.+) membuat room sebagai Bandar$/);
@@ -135,6 +139,20 @@ function translateEvent(text) {
   );
   if (match)
     return "Round cancelled because the dealer changed. All chips were returned";
+  match = text.match(/^Ronde dibatalkan karena Bandar terputus$/);
+  if (match) return "Round cancelled because the dealer disconnected";
+  match = text.match(/^(.+) terputus\. Ronde dibatalkan$/);
+  if (match) return `${match[1]} disconnected. The round was cancelled`;
+  match = text.match(/^(.+) terputus dan meninggalkan meja$/);
+  if (match) return `${match[1]} disconnected and left the table`;
+  match = text.match(/^(.+) kembali menjadi Bandar$/);
+  if (match) return `${match[1]} returned as the dealer`;
+  match = text.match(/^(.+) kembali ke meja$/);
+  if (match) return `${match[1]} returned to the table`;
+  match = text.match(/^Taruhan Blackjack dibatalkan\. Chip dikembalikan$/);
+  if (match) return "Blackjack bets cancelled. Chips were refunded";
+  match = text.match(/^Bandar terputus\. Menunggu Bandar kembali…$/);
+  if (match) return "Dealer disconnected. Waiting for the dealer to return…";
   match = text.match(
     /^Bandar mengubah urutan tempat duduk pemain$|^Bandar merubah urutan tempat duduk pemain$/,
   );
@@ -143,6 +161,14 @@ function translateEvent(text) {
   if (match) return "Dealer offer cancelled";
   match = text.match(/^Menunggu Bandar (.+)$/);
   if (match) return `Waiting for the dealer ${match[1]}`;
+  match = text.match(/^Kembali sebagai (Bandar|pemain (.+?))(?: dengan ([\d.,]+) chip)?\.$/);
+  if (match) {
+    const role = match[1] === "Bandar" ? "dealer" : `player ${match[2]}`;
+    const chips = match[3]
+      ? ` with ${match[3]} ${chipUnit(match[3])}`
+      : "";
+    return `Resume as ${role}${chips}.`;
+  }
   match = text.match(/^Minimal raise ke (\d+)$/);
   if (match) return `Minimum raise to ${match[1]}`;
   match = text.match(/^Semua pemain fold$/);

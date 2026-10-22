@@ -51,7 +51,7 @@ function bjView(me) {
 
   if (me && me.chips > 0 && bj.phase === "betting") {
     h +=
-      `<div class="card"><h3>Taruhanmu: ${fmt(me.bjBet)}</h3><div class="chips">` +
+      `<div class="card"><h3>${translateText("Taruhanmu:")} ${fmt(me.bjBet)}</h3><div class="chips">` +
       [5, 10, 25, 100, 500]
         .map(
           (v) =>
@@ -60,7 +60,7 @@ function bjView(me) {
         .join("") +
       `<button class="chip callin" onclick="askAllInConfirmation('blackjack',${(me.chips || 0) + (me.bjBet || 0)})">ALL IN</button>` +
       `</div><div class="row"><button class="g f" onclick="placeBlackjackBet(0)">Reset</button>
-      ${me.last ? `<button class="g f" onclick="placeBlackjackBet(${me.last})">Ulang (${fmt(me.last)})</button>` : ""}</div></div>`;
+      ${me.last ? `<button class="g f" onclick="placeBlackjackBet(${me.last})">${translateText("Ulang")} (${fmt(me.last)})</button>` : ""}</div></div>`;
   }
 
   if (

@@ -25,6 +25,10 @@
         currentLanguage = LANGUAGES[language] ? language : "id";
         localStorage.cb_language = currentLanguage;
         document.documentElement.lang = currentLanguage;
+        document.title =
+          currentLanguage === "en"
+            ? "Chips-in - Virtual Casino Chips"
+            : "Chips-in - Chip Kasino Virtual";
         render();
         if (settingsOpen) renderSettings();
       }

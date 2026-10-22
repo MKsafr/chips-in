@@ -29,7 +29,7 @@ function pokerView(me) {
     h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
   } else if (me && k.active && k.turn === me.id) {
     if (!st.dealerConfirmedStage) {
-      h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3><div class="mut">Tunggu Bandar mengonfirmasi pembukaan kartu ${(k.stage || "").toUpperCase()} di meja fisik...</div></div>`;
+      h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3><div class="mut">${translateText("Tunggu Bandar mengonfirmasi pembukaan kartu")} ${(k.stage || "").toUpperCase()} ${translateText("di meja fisik...")}</div></div>`;
     } else {
       const toCall = (k.currentBet || 0) - (me.bet || 0),
         callAmt = Math.min(toCall, me.chips),

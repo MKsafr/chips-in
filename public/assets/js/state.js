@@ -13,6 +13,12 @@ const esc = (s) =>
   );
 const fmt = (n) =>
   Number(n || 0).toLocaleString(currentLanguage === "en" ? "en-US" : "id-ID");
+const chipUnit = (amount) =>
+  currentLanguage === "en" &&
+  Number(String(amount).replace(/[,.]/g, "")) !== 1
+    ? "chips"
+    : "chip";
+const fmtChips = (amount) => `${fmt(amount)} ${chipUnit(amount)}`;
 
 let token =
   localStorage.cb_token ||
@@ -39,7 +45,7 @@ const EN_TEXT = {
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
   "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
     "A digital casino chip app for playing poker and blackjack with friends.",
-  "Host Room (Buat Meja Baru)": "Create Room",
+  "Buat Ruangan": "Create Room",
   "— ATAU —": "— OR —",
   "Kode Room (6 Karakter)": "Room Code (6 characters)",
   "Tampilkan QR Room": "Show Room QR",
@@ -68,7 +74,7 @@ const EN_TEXT = {
     "Switch to Poker? Unlocked Blackjack bets will be canceled and the chips refunded.",
   "Ada taruhan Blackjack yang belum dikunci. Konfirmasi pembatalan taruhan untuk pindah ke Poker.":
     "There are unlocked Blackjack bets. Confirm bet cancellation to switch to Poker.",
-  "Join Room": "Join Room",
+  "Gabung Room": "Join Room",
   "Scan QR Room dengan Kamera": "Scan Room QR with Camera",
   "Scan QR Room": "Scan Room QR",
   "Arahkan kamera ke QR room.": "Point the camera at the room QR code.",
@@ -86,6 +92,8 @@ const EN_TEXT = {
   "Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.":
     "You are out of chips. Wait for the next round or ask the dealer for more chips.",
   "Masukkan jumlah chip": "Enter the chip amount",
+  "Masukkan jumlah chip bulat lebih dari nol":
+    "Enter a whole number of chips greater than zero",
   "Jumlah chip harus berupa angka bulat lebih dari nol":
     "Enter a whole number greater than zero",
   Pengaturan: "Settings",
@@ -151,22 +159,28 @@ const EN_TEXT = {
     "This photo cannot be compressed to avatar size.",
   "Selamat datang di meja! 🎉": "Welcome to the table! 🎉",
   "Kamu jadi Bandar! 👑": "You are the Dealer! 👑",
-  "Buat Meja Baru 👑": "Create a New Table 👑",
+  "Buat Meja Baru 👑": "Create New Table 👑",
   "Siapkan Profil Pemain": "Set Up Player Profile",
   "Pilih nama dan foto profil Bandar. Room baru dibuat setelah menekan Lanjutkan.":
     "Choose the dealer's name and avatar. The room will be created when you select Continue.",
   "Pemain lain baru melihatmu setelah kamu menekan Lanjutkan.":
     "Other players will see you after you select Continue.",
+  "Pemain lain baru melihat profilmu setelah kamu menekan Lanjutkan.":
+    "Other players will see your profile after you select Continue.",
   "Pilih nama dan foto profil Bandar dulu sebelum mengatur room. Pemain lain akan melihatnya.":
     "Choose the dealer's name and avatar before setting up the room. Other players will see this profile.",
+  "Pilih nama dan avatar Bandar.": "Choose the dealer's name and avatar.",
   "Pilih foto profil dan isi namamu. Bisa diubah lagi kapan saja saat bermain.":
     "Choose an avatar and enter your name. You can change these anytime while playing.",
   "Nama (maks 16 karakter)": "Name (up to 16 characters)",
+  Nama: "Name",
+  "Masukkan nama": "Enter your name",
   Lanjutkan: "Continue",
   Lanjut: "Continue",
+  Tidak: "No",
   "Mulai Main": "Start Playing",
   "Mode game diubah ke": "Game mode changed to",
-  "Belum Dimulai": "IDLE",
+  "Belum Dimulai": "Not Started",
   "Jumlah Pot": "Total Pot",
   "Taruhan saat ini": "Current bet",
   "Feed Terbaru": "Latest Update",
@@ -208,6 +222,8 @@ const EN_TEXT = {
   "Double (+": "Double (+",
   "Split (+": "Split (+",
   "Kontrol Bandar": "Dealer Controls",
+  "👑 Kontrol Bandar": "👑 Dealer Controls",
+  "Kontrol Blackjack": "Blackjack Controls",
   "Semua Menang": "All Win",
   "Semua Seri": "All Push",
   "Semua Kalah": "All Lose",
@@ -222,7 +238,7 @@ const EN_TEXT = {
   "Big Blind": "Big Blind",
   "Simpan Pengaturan": "Save Settings",
   "Kelola Pemain": "Manage Players",
-  "Tawarkan Bandar": "Offer Dealer Role",
+  "Berikan peran bandar": "Offer the Dealer Role",
   "Reset Semua Chip": "Reset All Chips",
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
   "Kode room tidak valid": "Invalid room code",
@@ -359,14 +375,12 @@ const EN_TEXT = {
   "♣ Blackjack": "♣ Blackjack",
   "Simpan Pengaturan": "Save Settings",
   "Kelola Pemain": "Manage Players",
-  "Tawarkan Bandar": "Offer Dealer Role",
+  "Berikan peran bandar": "Offer the Dealer Role",
   "Reset Semua Chip": "Reset All Chips",
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
   "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
     "A digital casino chip app for playing poker and blackjack with friends.",
-  "Host Room (Buat Meja Baru)": "Create Room",
   "— ATAU —": "— OR —",
-  "Join Room": "Join Room",
   "Maks 16 karakter": "Up to 16 characters",
   "Nama (maks 16 karakter)": "Name (up to 16 characters)",
   "MENANG KASINO!": "WINS THE GAME!",
@@ -425,10 +439,20 @@ const EN_TEXT = {
   "Tidak dapat menambah taruhan": "Cannot add to the bet",
   "Chip tidak mencukupi": "Not enough chips",
   "Chip tidak cukup untuk Melakukan Split": "Not enough chips to split",
+  "Bukan giliranmu": "It is not your turn",
+  "Aksi tidak dikenal": "Unknown action",
+  "Hasil tidak valid": "Invalid result",
+  "Taruhan tidak valid": "Invalid bet",
+  "Sesi sebelumnya tidak ditemukan": "Previous session not found",
+  "Tidak dapat melanjutkan sesi pemain":
+    "Could not resume the player session",
+  "Pilih nama dan foto profil Bandar dulu":
+    "Choose the dealer's name and avatar first",
   "Selesaikan ronde yang berjalan terlebih dahulu!":
     "Finish the current round first!",
-  "Tidak bisa mengubah urutan saat hand berjalan":
+  "Tidak bisa mengubah urutan saat ronde berjalan":
     "Cannot change the seating order during a hand",
+  "Urutan pemain tidak valid": "Invalid player order",
   "Pemain tidak ditemukan": "Player not found",
   "Selesaikan ronde yang berjalan sebelum mengganti Bandar":
     "Finish the current round before changing the dealer",
@@ -458,6 +482,10 @@ const EN_TEXT = {
 let currentLanguage = LANGUAGES[localStorage.cb_language]
   ? localStorage.cb_language
   : "id";
+document.title =
+  currentLanguage === "en"
+    ? "Chips-in - Virtual Casino Chips"
+    : "Chips-in - Chip Kasino Virtual";
 let currentVolume = Number(localStorage.cb_volume);
 if (!Number.isFinite(currentVolume)) currentVolume = 1;
 currentVolume = Math.max(0, Math.min(currentVolume, 1));

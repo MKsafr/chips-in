@@ -25,12 +25,12 @@ function render() {
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.</p>
         <div class="row" style="margin-top:12px">
-          <button class="y f" onclick="beginHostCreation()">Host Room (Buat Meja Baru)</button>
+          <button class="y f" onclick="beginHostCreation()">${translateText("Buat Ruangan")}</button>
         </div>
         <div style="margin:16px 0;text-align:center" class="mut">— ATAU —</div>
         <div class="row">
           <input id="rc" value="${esc(invitedRoomCode)}" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6" onkeydown="if(event.key==='Enter')joinRoom()">
-          <button class="ok" onclick="joinRoom()">Join Room</button>
+          <button class="ok" onclick="joinRoom()">${translateText("Gabung Room")}</button>
           <button class="g room-camera-button" aria-label="${translateText("Scan QR Room dengan Kamera")}" title="${translateText("Scan QR Room dengan Kamera")}" onclick="openRoomScanner()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h-4L8.5 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14 5Z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
         </div>
       </div>`;
@@ -40,7 +40,7 @@ function render() {
 
   if (!st) {
     $("#app").innerHTML =
-      `<div class="card"><div class="mut">Menghubungkan ke Room ${roomCode}…</div><button class="g s" style="margin-top:10px" onclick="roomCode='';localStorage.cb_room='';render()">Batal / Ganti Room</button></div>`;
+      `<div class="card"><div class="mut">${translateText("Menghubungkan ke Room")} ${roomCode}…</div><button class="g s" style="margin-top:10px" onclick="roomCode='';localStorage.cb_room='';render()">Batal / Ganti Room</button></div>`;
     localizeTree($("#app"));
     return;
   }
@@ -77,7 +77,7 @@ function render() {
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s chip-transfer-action" aria-label="Transfer Chips" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>Transfer Chips</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
   }
 
   const ph = st.pendingHost;

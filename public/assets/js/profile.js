@@ -160,7 +160,7 @@ function renderProfile() {
         <span class="mut">Pilih avatar</span>
       </div>
       <div class="profile-fields">
-        ${showName ? `<label class="profile-label" for="pfName">Nama</label><input id="pfName" maxlength="16" value="${esc(pf.name)}" autocomplete="nickname" placeholder="Masukkan nama" onkeydown="if(event.key==='Enter')saveProfile()">` : ""}
+        ${showName ? `<label class="profile-label" for="pfName">${translateText("Nama")}</label><input id="pfName" maxlength="16" value="${esc(pf.name)}" autocomplete="nickname" placeholder="${translateText("Masukkan nama")}" onkeydown="if(event.key==='Enter')saveProfile()">` : ""}
         <div class="mut profile-avatar-hint">${pf.avatar && pf.avatar !== "default" ? "Avatar siap digunakan" : "Avatar default"}</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ function renderProfile() {
       <div class="row sp avatar-picker-heading"><div><div class="profile-title">Pilih Avatar</div><div class="mut">Pilih emoji atau gunakan foto sendiri.</div></div><button class="g s" aria-label="Tutup" onclick="closeAvatarPicker()">✕</button></div>
       <div class="avgrid">${AV_IDS.map((id) => `<button class="avbtn ${pf.avatar === id ? "sel" : ""}" aria-label="${id === "default" ? "Avatar default" : id}" onclick="pickAvatar('${id}')">${avatar(id, 42)}</button>`).join("")}</div>
       <div class="avatar-picker-actions">
-        <label class="g avatar-upload-button">📷 Upload Foto<input type="file" accept="image/*" onchange="uploadAvatar(this)"></label>
+        <label class="g avatar-upload-button">📷 ${translateText("Upload Foto")}<input type="file" accept="image/*" onchange="uploadAvatar(this)"></label>
       </div>
     </div></div>`
         : ""

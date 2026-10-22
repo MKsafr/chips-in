@@ -17,11 +17,11 @@ function hostPanel() {
       ? st.players
           .map(
             (p, index) => `<div class="manage-player" data-player-id="${p.id}">
-          <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmt(p.chips)} chip</span></div></div>
+          <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmtChips(p.chips)}</span></div></div>
       <div class="manage-player-actions manage-player-actions-primary">
           <button class="g s" aria-label="Naikkan pemain" ${index === 0 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
           <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
-      <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
+      <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Berikan peran bandar")}</button>
       </div><div class="manage-player-actions manage-player-actions-secondary">
       <button class="ok s" onclick="openChipAdjustment(${p.id},1)">+ Chip</button>
       <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
