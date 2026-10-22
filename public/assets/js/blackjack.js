@@ -1,6 +1,7 @@
 function bjView(me) {
   const bj = st.bj || {},
     players = st.players || [],
+    uniqueLeaderId = getUniqueChipLeader(players, false),
     bettingPlayers = players.filter(
       (p) => (p.bjBet || 0) > 0 || (p.bjSplitBet || 0) > 0,
     );
@@ -10,7 +11,7 @@ function bjView(me) {
   </div>`;
 
   const playing = bj.phase === "playing";
-  h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
   h += roundStartControl();
   h += resetAllControl();
   h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
@@ -42,7 +43,7 @@ function bjView(me) {
         <button class="g s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'push'})">Seri</button>
         <button class="r s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'lose'})">Kalah</button></div>`
               : "";
-          return pRow(p, ex, hand);
+          return pRow(p, ex, hand, p.id === uniqueLeaderId);
         });
       })
       .join("");

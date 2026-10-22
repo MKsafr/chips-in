@@ -1,4 +1,25 @@
-      function pRow(p, extra = "", blackjackHand = null) {
+      function getUniqueChipLeader(players, isPoker) {
+        let leaderId = null;
+        let maxChips = 0;
+        let hasTie = false;
+        for (const player of players) {
+          const total =
+            (player.chips || 0) +
+            (isPoker
+              ? player.contrib || 0
+              : (player.bjBet || 0) + (player.bjSplitBet || 0));
+          if (total > maxChips) {
+            leaderId = player.id;
+            maxChips = total;
+            hasTie = false;
+          } else if (total === maxChips && total > 0) {
+            hasTie = true;
+          }
+        }
+        return hasTie ? null : leaderId;
+      }
+
+      function pRow(p, extra = "", blackjackHand = null, fireLeader = false) {
         if (!p) return "";
         const k = st.poker || {},
           pk = st.mode === "poker";
@@ -24,24 +45,6 @@
             : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
-        const players = st.players || [];
-        const chipTotals = players.map(
-          (player) =>
-            (player.chips || 0) +
-            (pk
-              ? player.contrib || 0
-              : (player.bjBet || 0) + (player.bjSplitBet || 0)),
-        );
-        const maxChips = Math.max(
-          0,
-          ...chipTotals,
-        );
-        const hasUniqueLeader =
-          maxChips > 0 &&
-          chipTotals.filter((total) => total === maxChips).length === 1;
-        const fireLeader =
-          hasUniqueLeader && chipTotals[players.indexOf(p)] === maxChips;
-
         return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""} ${fireLeader ? "pl-fire-leader" : ""}">
     <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
     <div style="text-align:right">${blackjackHand ? "" : `<b style="color:var(--gold)">${fmt(p.chips)}</b>`}${bet}</div></div>`;

@@ -2,7 +2,7 @@ const sfxCache = {};
 const audioGainNodes = new WeakMap();
 const backgroundMusic = new Audio("/assets/sounds/bgmusic.mp3");
 backgroundMusic.loop = true;
-backgroundMusic.preload = "auto";
+backgroundMusic.preload = "none";
 let backgroundMusicStarting = false;
 
 function getAudioContext() {
@@ -69,7 +69,13 @@ function unlockAudio() {
 }
 
 function startBackgroundMusic() {
-  if (!backgroundMusic.paused || backgroundMusicStarting) return;
+  if (
+    !backgroundMusic.paused ||
+    backgroundMusicStarting ||
+    backgroundMusicMuted ||
+    backgroundMusicVolume === 0
+  )
+    return;
   backgroundMusic.currentTime = 0;
   backgroundMusicStarting = true;
   backgroundMusic
@@ -83,7 +89,6 @@ function startBackgroundMusic() {
 }
 
 syncBackgroundMusic();
-startBackgroundMusic();
 document.addEventListener("pointerdown", unlockAudio);
 document.addEventListener("touchend", unlockAudio);
 document.addEventListener("keydown", unlockAudio);

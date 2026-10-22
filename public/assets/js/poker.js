@@ -1,5 +1,6 @@
 function pokerView(me) {
   const k = st.poker || {};
+  const uniqueLeaderId = getUniqueChipLeader(st.players || [], true);
   let h = `<div class="grid-2">`;
 
   const stageLabel =
@@ -53,7 +54,7 @@ function pokerView(me) {
     }
   }
 
-  h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
 
   if (k.stage === "showdown") h += showdown();
   if (!k.active) {

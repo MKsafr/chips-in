@@ -1,6 +1,7 @@
 let pendingAllInConfirmation = null;
 let roomScanner = null;
 let roomScanHandled = false;
+let roomScannerLibraryPromise = null;
 
 function setModalContent(content) {
   const modal = $("#modal");
@@ -35,8 +36,12 @@ function openRoomScanner() {
 
 async function startRoomScanner() {
   if (!window.Html5Qrcode) {
-    setRoomScannerStatus("Pemindai QR tidak dapat dimuat.");
-    return;
+    try {
+      await loadRoomScannerLibrary();
+    } catch {
+      setRoomScannerStatus("Pemindai QR tidak dapat dimuat.");
+      return;
+    }
   }
   const scanner = new Html5Qrcode("roomQrReader");
   roomScanner = scanner;
@@ -83,6 +88,24 @@ async function startRoomScanner() {
       );
     }
   }
+}
+
+function loadRoomScannerLibrary() {
+  if (window.Html5Qrcode) return Promise.resolve();
+  if (!roomScannerLibraryPromise) {
+    roomScannerLibraryPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "/assets/js/html5-qrcode.min.js";
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => {
+        roomScannerLibraryPromise = null;
+        reject(new Error("QR scanner script failed to load"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return roomScannerLibraryPromise;
 }
 
 function roomCodeFromScan(value) {
@@ -272,6 +295,8 @@ function setBackgroundMusicVolume(value) {
   backgroundMusicVolume = Math.max(0, Math.min(Number(value) / 100, 1));
   localStorage.cb_bgm_volume = String(backgroundMusicVolume);
   syncBackgroundMusic();
+  if (!backgroundMusicMuted && backgroundMusicVolume > 0)
+    startBackgroundMusic();
   const slider = $("#bgMusicVolumeSlider");
   if (slider)
     slider.style.setProperty(
@@ -291,6 +316,8 @@ function toggleBackgroundMusicMute() {
   backgroundMusicMuted = !backgroundMusicMuted;
   localStorage.cb_bgm_muted = String(backgroundMusicMuted);
   syncBackgroundMusic();
+  if (!backgroundMusicMuted && backgroundMusicVolume > 0)
+    startBackgroundMusic();
   renderSettings();
 }
 function renderSettings() {
