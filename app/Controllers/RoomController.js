@@ -1136,6 +1136,20 @@ http
       });
       return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "sw.js")));
     }
+    const legalPages = {
+      "/about": "about.html",
+      "/terms": "terms.html",
+      "/privacy": "privacy.html",
+    };
+    if (req.method === "GET" && legalPages[u.pathname]) {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+      });
+      return res.end(
+        fs.readFileSync(path.join(PUBLIC_PATH, "pages", legalPages[u.pathname])),
+      );
+    }
     const assetMatch = u.pathname.match(/^\/assets\/(css|js|images)\/(.+)$/);
     if (assetMatch) {
       let assetPath;

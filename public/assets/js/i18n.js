@@ -31,6 +31,7 @@
             : "Chips-in - Chip Kasino Virtual";
         render();
         if (settingsOpen) renderSettings();
+        window.dispatchEvent(new Event("chipsin-language-change"));
       }
       function changeTheme(th) {
         if (!THEMES[th]) th = "default";

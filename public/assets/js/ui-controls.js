@@ -3,6 +3,19 @@ let roomScanner = null;
 let roomScanHandled = false;
 let roomScannerLibraryPromise = null;
 
+function rememberModalPointerDown(event) {
+  event.currentTarget.dataset.pointerStartedInside =
+    String(event.target !== event.currentTarget);
+}
+
+function closeOnModalBackdrop(event, close) {
+  const modal = event.currentTarget;
+  const pointerStartedInside =
+    modal.dataset.pointerStartedInside === "true";
+  delete modal.dataset.pointerStartedInside;
+  if (event.target === modal && !pointerStartedInside) close();
+}
+
 function setModalContent(content) {
   const modal = $("#modal");
   const scrollPositions = [...modal.querySelectorAll(".mbox")].map(
@@ -23,7 +36,7 @@ function setModalContent(content) {
 function openRoomScanner() {
   roomScanHandled = false;
   $("#modal").innerHTML =
-    `<div class="modal" onclick="if(event.target===this)closeRoomScanner()"><div class="mbox room-scanner-modal" role="dialog" aria-modal="true" aria-label="${translateText("Scan QR Room dengan Kamera")}">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeRoomScanner)"><div class="mbox room-scanner-modal" role="dialog" aria-modal="true" aria-label="${translateText("Scan QR Room dengan Kamera")}">
     <div class="row sp"><h2>${translateText("Scan QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomScanner()">×</button></div>
     <p class="mut">${translateText("Arahkan kamera ke QR room.")}</p>
     <div id="roomQrReader"></div>
@@ -143,7 +156,7 @@ async function closeRoomScanner() {
 function askAllInConfirmation(mode, amount) {
   pendingAllInConfirmation = { mode, amount };
   $("#modal").innerHTML =
-    `<div class="modal" onclick="if(event.target===this)cancelAllInConfirmation()"><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="allInConfirmationTitle" style="text-align:center">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,cancelAllInConfirmation)"><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="allInConfirmationTitle" style="text-align:center">
     <h2 id="allInConfirmationTitle">${translateText("Konfirmasi All-in")}</h2>
     <p class="mut">${translateText("Apakah kamu yakin ingin All-in?")}</p>
     <p style="font-size:20px;font-weight:800;color:var(--gold)">${translateText("Jumlah All-in")}: ${fmt(amount)}</p>
@@ -176,7 +189,7 @@ function openRoomQr() {
   inviteUrl.searchParams.set("room", code);
   const link = inviteUrl.toString();
   $("#modal").innerHTML =
-    `<div class="modal" onclick="if(event.target===this)closeRoomQr()"><div class="mbox room-qr-modal" role="dialog" aria-modal="true" aria-label="${translateText("QR Room")}">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeRoomQr)"><div class="mbox room-qr-modal" role="dialog" aria-modal="true" aria-label="${translateText("QR Room")}">
     <div class="row sp"><h2>${translateText("QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomQr()">×</button></div>
     <p class="mut">${translateText("Scan QR ini untuk membuka room.")}</p>
     <img class="room-qr-image" src="/room-qr?room=${encodeURIComponent(code)}" alt="${translateText("QR Room")}">
@@ -211,7 +224,7 @@ function openChipTransfer() {
     (st.players || []).some((player) => player.bjBet || player.bjSplitBet);
   if (!me.chips || !recipients.length || transferLocked) return;
   $("#modal").innerHTML =
-    `<div class="modal" onclick="if(event.target===this)closeChipTransfer()"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeChipTransfer)"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
     <div class="row sp"><h2 id="chipTransferTitle">${translateText("Kirim Chip")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeChipTransfer()">×</button></div>
     <div class="chip-transfer-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
     <label class="chip-transfer-field"><span>${translateText("Penerima")}</span><select id="chipTransferTarget"><option value="">${translateText("Pilih pemain")}</option>${recipients.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select></label>
@@ -322,7 +335,7 @@ function toggleBackgroundMusicMute() {
 }
 function renderSettings() {
   setModalContent(
-    `<div class="modal" onclick="if(event.target===this)closeSettings()"><div class="mbox">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeSettings)"><div class="mbox">
     <div class="row sp"><div style="font-size:18px;font-weight:800">⚙ ${translateText("Pengaturan")}</div><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeSettings()">×</button></div>
     <div class="settings-grid">
       <label class="settings-option"><span class="mut">${translateText("Tema")}</span>
@@ -415,7 +428,7 @@ function closeDealerControls() {
 function renderDealerControls() {
   if (!dealerControlsOpen || !st || !st.isHost) return;
   setModalContent(
-    `<div class="modal" onclick="if(event.target===this)closeDealerControls()"><div class="mbox">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeDealerControls)"><div class="mbox">
     <div class="dealer-controls-heading"><div style="font-size:18px;font-weight:800">👑 Kontrol Bandar</div><button class="g s" aria-label="Tutup" onclick="closeDealerControls()">×</button></div>
     ${hostPanel()}
   </div></div>`,
@@ -436,7 +449,7 @@ function renderChipAdjustment() {
   if (!player) return closeChipAdjustment();
   const adding = chipAdjustment.direction > 0;
   setModalContent(
-    `<div class="modal" onclick="if(event.target===this)closeChipAdjustment()"><div class="mbox">
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeChipAdjustment)"><div class="mbox">
     <div class="row sp"><div style="font-size:18px;font-weight:800">${translateText(adding ? "+ Chip" : "- Chip")} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
     <div class="mut" style="margin:10px 0 4px">Masukkan jumlah chip</div>
     <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}" onkeydown="if(event.key==='Enter')submitChipAdjustment()">

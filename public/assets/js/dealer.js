@@ -148,8 +148,10 @@ function roundStartControl() {
   }
 
   let h = "";
-  if (st.mode === "poker" && st.poker && !st.poker.active)
-    h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" onclick="api('start')">▶ Mulai Hand Baru</button>`;
+  if (st.mode === "poker" && st.poker && !st.poker.active) {
+    const canStart = (st.players || []).filter((p) => p.chips > 0).length >= 2;
+    h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${canStart ? "" : "disabled"} onclick="api('start')">▶ Mulai Hand Baru</button>`;
+  }
   if (st.mode === "blackjack" && st.bj.phase !== "playing") {
     const hasBets = (st.players || []).some((p) => p.bjBet > 0);
     h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
@@ -159,5 +161,6 @@ function roundStartControl() {
 
 function resetAllControl() {
   if (!st.isHost || st.poker.active || st.bj.phase === "playing") return "";
-  return `<button class="g s" style="width:100%;margin-bottom:10px" onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button>`;
+  const hasPlayers = (st.players || []).length > 0;
+  return `<button class="g s" style="width:100%;margin-bottom:10px" ${hasPlayers ? "" : "disabled"} onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button>`;
 }

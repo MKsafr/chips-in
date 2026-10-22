@@ -171,7 +171,7 @@ function renderProfile() {
     </div></div>
     ${
       pfAvatarPickerOpen
-        ? `<div class="modal avatar-picker-modal" onclick="if(event.target===this)closeAvatarPicker()"><div class="mbox avatar-picker-box" role="dialog" aria-modal="true" aria-label="Pilih avatar">
+        ? `<div class="modal avatar-picker-modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeAvatarPicker)"><div class="mbox avatar-picker-box" role="dialog" aria-modal="true" aria-label="Pilih avatar">
       <div class="row sp avatar-picker-heading"><div><div class="profile-title">Pilih Avatar</div><div class="mut">Pilih emoji atau gunakan foto sendiri.</div></div><button class="g s" aria-label="Tutup" onclick="closeAvatarPicker()">✕</button></div>
       <div class="avgrid">${AV_IDS.map((id) => `<button class="avbtn ${pf.avatar === id ? "sel" : ""}" aria-label="${id === "default" ? "Avatar default" : id}" onclick="pickAvatar('${id}')">${avatar(id, 42)}</button>`).join("")}</div>
       <div class="avatar-picker-actions">

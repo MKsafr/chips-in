@@ -161,6 +161,22 @@ body {
   padding: clamp(8px, 2vw, 12px);
   container-type: inline-size;
 }
+.legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 8px 12px 20px;
+  font-size: 13px;
+}
+.legal-footer a {
+  color: var(--mut);
+}
+.legal-footer a:hover {
+  color: var(--tx);
+}
 
 .top {
   display: flex;
