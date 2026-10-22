@@ -1,12 +1,71 @@
 const sfxCache = {};
+const audioGainNodes = new WeakMap();
 const backgroundMusic = new Audio("/assets/sounds/bgmusic.mp3");
 backgroundMusic.loop = true;
 backgroundMusic.preload = "auto";
 let backgroundMusicStarting = false;
 
+function getAudioContext() {
+  const AudioContextConstructor =
+    window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextConstructor) return null;
+  if (!audioCtx) {
+    try {
+      audioCtx = new AudioContextConstructor();
+    } catch {
+      return null;
+    }
+  }
+  return audioCtx;
+}
+
+function getAudioGainNode(media) {
+  const existingGain = audioGainNodes.get(media);
+  if (existingGain) return existingGain;
+  const context = getAudioContext();
+  if (!context) return null;
+  try {
+    const source = context.createMediaElementSource(media);
+    const gain = context.createGain();
+    source.connect(gain);
+    gain.connect(context.destination);
+    media.volume = 1;
+    media.muted = false;
+    audioGainNodes.set(media, gain);
+    return gain;
+  } catch {
+    return null;
+  }
+}
+
+function setMediaGain(media, volume, muted = false) {
+  const gain = getAudioGainNode(media);
+  if (!gain) {
+    media.volume = volume;
+    media.muted = muted;
+    return;
+  }
+  const context = getAudioContext();
+  const targetVolume = muted ? 0 : volume;
+  gain.gain.cancelScheduledValues(context.currentTime);
+  gain.gain.setTargetAtTime(targetVolume, context.currentTime, 0.02);
+}
+
 function syncBackgroundMusic() {
-  backgroundMusic.volume = backgroundMusicVolume;
-  backgroundMusic.muted = backgroundMusicMuted;
+  setMediaGain(backgroundMusic, backgroundMusicVolume, backgroundMusicMuted);
+}
+
+function syncSoundEffects() {
+  Object.values(sfxCache).forEach((media) => {
+    setMediaGain(media, currentVolume, soundMuted);
+  });
+}
+
+function unlockAudio() {
+  const context = getAudioContext();
+  if (context && context.state === "suspended")
+    context.resume().catch(() => {});
+  startBackgroundMusic();
 }
 
 function startBackgroundMusic() {
@@ -17,8 +76,6 @@ function startBackgroundMusic() {
     .play()
     .then(() => {
       backgroundMusicStarting = false;
-      document.removeEventListener("pointerdown", startBackgroundMusic);
-      document.removeEventListener("keydown", startBackgroundMusic);
     })
     .catch(() => {
       backgroundMusicStarting = false;
@@ -27,8 +84,12 @@ function startBackgroundMusic() {
 
 syncBackgroundMusic();
 startBackgroundMusic();
-document.addEventListener("pointerdown", startBackgroundMusic);
-document.addEventListener("keydown", startBackgroundMusic);
+document.addEventListener("pointerdown", unlockAudio);
+document.addEventListener("touchend", unlockAudio);
+document.addEventListener("keydown", unlockAudio);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) unlockAudio();
+});
 
 function playSFX(file) {
   if (soundMuted || currentVolume === 0) return;
@@ -36,7 +97,7 @@ function playSFX(file) {
     if (!sfxCache[file])
       sfxCache[file] = new Audio("/assets/sounds/" + file + ".mp3");
     const a = sfxCache[file];
-    a.volume = currentVolume;
+    setMediaGain(a, currentVolume, false);
     a.currentTime = 0;
     a.play().catch(() => {});
   } catch (e) {}

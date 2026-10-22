@@ -1,4 +1,5 @@
 function hostPanel() {
+  const orderLocked = st.poker.active || st.bj.phase === "playing";
   let h =
     `<div class="card"><h3>Pengaturan Meja</h3>
     <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" onclick="api('setup',{mode:'poker'})">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" onclick="api('setup',{mode:'blackjack'})">♣ Blackjack</button></div>
@@ -15,16 +16,16 @@ function hostPanel() {
     ((st.players || []).length
       ? st.players
           .map(
-            (p, index) => `<div class="manage-player">
-      <div class="manage-player-summary">${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmt(p.chips)} chip</span></div></div>
+            (p, index) => `<div class="manage-player" data-player-id="${p.id}">
+          <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmt(p.chips)} chip</span></div></div>
       <div class="manage-player-actions manage-player-actions-primary">
-      <button class="g s" aria-label="Naikkan pemain" ${index === 0 ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
-      <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
+          <button class="g s" aria-label="Naikkan pemain" ${index === 0 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
+          <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
       <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">Tawarkan Bandar</button>
       </div><div class="manage-player-actions manage-player-actions-secondary">
       <button class="ok s" onclick="openChipAdjustment(${p.id},1)">+ Chip</button>
       <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
-      <button class="r s" aria-label="Keluarkan ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
+          <button class="r s" aria-label="${translateText("Keluarkan")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
           )
           .join("")
       : `<div class="mut">${translateText("Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.")}</div>`) +
@@ -38,6 +39,84 @@ function movePlayer(id, offset) {
   if (index < 0 || target < 0 || target >= order.length) return;
   [order[index], order[target]] = [order[target], order[index]];
   api("reorderPlayers", { newOrder: order });
+}
+let playerDragState = null;
+
+function startPlayerDrag(event, id) {
+  if (
+    (event.button !== undefined && event.button !== 0) ||
+    !st.isHost ||
+    st.poker.active ||
+    st.bj.phase === "playing" ||
+    playerDragState
+  )
+    return;
+  const row = event.currentTarget.closest(".manage-player");
+  if (!row) return;
+  event.preventDefault();
+  playerDragState = {
+    id,
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    active: false,
+    row,
+    parent: row.parentElement,
+    originalOrder: [
+      ...row.parentElement.querySelectorAll(".manage-player"),
+    ].map((player) => Number(player.dataset.playerId)),
+  };
+  try {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  } catch {}
+  document.addEventListener("pointermove", handlePlayerDragMove);
+  document.addEventListener("pointerup", finishPlayerDrag);
+  document.addEventListener("pointercancel", finishPlayerDrag);
+}
+
+function handlePlayerDragMove(event) {
+  const drag = playerDragState;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  if (!drag.active && Math.abs(event.clientY - drag.startY) < 5) return;
+  event.preventDefault();
+  drag.active = true;
+  drag.row.classList.add("dragging");
+
+  const target = document
+    .elementFromPoint(event.clientX, event.clientY)
+    ?.closest(".manage-player");
+  if (target && target !== drag.row && target.parentElement === drag.parent) {
+    const rect = target.getBoundingClientRect();
+    drag.parent.insertBefore(
+      drag.row,
+      event.clientY > rect.top + rect.height / 2
+        ? target.nextElementSibling
+        : target,
+    );
+  }
+
+  const scrollArea = drag.row.closest(".mbox");
+  if (scrollArea) {
+    const bounds = scrollArea.getBoundingClientRect();
+    if (event.clientY < bounds.top + 44) scrollArea.scrollTop -= 12;
+    else if (event.clientY > bounds.bottom - 44) scrollArea.scrollTop += 12;
+  }
+}
+
+function finishPlayerDrag(event) {
+  const drag = playerDragState;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  document.removeEventListener("pointermove", handlePlayerDragMove);
+  document.removeEventListener("pointerup", finishPlayerDrag);
+  document.removeEventListener("pointercancel", finishPlayerDrag);
+  drag.row.classList.remove("dragging");
+  playerDragState = null;
+  if (!drag.active) return;
+
+  const newOrder = [...drag.parent.querySelectorAll(".manage-player")].map(
+    (player) => Number(player.dataset.playerId),
+  );
+  if (newOrder.some((id, index) => id !== drag.originalOrder[index]))
+    api("reorderPlayers", { newOrder });
 }
 function roundStartControl() {
   if (!st.isHost) return "";

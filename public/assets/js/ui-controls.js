@@ -2,6 +2,23 @@ let pendingAllInConfirmation = null;
 let roomScanner = null;
 let roomScanHandled = false;
 
+function setModalContent(content) {
+  const modal = $("#modal");
+  const scrollPositions = [...modal.querySelectorAll(".mbox")].map(
+    (box) => box.scrollTop,
+  );
+  modal.innerHTML = content;
+  localizeTree(modal);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      modal.querySelectorAll(".mbox").forEach((box, index) => {
+        if (scrollPositions[index] !== undefined)
+          box.scrollTop = scrollPositions[index];
+      });
+    });
+  });
+}
+
 function openRoomScanner() {
   roomScanHandled = false;
   $("#modal").innerHTML =
@@ -159,6 +176,68 @@ async function copyRoomInviteLink() {
   }
   flash("Link room disalin");
 }
+let chipTransferPending = false;
+
+function openChipTransfer() {
+  const me = (st.players || []).find((player) => player.id === st.you);
+  if (!me) return;
+  const recipients = (st.players || []).filter((player) => player.id !== me.id);
+  const transferLocked =
+    st.poker.active ||
+    st.bj.phase === "playing" ||
+    (st.players || []).some((player) => player.bjBet || player.bjSplitBet);
+  if (!me.chips || !recipients.length || transferLocked) return;
+  $("#modal").innerHTML =
+    `<div class="modal" onclick="if(event.target===this)closeChipTransfer()"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
+    <div class="row sp"><h2 id="chipTransferTitle">${translateText("Kirim Chip")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeChipTransfer()">×</button></div>
+    <div class="chip-transfer-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmt(me.chips)} chip</b></div>
+    <label class="chip-transfer-field"><span>${translateText("Penerima")}</span><select id="chipTransferTarget"><option value="">${translateText("Pilih pemain")}</option>${recipients.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select></label>
+    <label class="chip-transfer-field"><span>${translateText("Jumlah Chip")}</span><input id="chipTransferAmount" type="number" min="1" max="${me.chips}" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}"></label>
+    <div class="row chip-transfer-actions"><button class="g f" onclick="closeChipTransfer()">${translateText("Batal")}</button><button class="ok f" onclick="submitChipTransfer()">${translateText("Kirim Chip")}</button></div>
+  </div></div>`;
+  localizeTree($("#modal"));
+}
+
+function closeChipTransfer() {
+  $("#modal").innerHTML = "";
+}
+
+async function submitChipTransfer() {
+  if (chipTransferPending) return;
+  const targetId = Number(($("#chipTransferTarget") || {}).value);
+  const amount = Number(($("#chipTransferAmount") || {}).value);
+  const me = (st.players || []).find((player) => player.id === st.you);
+  const recipient = (st.players || []).find((player) => player.id === targetId);
+  if (!recipient || recipient.id === st.you) {
+    flash("Pilih pemain yang valid");
+    return;
+  }
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    flash("Jumlah chip harus berupa angka bulat lebih dari nol");
+    return;
+  }
+  if (!me || amount > me.chips) {
+    flash("Chip tidak mencukupi");
+    return;
+  }
+  if (
+    !confirm(
+      `${translateText("Kirim")} ${fmt(amount)} chip ${translateText("ke")} ${recipient.name}?`,
+    )
+  )
+    return;
+
+  chipTransferPending = true;
+  try {
+    const result = await api("transferChips", { targetId, amount });
+    if (result && result.ok) {
+      closeChipTransfer();
+      flash("Transfer chip berhasil");
+    }
+  } finally {
+    chipTransferPending = false;
+  }
+}
 function themeSelect() {
   return (
     `<select onchange="changeTheme(this.value)" title="Tampilan (hanya di perangkat ini)" style="width:auto;padding:4px 8px;font-size:12px">` +
@@ -182,6 +261,7 @@ function closeSettings() {
 function setVolume(value) {
   currentVolume = Math.max(0, Math.min(Number(value) / 100, 1));
   localStorage.cb_volume = String(currentVolume);
+  syncSoundEffects();
   const slider = $("#volumeSlider");
   if (slider)
     slider.style.setProperty("--volume-level", `${currentVolume * 100}%`);
@@ -204,6 +284,7 @@ function setBackgroundMusicVolume(value) {
 function toggleMute() {
   soundMuted = !soundMuted;
   localStorage.cb_muted = String(soundMuted);
+  syncSoundEffects();
   renderSettings();
 }
 function toggleBackgroundMusicMute() {
@@ -213,7 +294,7 @@ function toggleBackgroundMusicMute() {
   renderSettings();
 }
 function renderSettings() {
-  $("#modal").innerHTML =
+  setModalContent(
     `<div class="modal" onclick="if(event.target===this)closeSettings()"><div class="mbox">
     <div class="row sp"><div style="font-size:18px;font-weight:800">⚙ ${translateText("Pengaturan")}</div><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeSettings()">×</button></div>
     <div class="settings-grid">
@@ -256,8 +337,8 @@ function renderSettings() {
     </div>
     <button class="g s install-app-button" onclick="installApp()">${translateText("Unduh App")}</button>
     <button class="ok" style="width:100%" onclick="closeSettings()">${translateText("Simpan")}</button>
-  </div></div>`;
-  localizeTree($("#modal"));
+  </div></div>`,
+  );
 }
 
 function exitRoom() {
@@ -306,12 +387,12 @@ function closeDealerControls() {
 }
 function renderDealerControls() {
   if (!dealerControlsOpen || !st || !st.isHost) return;
-  $("#modal").innerHTML =
+  setModalContent(
     `<div class="modal" onclick="if(event.target===this)closeDealerControls()"><div class="mbox">
     <div class="dealer-controls-heading"><div style="font-size:18px;font-weight:800">👑 Kontrol Bandar</div><button class="g s" aria-label="Tutup" onclick="closeDealerControls()">×</button></div>
     ${hostPanel()}
-  </div></div>`;
-  localizeTree($("#modal"));
+  </div></div>`,
+  );
 }
 function openChipAdjustment(id, direction) {
   chipAdjustment = { id, direction };
@@ -327,14 +408,14 @@ function renderChipAdjustment() {
   const player = (st.players || []).find((p) => p.id === chipAdjustment.id);
   if (!player) return closeChipAdjustment();
   const adding = chipAdjustment.direction > 0;
-  $("#modal").innerHTML =
+  setModalContent(
     `<div class="modal" onclick="if(event.target===this)closeChipAdjustment()"><div class="mbox">
     <div class="row sp"><div style="font-size:18px;font-weight:800">${adding ? "+ Chip" : "- Chip"} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
     <div class="mut" style="margin:10px 0 4px">Masukkan jumlah chip</div>
     <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Jumlah chip" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
     <div class="row" style="margin-top:12px"><button class="g f" onclick="closeChipAdjustment()">Batal</button><button class="${adding ? "ok" : "r"} f" onclick="submitChipAdjustment()">Simpan</button></div>
-  </div></div>`;
-  localizeTree($("#modal"));
+  </div></div>`,
+  );
 }
 async function submitChipAdjustment() {
   const amount = Number(($("#chipAmount") || {}).value);

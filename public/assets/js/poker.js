@@ -2,8 +2,12 @@ function pokerView(me) {
   const k = st.poker || {};
   let h = `<div class="grid-2">`;
 
-  h += `<div><div class="card pot"><div class="mut">${(k.stage || "IDLE").toUpperCase()}${k.active && k.currentBet ? " • Taruhan saat ini " + fmt(k.currentBet) : ""}</div>
-    <div class="big">${fmt(k.pot)}</div><div class="mut">Total Pot</div></div></div>`;
+  const stageLabel =
+    k.stage === "idle" || !k.stage
+      ? translateText("Belum Dimulai")
+      : k.stage.toUpperCase();
+  h += `<div><div class="card pot"><div class="mut">${stageLabel}${k.active && k.currentBet ? " • Taruhan saat ini " + fmt(k.currentBet) : ""}</div>
+    <div class="big">${fmt(k.pot)}</div><div class="mut">${translateText("Jumlah Pot")}</div></div></div>`;
 
   h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || "-")}</div></div></div></div>`;
 
@@ -15,11 +19,11 @@ function pokerView(me) {
   ) {
     const stage = (k.stage || "").toUpperCase();
     h += `<div class="card" style="border-color:var(--gold)"><h3>Aksi Bandar</h3>
-      <div class="mut" style="margin-bottom:8px">Buka kartu <b>${stage}</b> di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.</div>
-      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">Tampilkan Kartu ${stage}</button></div>`;
+      <div class="mut" style="margin-bottom:8px">${translateText("Buka kartu")} <b>${stage}</b> ${translateText("di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.")}</div>
+      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">${translateText("Tampilkan Kartu")} ${stage}</button></div>`;
   }
 
-  h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  if (k.active) h += roundStartControl();
 
   if (me && me.chips === 0) {
     h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
@@ -49,9 +53,13 @@ function pokerView(me) {
     }
   }
 
+  h += `<div class="card"><h3>Daftar Pemain</h3>${(st.players || []).map((p) => pRow(p)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+
   if (k.stage === "showdown") h += showdown();
-  h += roundStartControl();
-  h += resetAllControl();
+  if (!k.active) {
+    h += roundStartControl();
+    h += resetAllControl();
+  }
   return h;
 }
 

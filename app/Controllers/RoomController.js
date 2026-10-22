@@ -172,7 +172,7 @@ function startHand(room) {
   post(P(room, order[bbI]), room.bb);
   k.currentBet = Math.max(...order.map((id) => P(room, id).bet));
   k.turn = nextActor(room, (bbI + 1) % n);
-  room.dealerConfirmedStage = true;
+  room.dealerConfirmedStage = false;
   logRoom(
     room,
     `Hand baru dimulai • Dealer: ${P(room, k.dealer).name} • Blind ${room.sb}/${room.bb}`,
@@ -890,6 +890,33 @@ function handle(b) {
       logRoom(
         room,
         `Bandar ${d >= 0 ? "menambah" : "mengurangi"} ${Math.abs(d)} chip untuk ${p.name}`,
+      );
+      break;
+    }
+    case "transferChips": {
+      const sender = needMe();
+      if (
+        room.poker.active ||
+        room.bj.phase === "playing" ||
+        room.players.some((p) => p.bjBet || p.bjSplitBet)
+      )
+        throw "Transfer chip hanya tersedia saat ronde tidak aktif";
+      const targetId = Number(b.targetId);
+      const recipient = P(room, targetId);
+      if (!recipient) throw "Pemain tidak ditemukan";
+      if (recipient === sender)
+        throw "Tidak bisa mengirim chip ke diri sendiri";
+      const amount = Number(b.amount);
+      if (!Number.isSafeInteger(amount) || amount < 1)
+        throw "Jumlah chip harus berupa angka bulat lebih dari nol";
+      if (amount > sender.chips) throw "Chip tidak mencukupi";
+      if (!Number.isSafeInteger(recipient.chips + amount))
+        throw "Jumlah chip penerima terlalu besar";
+      sender.chips -= amount;
+      recipient.chips += amount;
+      logRoom(
+        room,
+        `${sender.name} mengirim ${amount.toLocaleString("id-ID")} chip kepada ${recipient.name}`,
       );
       break;
     }

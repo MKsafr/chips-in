@@ -209,12 +209,14 @@ body {
 .room-qr-button {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   width: 32px;
   height: 32px;
   padding: 5px;
   flex: none;
 }
 .room-qr-button svg {
+  display: block;
   width: 20px;
   height: 20px;
   fill: currentColor;
@@ -246,6 +248,27 @@ h3 {
   font-size: clamp(24px, 6vw, 32px);
   font-weight: 800;
   color: var(--gold);
+}
+.chip-balance-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chip-transfer-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  flex: none;
+}
+.chip-transfer-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
 }
 
 .row {
@@ -418,6 +441,28 @@ select {
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+.manage-player-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  padding: 6px;
+  flex: none;
+  cursor: grab;
+  touch-action: none;
+}
+.manage-player-drag-handle:active {
+  cursor: grabbing;
+}
+.manage-player-drag-handle svg {
+  width: 16px;
+  height: 24px;
+  fill: currentColor;
+}
+.manage-player.dragging {
+  border-color: var(--gold);
+  opacity: 0.65;
 }
 .manage-player-identity {
   display: flex;
@@ -871,6 +916,30 @@ select {
 .room-qr-modal h2 {
   margin: 0;
   font-size: 20px;
+}
+.chip-transfer-modal {
+  max-width: 400px;
+}
+.chip-transfer-modal h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.chip-transfer-balance {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+}
+.chip-transfer-balance b {
+  color: var(--gold);
+}
+.chip-transfer-field {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.chip-transfer-actions {
+  margin-top: 16px;
 }
 .room-qr-image {
   display: block;

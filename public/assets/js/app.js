@@ -2,6 +2,7 @@ function render() {
   const preserveRoomViewport = Boolean(roomCode && st);
   const savedScrollX = window.scrollX;
   const savedScrollY = window.scrollY;
+  const savedModalScrollTop = $("#modal .mbox")?.scrollTop ?? null;
   const currentInput = document.activeElement?.matches(
     "input, textarea, select",
   )
@@ -45,10 +46,16 @@ function render() {
   }
 
   const me = st.players ? st.players.find((p) => p.id === st.you) : null;
+  const transferLocked =
+    st.poker.active ||
+    st.bj.phase === "playing" ||
+    (st.players || []).some((player) => player.bjBet || player.bjSplitBet);
+  const canTransferChips =
+    me && me.chips > 0 && (st.players || []).length > 1 && !transferLocked;
 
   let h = `<div class="top">
     <div class="logo-box">
-      ${logoHTML(36)}<div><div class="room-code-line"><div class="logo">Room: <b>${st.code || roomCode}</b></div><button class="g s room-qr-button" aria-label="${translateText("Tampilkan QR Room")}" title="${translateText("Tampilkan QR Room")}" onclick="openRoomQr()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3zM17 17h2v2h-2z"/></svg></button></div><div class="logo">${st.mode === "poker" ? "♠ Poker" : "♣ Blackjack"}</div></div>
+      ${logoHTML(36)}<div><div class="room-code-line"><div class="logo">Room: <b>${st.code || roomCode}</b></div><button class="g room-qr-button" aria-label="${translateText("Tampilkan QR Room")}" title="${translateText("Tampilkan QR Room")}" onclick="openRoomQr()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3zM17 17h2v2h-2z"/></svg></button></div><div class="logo">${st.mode === "poker" ? "♠ Poker" : "♣ Blackjack"}</div></div>
     </div>
     <div class="row">
       ${settingsButtonHTML()}
@@ -68,7 +75,7 @@ function render() {
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
   } else if (me) {
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="big">${fmt(me.chips)}</div></div></div>
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div><button class="g chip-transfer-button" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
   }
@@ -122,7 +129,7 @@ function render() {
   if (preserveRoomViewport) {
     requestAnimationFrame(() => {
       const input = savedInput && document.getElementById(savedInput.id);
-      if (input) {
+      if (input && !currentInput?.isConnected) {
         input.value = savedInput.value;
         try {
           input.focus({ preventScroll: true });
@@ -139,6 +146,11 @@ function render() {
         }
       }
       window.scrollTo(savedScrollX, savedScrollY);
+      requestAnimationFrame(() => {
+        const modalBox = $("#modal .mbox");
+        if (modalBox && savedModalScrollTop !== null)
+          modalBox.scrollTop = savedModalScrollTop;
+      });
     });
   }
 }
