@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /*?room=
+
+Sitemap: https://chips-in-online.onrender.com/sitemap.xml

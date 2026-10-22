@@ -27,8 +27,8 @@
         document.documentElement.lang = currentLanguage;
         document.title =
           currentLanguage === "en"
-            ? "Chips-in - Virtual Casino Chips"
-            : "Chips-in - Chip Kasino Virtual";
+            ? "Chips-in - Virtual Poker & Blackjack Chips"
+            : "Chips-in - Chip Virtual Poker & Blackjack";
         render();
         if (settingsOpen) renderSettings();
         window.dispatchEvent(new Event("chipsin-language-change"));

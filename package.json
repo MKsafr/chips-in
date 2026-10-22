@@ -1,7 +1,7 @@
 {
   "name": "Chips-in",
   "version": "2.0.0",
-  "description": "Chips-in digital lokal untuk poker & blackjack (Multi-room & PWA)",
+  "description": "Aplikasi chip virtual untuk mencatat permainan Poker dan Blackjack bersama teman.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

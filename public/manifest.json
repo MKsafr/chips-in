@@ -1,6 +1,7 @@
 {
   "short_name": "Chips-in",
-  "name": "Chips-in - Digital Casino Chips",
+  "name": "Chips-in - Virtual Poker & Blackjack Chips",
+  "description": "Aplikasi chip virtual untuk mencatat permainan Poker dan Blackjack bersama teman.",
   "icons": [
     {
       "src": "/assets/logo/logo-small.png",

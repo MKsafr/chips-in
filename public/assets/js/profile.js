@@ -16,6 +16,12 @@ async function joinRoom() {
   }
   const j = await api("checkRoom", { roomCode: v });
   if (j && j.ok) {
+    if (j.resumeOffer) {
+      roomCode = v;
+      localStorage.cb_room = roomCode;
+      connect();
+      return;
+    }
     pendingRoomCode = v;
     pf = {
       mode: "join",
@@ -76,58 +82,87 @@ function uploadAvatar(input) {
   input.value = "";
   if (!file) return;
   captureProfileName();
-  if (!file.type.startsWith("image/")) {
-    showAlert("Foto tidak valid", "Pilih file gambar untuk dijadikan avatar.");
+  if (file.type && !file.type.startsWith("image/")) {
+    showAlert(
+      "Format foto tidak didukung",
+      "Pilih foto dalam format JPG, PNG, atau WebP.",
+    );
     return;
   }
   if (file.size > 10 * 1024 * 1024) {
-    showAlert("Foto terlalu besar", "Ukuran file foto maksimal 10 MB.");
+    showAlert(
+      "Ukuran foto terlalu besar",
+      "Ukuran foto maksimal 10 MB. Pilih foto yang lebih kecil.",
+    );
     return;
   }
 
   const reader = new FileReader();
   reader.onerror = () =>
-    showAlert("Foto gagal dibuka", "Coba pilih file gambar yang lain.");
+    showAlert(
+      "Foto gagal dibaca",
+      "File tidak dapat dibaca. Coba pilih foto yang lain.",
+    );
   reader.onload = () => {
     const image = new Image();
     image.onerror = () =>
-      showAlert("Foto gagal dibuka", "Coba pilih file gambar yang lain.");
+      showAlert(
+        "Format foto tidak didukung",
+        "Browser tidak dapat membuka foto ini. Coba pilih JPG, PNG, atau WebP.",
+      );
     image.onload = () => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context || !image.naturalWidth || !image.naturalHeight) {
-        showAlert("Foto gagal diproses", "Coba pilih file gambar yang lain.");
-        return;
-      }
-      const side = Math.min(image.naturalWidth, image.naturalHeight);
-      const sx = (image.naturalWidth - side) / 2;
-      const sy = (image.naturalHeight - side) / 2;
-      let output = "";
-      for (const size of [128, 96, 72]) {
-        canvas.width = size;
-        canvas.height = size;
-        context.clearRect(0, 0, size, size);
-        context.drawImage(image, sx, sy, side, side, 0, 0, size, size);
-        for (const quality of [0.82, 0.68, 0.52, 0.38]) {
-          output = canvas.toDataURL("image/jpeg", quality);
+      try {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        if (!context || !image.naturalWidth || !image.naturalHeight) {
+          showAlert(
+            "Foto gagal diproses",
+            "Browser tidak dapat memproses foto ini. Coba pilih foto lain.",
+          );
+          return;
+        }
+        const side = Math.min(image.naturalWidth, image.naturalHeight);
+        const sx = (image.naturalWidth - side) / 2;
+        const sy = (image.naturalHeight - side) / 2;
+        let output = "";
+        for (const size of [128, 96, 72]) {
+          canvas.width = size;
+          canvas.height = size;
+          context.clearRect(0, 0, size, size);
+          context.drawImage(image, sx, sy, side, side, 0, 0, size, size);
+          for (const quality of [0.82, 0.68, 0.52, 0.38]) {
+            output = canvas.toDataURL("image/jpeg", quality);
+            if (output.length <= 48 * 1024) break;
+          }
           if (output.length <= 48 * 1024) break;
         }
-        if (output.length <= 48 * 1024) break;
-      }
-      if (!output || output.length > 48 * 1024) {
+        if (!output || output.length > 48 * 1024) {
+          showAlert(
+            "Foto tidak bisa dikompres",
+            "Coba pilih foto lain dengan ukuran atau resolusi yang lebih kecil.",
+          );
+          return;
+        }
+        pf.avatar = output;
+        pfAvatarPickerOpen = false;
+        renderProfile();
+      } catch {
         showAlert(
-          "Foto terlalu besar",
-          "Foto ini tidak dapat dikompres ke ukuran avatar.",
+          "Foto gagal diproses",
+          "Browser tidak dapat memproses foto ini. Coba pilih foto lain.",
         );
-        return;
       }
-      pf.avatar = output;
-      pfAvatarPickerOpen = false;
-      renderProfile();
     };
     image.src = String(reader.result);
   };
-  reader.readAsDataURL(file);
+  try {
+    reader.readAsDataURL(file);
+  } catch {
+    showAlert(
+      "Foto gagal dibaca",
+      "File tidak dapat dibaca. Coba pilih foto yang lain.",
+    );
+  }
 }
 function renderProfile() {
   const full = ["full", "join", "createHost"].includes(pf.mode),

@@ -1,4 +1,6 @@
 function render() {
+  document.body.classList.toggle("in-room", Boolean(roomCode));
+  $("#app-version").textContent = `version ${APP_VER}`;
   const preserveRoomViewport = Boolean(roomCode && st);
   const savedScrollX = window.scrollX;
   const savedScrollY = window.scrollY;
@@ -23,7 +25,7 @@ function render() {
       <div class="top"><div class="logo-box">${logoHTML(36)}<div class="logo">Chips-<b>in</b></div></div><div class="row">${settingsButtonHTML()}</div></div>
       <div class="card">
         <h3>Selamat Datang di Chips-in</h3>
-        <p class="mut">Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.</p>
+        <p class="mut">Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.</p>
         <div class="row" style="margin-top:12px">
           <button class="y f" onclick="beginHostCreation()">${translateText("Buat Ruangan")}</button>
         </div>

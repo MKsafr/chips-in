@@ -161,6 +161,13 @@ body {
   padding: clamp(8px, 2vw, 12px);
   container-type: inline-size;
 }
+.app-version {
+  margin: 0 auto;
+  padding: 0 12px 10px;
+  color: var(--mut);
+  font-size: 12px;
+  text-align: center;
+}
 .legal-footer {
   display: flex;
   flex-wrap: wrap;
@@ -177,7 +184,12 @@ body {
 .legal-footer a:hover {
   color: var(--tx);
 }
-
+body.in-room {
+  padding-bottom: 0;
+}
+body.in-room .legal-footer {
+  display: none;
+}
 .top {
   display: flex;
   justify-content: space-between;
@@ -438,6 +450,9 @@ select {
 .pl.me {
   background: rgba(232, 195, 90, 0.1);
 }
+.pl.turn {
+  background: color-mix(in srgb, var(--card) 82%, white);
+}
 .pl > * {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -550,10 +565,10 @@ select {
   gap: 6px;
 }
 .manage-player-actions-primary {
-  grid-template-columns: repeat(2, minmax(36px, 42px)) minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .manage-player-actions-secondary {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(36px, 42px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .manage-player-actions button {
   width: 100%;
@@ -654,6 +669,116 @@ select {
 }
 .pot .big {
   font-size: clamp(30px, 7vw, 38px);
+}
+.poker-guide-trigger {
+  width: 100%;
+  margin-top: 12px;
+}
+.latest-feed-message {
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.poker-hand-guide-modal {
+  max-width: 720px;
+}
+.poker-hand-guide-title {
+  margin-bottom: 8px;
+}
+.poker-hand-guide-title h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.poker-hand-guide-intro {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.poker-hand-guide-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+}
+.poker-hand-guide-item {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.16);
+}
+.poker-hand-guide-intro,
+.poker-hand-guide-item p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.poker-hand-guide-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.poker-hand-guide-heading h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.poker-hand-guide-rank {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #17130a;
+  font-size: 12px;
+  font-weight: 900;
+}
+.poker-hand-guide-cards {
+  display: flex;
+  gap: clamp(3px, 1vw, 6px);
+}
+.poker-playing-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  max-width: 46px;
+  height: 58px;
+  padding: 4px 5px;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+.poker-playing-card span:last-child {
+  align-self: flex-end;
+  font-size: 17px;
+}
+.poker-playing-card.red {
+  color: #cf3045;
+}
+.poker-playing-card.black {
+  color: #18202b;
+}
+.poker-hand-guide-item p {
+  margin: 8px 0 0;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.4;
+}
+@media (max-width: 220px) {
+  .poker-hand-guide-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .poker-hand-guide-heading h3 {
+    width: 100%;
+    font-size: 12px;
+  }
 }
 .showdown-card {
   border-radius: 18px;

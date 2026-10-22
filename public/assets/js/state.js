@@ -43,8 +43,8 @@ const THEMES = {
 const LANGUAGES = { id: "Bahasa Indonesia", en: "English" };
 const EN_TEXT = {
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
-  "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
-    "A digital casino chip app for playing poker and blackjack with friends.",
+  "Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.":
+    "A virtual chip app for tracking Poker & Blackjack games with friends.",
   "Buat Ruangan": "Create Room",
   "— ATAU —": "— OR —",
   "Kode Room (6 Karakter)": "Room Code (6 characters)",
@@ -102,10 +102,11 @@ const EN_TEXT = {
   Keluar: "Leave",
   "+ Chip": "+ Chips",
   "- Chip": "- Chips",
+  "Tambah Chip": "Add Chips",
+  "Kurangi Chip": "Reduce Chips",
   "Seret untuk memindahkan": "Drag to reorder",
-  "Naikkan pemain": "Move player up",
-  "Turunkan pemain": "Move player down",
   Keluarkan: "Remove",
+  "Keluarkan pemain": "Remove Player",
   Tutup: "Close",
   "Tampilan (hanya di perangkat ini)": "Appearance (this device only)",
   Tema: "Theme",
@@ -147,16 +148,26 @@ const EN_TEXT = {
   "Pilih emoji atau gunakan foto sendiri.":
     "Choose an emoji or use your own photo.",
   "Upload Foto": "Upload Photo",
-  "Foto tidak valid": "Invalid photo",
-  "Foto terlalu besar": "Photo too large",
-  "Foto gagal dibuka": "Could not open photo",
+  "Ukuran foto terlalu besar": "Photo file too large",
+  "Format foto tidak didukung": "Unsupported photo format",
+  "Foto gagal dibaca": "Could not read photo",
   "Foto gagal diproses": "Could not process photo",
+  "Foto tidak bisa dikompres": "Could not compress photo",
+  "Foto tidak dapat digunakan": "Photo could not be used",
   "Pilih file gambar untuk dijadikan avatar.":
     "Choose an image file for your avatar.",
-  "Ukuran file foto maksimal 10 MB.": "Photo file size must be 10 MB or less.",
-  "Coba pilih file gambar yang lain.": "Try choosing another image file.",
-  "Foto ini tidak dapat dikompres ke ukuran avatar.":
-    "This photo cannot be compressed to avatar size.",
+  "Pilih foto dalam format JPG, PNG, atau WebP.":
+    "Choose a photo in JPG, PNG, or WebP format.",
+  "Ukuran foto maksimal 10 MB. Pilih foto yang lebih kecil.":
+    "Photo size must be 10 MB or less. Choose a smaller photo.",
+  "File tidak dapat dibaca. Coba pilih foto yang lain.":
+    "The file could not be read. Try choosing another photo.",
+  "Browser tidak dapat membuka foto ini. Coba pilih JPG, PNG, atau WebP.":
+    "Your browser could not open this photo. Try JPG, PNG, or WebP.",
+  "Browser tidak dapat memproses foto ini. Coba pilih foto lain.":
+    "Your browser could not process this photo. Try another one.",
+  "Coba pilih foto lain dengan ukuran atau resolusi yang lebih kecil.":
+    "Try another photo with a smaller file size or resolution.",
   "Selamat datang di meja! 🎉": "Welcome to the table! 🎉",
   "Kamu jadi Bandar! 👑": "You are the Dealer! 👑",
   "Buat Meja Baru 👑": "Create New Table 👑",
@@ -182,6 +193,77 @@ const EN_TEXT = {
   "Mode game diubah ke": "Game mode changed to",
   "Belum Dimulai": "Not Started",
   "Jumlah Pot": "Total Pot",
+  "Panduan Hand Poker": "Poker Hand Guide",
+  "Panduan Blackjack": "Blackjack Guide",
+  "Urutan Hand Poker": "Poker Hand Rankings",
+  "Contoh kartu": "Example cards",
+  "Menangkan pot dengan membuat semua pemain lain fold atau bertahan hingga showdown dengan kombinasi lima kartu terkuat. Berikut urutan hand dari yang terendah hingga tertinggi.":
+    "Win the pot by making every other player fold, or stay in until showdown with the strongest five-card hand. Here are the hands ranked from lowest to highest.",
+  "Royal Flush": "Royal Flush",
+  "Straight Flush": "Straight Flush",
+  "Four of a Kind": "Four of a Kind",
+  "Full House": "Full House",
+  Flush: "Flush",
+  Straight: "Straight",
+  "Three of a Kind": "Three of a Kind",
+  "Two Pair": "Two Pair",
+  "One Pair": "One Pair",
+  "High Card": "High Card",
+  "Lima kartu berurutan dari 10 sampai As dengan simbol yang sama.":
+    "Five consecutive cards from 10 to Ace, all in the same suit.",
+  "Lima kartu berurutan dengan simbol yang sama.":
+    "Five consecutive cards, all in the same suit.",
+  "Empat kartu dengan angka yang sama, ditambah satu kartu lain.":
+    "Four cards of the same rank, plus one other card.",
+  "Tiga kartu dengan angka yang sama dan sepasang kartu dengan angka yang sama.":
+    "Three cards of the same rank and a pair of another rank.",
+  "Lima kartu dengan simbol yang sama, tidak harus berurutan.":
+    "Five cards of the same suit, not necessarily in sequence.",
+  "Lima kartu berurutan dengan simbol yang berbeda-beda.":
+    "Five consecutive cards in different suits.",
+  "Tiga kartu dengan angka yang sama, ditambah dua kartu lain.":
+    "Three cards of the same rank, plus two other cards.",
+  "Dua pasang kartu dengan angka yang sama, ditambah satu kartu lain.":
+    "Two pairs of cards with matching ranks, plus one other card.",
+  "Sepasang kartu dengan angka yang sama, ditambah tiga kartu lain.":
+    "A pair of cards with the same rank, plus three other cards.",
+  "Tidak ada kombinasi di atas; nilai kartu tertinggi yang menentukan.":
+    "None of the combinations above; the highest card determines the hand.",
+  "Tujuan permainan": "Goal",
+  "Dapatkan nilai kartu lebih tinggi dari bandar tanpa melewati 21. Kamu juga menang jika bandar melewati 21 sementara nilaimu tidak.":
+    "Get a higher card total than the dealer without going over 21. You also win if the dealer busts and you do not.",
+  "Nilai kartu dan hand": "Card values and hands",
+  "Kartu 2–10 bernilai sesuai angkanya; J, Q, dan K bernilai 10. As bernilai 1 atau 11, pilih nilai yang tidak membuat total melewati 21 jika memungkinkan. Hand adalah total nilai kartu yang kamu pegang.":
+    "Cards 2–10 are worth their face value; J, Q, and K are worth 10. An Ace is worth 1 or 11; use the value that keeps your total at or below 21 when possible. Your hand is the total value of your cards.",
+  "Contoh: As + King = Blackjack natural (21 dari dua kartu).":
+    "Example: Ace + King = a natural Blackjack (21 in two cards).",
+  "Menang, kalah, seri, dan bust": "Win, lose, push, and bust",
+  "Jika totalmu melewati 21, kamu bust dan kalah. Jika tidak bust, bandingkan total dengan bandar: lebih tinggi menang, lebih rendah kalah, dan sama berarti seri (push, taruhan kembali).":
+    "If your total goes over 21, you bust and lose. Otherwise, compare totals with the dealer: higher wins, lower loses, and a tie is a push (your bet is returned).",
+  "Blackjack natural": "Natural Blackjack",
+  "Blackjack adalah 21 dari dua kartu pertama: satu As dan satu kartu bernilai 10. Dalam aturan umum, payout-nya 3:2. Tiga kartu atau lebih yang totalnya 21 bukan Blackjack natural.":
+    "A Blackjack is 21 with your first two cards: one Ace and one 10-value card. Under common rules, it pays 3:2. A total of 21 made with three or more cards is not a natural Blackjack.",
+  "Contoh natural: As + Queen. Aplikasi mencatat hasil yang dipilih bandar; kartu tidak diperiksa otomatis.":
+    "Natural example: Ace + Queen. The app records the dealer's selected result; it does not verify cards automatically.",
+  "Hit dan stand": "Hit and stand",
+  "Hit berarti mengambil kartu tambahan; stand berarti berhenti mengambil kartu. Tentukan aksi pada kartu fisik bersama bandar—aplikasi ini hanya mencatat taruhan dan hasil.":
+    "Hit means taking another card; stand means taking no more cards. Play these actions with physical cards and the dealer—the app only tracks bets and results.",
+  Double: "Double",
+  "Double berarti menambah taruhan sebesar taruhan awal, lalu mengambil satu kartu terakhir. Umumnya dilakukan pada dua kartu awal. Di aplikasi, opsi Double menambahkan taruhan yang sama; Split tidak dapat dilakukan setelah Double.":
+    "Double means adding an amount equal to your original bet, then taking one final card. It is commonly allowed on the first two cards. In this app, Double adds the same amount; you cannot Split after Doubling.",
+  Split: "Split",
+  "Jika dua kartu awal memiliki nilai yang sama, aturan umum mengizinkan kartu itu dipisah menjadi dua hand dengan taruhan tambahan yang sama. Mainkan dan tentukan hasil tiap hand secara terpisah. Aplikasi mendukung satu Split per ronde; Split memerlukan chip yang cukup dan tidak dapat dilakukan setelah Double. Blackjack pada hand hasil Split tidak mendapat payout natural 3:2.":
+    "If your first two cards have the same value, common rules allow splitting them into two hands with an additional matching bet. Play and settle each hand separately. This app allows one Split per round; you need enough chips, and cannot Split after Doubling. Blackjack on a split hand does not receive the natural 3:2 payout.",
+  "Taruhan dan payout di aplikasi": "Bets and payouts in this app",
+  "Taruhan dipasang sebelum kartu dibagikan. Hasil Menang mengembalikan total 2× taruhan (termasuk taruhan awal), push mengembalikan 1×, dan kalah mengembalikan 0. Hasil BJ membayar total 2,5× taruhan, dibulatkan ke chip terdekat. Bandar mencatat hasil secara manual.":
+    "Place bets before cards are dealt. Win returns 2× the bet total (including the original stake), push returns 1×, and lose returns 0. BJ returns 2.5× the bet, rounded to the nearest chip. The dealer records results manually.",
+  "Ringkasan aturan umum Blackjack. Aturan meja dapat berbeda; kartu dimainkan secara fisik dan hasil di aplikasi dicatat manual oleh bandar.":
+    "A summary of common Blackjack rules. Table rules can vary; cards are played physically and the dealer records results in the app.",
+  "As": "Ace",
+  sekop: "spades",
+  hati: "hearts",
+  wajik: "diamonds",
+  keriting: "clubs",
   "Taruhan saat ini": "Current bet",
   "Feed Terbaru": "Latest Update",
   "Aksi Bandar (Dealer)": "Dealer Action",
@@ -238,7 +320,7 @@ const EN_TEXT = {
   "Big Blind": "Big Blind",
   "Simpan Pengaturan": "Save Settings",
   "Kelola Pemain": "Manage Players",
-  "Berikan peran bandar": "Offer the Dealer Role",
+  "Tawarkan sebagai dealer": "Offer as Dealer",
   "Reset Semua Chip": "Reset All Chips",
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
   "Kode room tidak valid": "Invalid room code",
@@ -254,8 +336,8 @@ const EN_TEXT = {
     "You are no longer seated at this table",
   "Riwayat Permainan": "Game History",
   "Kode Room (6 Karakter)": "Room Code (6 characters)",
-  "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
-    "A digital casino chip app for playing poker and blackjack with friends.",
+  "Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.":
+    "A virtual chip app for tracking Poker & Blackjack games with friends.",
   "Room tidak ditemukan": "Room Not Found",
   "Pemain dikeluarkan oleh Bandar": "Player removed by dealer",
   "Room tidak ditemukan atau telah ditutup!":
@@ -375,11 +457,11 @@ const EN_TEXT = {
   "♣ Blackjack": "♣ Blackjack",
   "Simpan Pengaturan": "Save Settings",
   "Kelola Pemain": "Manage Players",
-  "Berikan peran bandar": "Offer the Dealer Role",
+  "Tawarkan sebagai dealer": "Offer as Dealer",
   "Reset Semua Chip": "Reset All Chips",
   "Selamat Datang di Chips-in": "Welcome to Chips-in",
-  "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
-    "A digital casino chip app for playing poker and blackjack with friends.",
+  "Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.":
+    "A virtual chip app for tracking Poker & Blackjack games with friends.",
   "— ATAU —": "— OR —",
   "Maks 16 karakter": "Up to 16 characters",
   "Nama (maks 16 karakter)": "Name (up to 16 characters)",
@@ -396,8 +478,8 @@ const EN_TEXT = {
   "Mode game diubah ke": "Game mode changed to",
   "Chip Awal": "Starting Chips",
   "Daftar Pemain": "Players",
-  "Aplikasi chip kasino digital untuk Poker & Blackjack IRL bersama teman.":
-    "A digital casino chip app for playing poker and blackjack with friends.",
+  "Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.":
+    "A virtual chip app for tracking Poker & Blackjack games with friends.",
   Menunggu: "Waiting for",
   "menerima peran Bandar…": "to accept the dealer role…",
   Batalkan: "Cancel",
@@ -484,8 +566,8 @@ let currentLanguage = LANGUAGES[localStorage.cb_language]
   : "id";
 document.title =
   currentLanguage === "en"
-    ? "Chips-in - Virtual Casino Chips"
-    : "Chips-in - Chip Kasino Virtual";
+    ? "Chips-in - Virtual Poker & Blackjack Chips"
+    : "Chips-in - Chip Virtual Poker & Blackjack";
 let currentVolume = Number(localStorage.cb_volume);
 if (!Number.isFinite(currentVolume)) currentVolume = 1;
 currentVolume = Math.max(0, Math.min(currentVolume, 1));
@@ -502,7 +584,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.6.0";
+const APP_VER = "3.6.6";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

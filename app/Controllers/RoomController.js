@@ -5,7 +5,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.6.0"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.6.6"; // klien yang versinya beda akan otomatis refresh
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -202,7 +202,11 @@ function nextStage(room) {
     return;
   }
 
-  k.turn = nextActor(room, k.order.indexOf(k.dealer) + 1);
+  const firstToAct =
+    k.order.length === 2
+      ? k.order.indexOf(k.dealer)
+      : k.order.indexOf(k.dealer) + 1;
+  k.turn = nextActor(room, firstToAct);
   room.dealerConfirmedStage = false;
   logRoom(
     room,
@@ -335,9 +339,15 @@ function award(room, winners) {
   ls.forEach((l, i) => {
     const w = selectedWinners[i];
     const share = Math.floor(l.amount / w.length);
-    let rem = l.amount - share * w.length;
-    w.forEach((id) => {
-      const add = share + (rem-- > 0 ? 1 : 0);
+    const remainder = l.amount - share * w.length;
+    const dealerIndex = k.order.indexOf(k.dealer);
+    const clockwiseOrder = [
+      ...k.order.slice(dealerIndex + 1),
+      ...k.order.slice(0, dealerIndex + 1),
+    ];
+    const orderedWinners = clockwiseOrder.filter((id) => w.includes(id));
+    orderedWinners.forEach((id, index) => {
+      const add = share + (index < remainder ? 1 : 0);
       P(room, id).chips += add;
     });
     logRoom(
@@ -358,20 +368,23 @@ function setBet(room, p, amt) {
 function bjResolve(room, p, res, betSlot) {
   const mult = { win: 2, bj: 2.5, push: 1, lose: 0 };
   if (!(res in mult)) throw "Hasil tidak valid";
+  if (res === "bj" && (p.bjHasSplit || p.bjDoubled))
+    throw "Blackjack 3:2 tidak berlaku setelah Split atau Double";
   if (betSlot !== undefined && betSlot !== "main" && betSlot !== "split")
     throw "Taruhan tidak valid";
   if (!p.bjBet && !p.bjSplitBet) return;
 
   let totalPay = 0;
   if ((!betSlot || betSlot === "main") && p.bjBet > 0) {
-    totalPay += Math.floor(p.bjBet * mult[res]);
+    totalPay += Math.round(p.bjBet * mult[res]);
     p.bjBet = 0;
   }
   if ((!betSlot || betSlot === "split") && p.bjSplitBet > 0) {
-    totalPay += Math.floor(p.bjSplitBet * mult[res]);
+    totalPay += Math.round(p.bjSplitBet * mult[res]);
     p.bjSplitBet = 0;
   }
 
+  if (!p.bjBet && !p.bjSplitBet) p.bjHasSplit = false;
   p.chips += totalPay;
   room.bj.resolved = true;
   const betLabel =
@@ -439,6 +452,7 @@ function seatPlayer(room, token, profile) {
     inHand: false,
     bjBet: 0,
     bjSplitBet: 0,
+    bjHasSplit: false,
     bjDoubled: false,
     last: 0,
   };
@@ -451,6 +465,7 @@ function seatPlayer(room, token, profile) {
 function unseatPlayer(room, p) {
   p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0); // taruhan blackjack yang belum dikunci dikembalikan
   p.bjBet = p.bjSplitBet = 0;
+  p.bjHasSplit = false;
   p.bjDoubled = false;
   room.stash[p.token] = {
     name: p.name,
@@ -476,6 +491,7 @@ function cancelRound(room, why) {
     room.players.forEach((p) => {
       p.chips += p.bjBet + p.bjSplitBet;
       p.bjBet = p.bjSplitBet = 0;
+      p.bjHasSplit = false;
     });
     room.bj.phase = "betting";
     room.bj.resolved = false;
@@ -540,7 +556,8 @@ function resumeSession(room, token) {
     if (currentHostToken && currentHostToken !== token)
       seatPlayer(room, currentHostToken);
   } else {
-    const player = seatPlayer(room, token);
+    const player =
+      room.players.find((p) => p.token === token) || seatPlayer(room, token);
     if (!player) throw "Tidak dapat melanjutkan sesi pemain";
   }
 
@@ -612,7 +629,7 @@ function handle(b) {
       .trim()
       .slice(0, 16);
     if (!name) throw "Nama tidak boleh kosong";
-    if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
+    if (!isValidAvatar(b.avatar)) throw "Foto tidak dapat digunakan";
     const code = generateRoomCode();
     rooms[code] = initRoom(code);
     rooms[code].hostToken = token;
@@ -646,7 +663,11 @@ function handle(b) {
     case "declineResume": {
       const session = room.suspended[token];
       delete room.suspended[token];
-      delete room.stash[token];
+      if (session && session.role === "player") {
+        if (me) unseatPlayer(room, me);
+      } else {
+        delete room.stash[token];
+      }
       if (session && session.role === "host" && !room.hostToken) {
         const next = room.players[0];
         if (next) promote(room, next.token);
@@ -656,11 +677,13 @@ function handle(b) {
     }
     case "joinRoom": {
       if (isHost) throw "Bandar tidak dapat bergabung sebagai pemain";
+      if (room.suspended[token] && !me)
+        throw "Pilih Lanjutkan atau Tidak untuk sesi sebelumnya terlebih dahulu";
       const name = String(b.name || "")
         .trim()
         .slice(0, 16);
       if (!name) throw "Nama tidak boleh kosong";
-      if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
+      if (!isValidAvatar(b.avatar)) throw "Foto tidak dapat digunakan";
       if (nameTaken(room, name, me || null)) throw "Nama sudah dipakai";
       const player =
         me ||
@@ -670,6 +693,7 @@ function handle(b) {
         });
       if (!player) throw "Tidak dapat bergabung ke meja";
       if (me) {
+        delete room.suspended[token];
         player.name = name;
         player.avatar = b.avatar;
         player.ready = true;
@@ -690,7 +714,7 @@ function handle(b) {
         m.name = name;
       }
       if (b.avatar !== undefined) {
-        if (!isValidAvatar(b.avatar)) throw "Foto profil tidak valid";
+        if (!isValidAvatar(b.avatar)) throw "Foto tidak dapat digunakan";
         m.avatar = b.avatar;
       }
       m.ready = true;
@@ -739,6 +763,7 @@ function handle(b) {
         throw "Belum saatnya bertaruh";
       const oldBet = me.bjBet;
       setBet(room, me, Math.floor(+b.amount || 0));
+      me.bjHasSplit = false;
       me.bjDoubled = false;
       if (me.bjBet !== oldBet)
         logRoom(
@@ -750,7 +775,12 @@ function handle(b) {
       break;
     case "add": {
       needMe();
-      if (room.bj.phase !== "playing" || !me.bjBet || me.bjDoubled)
+      if (
+        room.bj.phase !== "playing" ||
+        !me.bjBet ||
+        me.bjDoubled ||
+        me.bjHasSplit
+      )
         throw "Tidak dapat menambah taruhan";
       const a = Math.min(Math.floor(+b.amount || 0), me.chips);
       if (!a) throw "Chip tidak mencukupi";
@@ -762,11 +792,17 @@ function handle(b) {
     }
     case "splitBJ": {
       needMe();
-      if (room.bj.phase !== "playing" || !me.bjBet || me.bjSplitBet)
+      if (
+        room.bj.phase !== "playing" ||
+        !me.bjBet ||
+        me.bjDoubled ||
+        me.bjSplitBet
+      )
         throw "Tidak dapat melakukan split";
       if (me.chips < me.bjBet) throw "Chip tidak cukup untuk Melakukan Split";
       me.chips -= me.bjBet;
       me.bjSplitBet = me.bjBet;
+      me.bjHasSplit = true;
       logRoom(room, `${me.name} Melakukan SPLIT (+${me.bjBet} chip)`);
       break;
     }
@@ -784,6 +820,7 @@ function handle(b) {
         room.players.forEach((p) => {
           p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0);
           p.bjBet = p.bjSplitBet = 0;
+          p.bjHasSplit = false;
           p.bjDoubled = false;
         });
         room.bj.phase = "betting";
@@ -954,6 +991,7 @@ function handle(b) {
       room.players.forEach((p) => {
         p.chips = room.startChips;
         p.bjBet = p.bjSplitBet = 0;
+        p.bjHasSplit = false;
         p.bjDoubled = false;
       });
       Object.values(room.stash).forEach((s) => {
@@ -998,6 +1036,7 @@ function handle(b) {
       room.players.forEach((p) => {
         p.chips += p.bjBet + p.bjSplitBet;
         p.bjBet = p.bjSplitBet = 0;
+        p.bjHasSplit = false;
         p.bjDoubled = false;
       });
       room.bj.phase = "betting";
@@ -1010,7 +1049,23 @@ function handle(b) {
   return {
     ok: 1,
     ...(type === "joinRoom" ? { roomCode: room.code } : {}),
-    ...(type === "checkRoom" ? { suggestedName: defaultName(room) } : {}),
+    ...(type === "checkRoom"
+      ? {
+          suggestedName: defaultName(room),
+          ...(!me && room.suspended[token]
+            ? {
+                resumeOffer: {
+                  role: room.suspended[token].role,
+                  name:
+                    room.suspended[token].role === "host"
+                      ? room.suspended[token].profile.name
+                      : room.suspended[token].name,
+                  chips: room.stash[token] ? room.stash[token].chips : null,
+                },
+              }
+            : {}),
+        }
+      : {}),
   };
 }
 
@@ -1052,7 +1107,7 @@ function view(token, roomCode) {
     bj: room.bj,
     pendingHost: room.pendingHost,
     host: room.hostProfile,
-    resumeOffer: room.suspended[token]
+    resumeOffer: !me && room.suspended[token]
       ? {
           role: room.suspended[token].role,
           name:
@@ -1128,6 +1183,20 @@ http
     if (u.pathname === "/manifest.json") {
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "manifest.json")));
+    }
+    if (req.method === "GET" && u.pathname === "/robots.txt") {
+      res.writeHead(200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      });
+      return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "robots.txt")));
+    }
+    if (req.method === "GET" && u.pathname === "/sitemap.xml") {
+      res.writeHead(200, {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      });
+      return res.end(fs.readFileSync(path.join(PUBLIC_PATH, "sitemap.xml")));
     }
     if (u.pathname === "/sw.js") {
       res.writeHead(200, {
@@ -1283,6 +1352,11 @@ http
         res.end(JSON.stringify(out));
       });
       return;
+    }
+
+    if (req.method === "GET" && u.pathname !== "/") {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end("Halaman tidak ditemukan");
     }
 
     fs.readFile(VIEW_PATH, (err, html) => {

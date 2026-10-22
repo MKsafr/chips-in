@@ -10,18 +10,20 @@
 </p>
 
 <p align="center">
-  <a href="https://online-poker-chips.onrender.com/"><strong>Play Chips-in</strong></a>
+  <a href="https://chips-in-online.onrender.com/"><strong>Play Chips-in</strong></a>
   &nbsp;·&nbsp;
-  <a href="README.md">Bahasa Indonesia</a>
+  <a href="README.md">Bahasa Indonesia</a> ·
+  <a href="https://github.com/MKsafr/chips-in">GitHub</a>
 </p>
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
+
+Current app version: **3.6.6** (the client/server version, separate from the Node.js package version).
 
 ## Table of contents
 
 - [Features](#features)
 - [How to use](#how-to-use)
-- [Run locally](#run-locally)
 - [Project structure](#project-structure)
 - [Credits](#credits)
 
@@ -30,6 +32,7 @@ Chips-in syncs rooms, players, chips, bets, and game results. Cards are still pl
 - Separate rooms with a unique code for each table.
 - Poker and Blackjack modes.
 - Chip balances, bets, pots, and game history.
+- Interactive Poker and Blackjack guides explaining hands, rules, and how to play.
 - A dealer panel to configure the table and manage players.
 - Player management: change seating order, add or remove chips, offer the dealer role, and remove players.
 - Players can join with a room code and set up their profile.
@@ -41,7 +44,7 @@ Chips-in syncs rooms, players, chips, bets, and game results. Cards are still pl
 
 ### Dealer
 
-1. Open [Chips-in](https://online-poker-chips.onrender.com/) and select **Create Room**.
+1. Open [Chips-in](https://chips-in-online.onrender.com/) and select **Create Room**.
 2. Change your name and choose an avatar.
 3. Share the room code with the players.
 4. Open **Dealer Controls** to choose Poker or Blackjack, set the starting chips, and—for Poker—set the Small Blind and Big Blind.
@@ -61,60 +64,6 @@ Chips-in syncs rooms, players, chips, bets, and game results. Cards are still pl
 4. Chip balances, bets, and room updates are synced automatically.
 
 If your connection drops or the tab closes, reopen the site in the same browser. If the room and session are still available, you can choose to resume as a player or dealer. Players return with their previous balance; a returning dealer resumes their role. A session cannot be resumed if the room is no longer available, for example, after the server restarts.
-
-## Run locally
-
-Follow these steps to run the Chips-in server on your own computer (localhost).
-
-### 1. Install Node.js
-
-Download and install **Node.js 18 or later** from [nodejs.org](https://nodejs.org/). The Node.js installer also includes npm, which is used to run the app.
-
-When installation is complete, open a new terminal and verify both commands are available:
-
-```bash
-node --version
-npm --version
-```
-
-If either command is not recognized, close and reopen your terminal or VS Code after installing Node.js.
-
-### 2. Open the project folder in a terminal
-
-In VS Code, open the `online-poker-chips` project folder and select **Terminal → New Terminal**. Make sure the terminal is in the folder containing `package.json`. If it is not, change to that folder with `cd`, for example:
-
-```powershell
-cd "C:\path\to\online-poker-chips"
-```
-
-### 3. Start the server
-
-Run this command in the terminal:
-
-```bash
-npm start
-```
-
-When the server starts successfully, the terminal will show the server address/port. Keep the terminal open while using the app.
-
-### 4. Open the app
-
-Open a browser and visit [http://localhost:3000](http://localhost:3000). The `localhost` address is only accessible from the computer running the server.
-
-To stop the server, return to the terminal and press **Ctrl+C**.
-
-### Troubleshooting
-
-- **`npm` or `node` is not recognized:** make sure Node.js 18 or later is installed, then open a new terminal.
-- **Port 3000 is already in use:** start the server on another port. In PowerShell:
-
-  ```powershell
-  $env:PORT=3001
-  npm start
-  ```
-
-  Then visit [http://localhost:3001](http://localhost:3001).
-- **The page cannot be opened:** make sure `npm start` is still running and check the terminal for errors.
 
 ## Project structure
 
@@ -176,6 +125,8 @@ To stop the server, return to the terminal and press **Ctrl+C**.
 │   │   ├── privacy.html
 │   │   └── terms.html
 │   ├── manifest.json
+│   ├── robots.txt
+│   ├── sitemap.xml
 │   └── sw.js
 ├── package-lock.json
 ├── package.json
@@ -189,6 +140,7 @@ To stop the server, return to the terminal and press **Ctrl+C**.
 - `app/Controllers/RoomController.js` handles the HTTP server, rooms, and game logic.
 - `app/Views/index.html` is the main page.
 - `public/pages/` contains the About, Privacy, and Terms pages; `public/assets/css/legal.css` and `public/assets/js/legal.js` support those pages.
+- `public/robots.txt` and `public/sitemap.xml` provide crawler directives and the public page list for search engines.
 - `public/assets/` contains stylesheets, browser scripts, the QR scanner, images, logos, and sounds.
 - Browser scripts are loaded in order from `app/Views/index.html` because some files use state and helpers defined by earlier files.
 - Room data is stored in server memory, so unfinished rooms do not persist when the server process restarts.
@@ -198,3 +150,5 @@ To stop the server, return to the terminal and press **Ctrl+C**.
 Created by **Ado, Anoy, Isan, and Kholid**.
 
 Built entirely with the help of AI.
+
+Website: https://chips-in-online.onrender.com/ · Repository: https://github.com/MKsafr/chips-in

@@ -16,16 +16,15 @@ function hostPanel() {
     ((st.players || []).length
       ? st.players
           .map(
-            (p, index) => `<div class="manage-player" data-player-id="${p.id}">
+            (p) => `<div class="manage-player" data-player-id="${p.id}">
           <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmtChips(p.chips)}</span></div></div>
       <div class="manage-player-actions manage-player-actions-primary">
-          <button class="g s" aria-label="Naikkan pemain" ${index === 0 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},-1)">↑</button>
-          <button class="g s" aria-label="Turunkan pemain" ${index === st.players.length - 1 || orderLocked ? "disabled" : ""} onclick="movePlayer(${p.id},1)">↓</button>
-      <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Berikan peran bandar")}</button>
+      <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Tawarkan sebagai dealer")}</button>
+      <button class="g s" aria-label="${translateText("Keluarkan pemain")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">${translateText("Keluarkan pemain")}</button>
       </div><div class="manage-player-actions manage-player-actions-secondary">
-      <button class="ok s" onclick="openChipAdjustment(${p.id},1)">+ Chip</button>
-      <button class="r s" onclick="openChipAdjustment(${p.id},-1)">- Chip</button>
-          <button class="r s" aria-label="${translateText("Keluarkan")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">✕</button></div></div>`,
+      <button class="ok s" onclick="openChipAdjustment(${p.id},1)">${translateText("Tambah Chip")}</button>
+      <button class="r s" onclick="openChipAdjustment(${p.id},-1)">${translateText("Kurangi Chip")}</button>
+      </div></div>`,
           )
           .join("")
       : `<div class="mut">${translateText("Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.")}</div>`) +
@@ -50,14 +49,6 @@ function changeGameMode(mode) {
     return;
   }
   api("setup", { mode });
-}
-function movePlayer(id, offset) {
-  const order = (st.players || []).map((p) => p.id);
-  const index = order.indexOf(id);
-  const target = index + offset;
-  if (index < 0 || target < 0 || target >= order.length) return;
-  [order[index], order[target]] = [order[target], order[index]];
-  api("reorderPlayers", { newOrder: order });
 }
 let playerDragState = null;
 

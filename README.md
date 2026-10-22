@@ -10,12 +10,15 @@
 </p>
 
 <p align="center">
-  <a href="https://online-poker-chips.onrender.com/"><strong> Mainkan Chips-in </strong></a>
+  <a href="https://chips-in-online.onrender.com/"><strong> Mainkan Chips-in </strong></a>
   &nbsp;·&nbsp;
-  <a href="README.en.md">English</a>
+  <a href="README.en.md">English</a> ·
+  <a href="https://github.com/MKsafr/chips-in">GitHub</a>
 </p>
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
+
+Versi aplikasi saat ini: **3.6.6** (versi klien/server, terpisah dari versi paket Node.js).
 
 ## Daftar isi
 
@@ -29,6 +32,7 @@ Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap
 - Room terpisah dengan kode unik untuk setiap meja.
 - Mode Poker dan Blackjack.
 - Saldo chip, taruhan, pot, dan riwayat permainan.
+- Panduan interaktif Poker dan Blackjack yang menjelaskan hand, aturan, dan cara bermain.
 - Panel dealer untuk mengatur meja dan mengelola pemain.
 - Pengelolaan pemain: ubah urutan duduk, tambah/kurangi chip, tawarkan peran dealer, dan keluarkan pemain.
 - Pemain dapat bergabung menggunakan kode room dan mengatur profil.
@@ -40,7 +44,7 @@ Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap
 
 ### Dealer
 
-1. Buka [Chips-in](https://online-poker-chips.onrender.com/) dan pilih **Host Room (Buat Meja Baru)**.
+1. Buka [Chips-in](https://chips-in-online.onrender.com/) dan pilih **Host Room (Buat Meja Baru)**.
 2. Ubah nama lalu pilih avatar.
 3. Bagikan kode room yang tampil kepada para pemain.
 4. Buka **Kontrol Dealer** untuk memilih Poker atau Blackjack, mengatur chip awal, dan—untuk Poker—mengatur Small Blind serta Big Blind.
@@ -121,6 +125,8 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 │   │   ├── privacy.html
 │   │   └── terms.html
 │   ├── manifest.json
+│   ├── robots.txt
+│   ├── sitemap.xml
 │   └── sw.js
 ├── package-lock.json
 ├── package.json
@@ -134,6 +140,7 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 - `app/Controllers/RoomController.js` menangani server HTTP, room, dan logika permainan.
 - `app/Views/index.html` adalah halaman utama.
 - `public/pages/` berisi halaman About, Privacy, dan Terms; `public/assets/css/legal.css` dan `public/assets/js/legal.js` mendukung halaman-halaman tersebut.
+- `public/robots.txt` dan `public/sitemap.xml` menyediakan arahan crawling dan daftar halaman publik untuk mesin pencari.
 - `public/assets/` berisi stylesheet, script browser, QR scanner, gambar, logo, dan suara.
 - Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
 - Data room disimpan di memori server, sehingga room yang belum selesai tidak bertahan jika proses server dimulai ulang.
@@ -145,3 +152,5 @@ Diinisiasi oleh **Ado, Anoy, Isan, dan Kholid**.
 Kode dibuat sepenuhnya dengan menggunakan bantuan AI.
 
 https://canva.link/un0tf2zzl0s5jy0
+
+Situs: https://chips-in-online.onrender.com/ · Repo: https://github.com/MKsafr/chips-in

@@ -8,9 +8,10 @@ function pokerView(me) {
       ? translateText("Belum Dimulai")
       : k.stage.toUpperCase();
   h += `<div><div class="card pot"><div class="mut">${stageLabel}${k.active && k.currentBet ? " • Taruhan saat ini " + fmt(k.currentBet) : ""}</div>
-    <div class="big">${fmt(k.pot)}</div><div class="mut">${translateText("Jumlah Pot")}</div></div></div>`;
+    <div class="big">${fmt(k.pot)}</div><div class="mut">${translateText("Jumlah Pot")}</div>
+    <button class="y s poker-guide-trigger" onclick="openPokerHandGuide()">🃏 ${translateText("Panduan Hand Poker")}</button></div></div>`;
 
-  h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="mut" style="font-weight:bold;color:var(--gold)">${esc(st.lastEvent || "-")}</div></div></div></div>`;
+  h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="latest-feed-message">${esc(st.lastEvent || "-")}</div></div></div></div>`;
 
   if (
     st.isHost &&
@@ -62,6 +63,113 @@ function pokerView(me) {
     h += resetAllControl();
   }
   return h;
+}
+
+function openPokerHandGuide() {
+  const hands = [
+    {
+      name: "High Card",
+      description: "Tidak ada kombinasi di atas; nilai kartu tertinggi yang menentukan.",
+      cards: ["A♠", "J♥", "8♦", "5♣", "2♠"],
+    },
+    {
+      name: "One Pair",
+      description: "Sepasang kartu dengan angka yang sama, ditambah tiga kartu lain.",
+      cards: ["10♠", "10♥", "K♦", "7♣", "2♠"],
+    },
+    {
+      name: "Two Pair",
+      description: "Dua pasang kartu dengan angka yang sama, ditambah satu kartu lain.",
+      cards: ["J♠", "J♥", "4♦", "4♣", "A♠"],
+    },
+    {
+      name: "Three of a Kind",
+      description: "Tiga kartu dengan angka yang sama, ditambah dua kartu lain.",
+      cards: ["Q♠", "Q♥", "Q♦", "8♣", "3♥"],
+    },
+    {
+      name: "Straight",
+      description: "Lima kartu berurutan dengan simbol yang berbeda-beda.",
+      cards: ["9♠", "8♥", "7♦", "6♣", "5♠"],
+    },
+    {
+      name: "Flush",
+      description: "Lima kartu dengan simbol yang sama, tidak harus berurutan.",
+      cards: ["A♣", "J♣", "8♣", "4♣", "2♣"],
+    },
+    {
+      name: "Full House",
+      description: "Tiga kartu dengan angka yang sama dan sepasang kartu dengan angka yang sama.",
+      cards: ["K♠", "K♥", "K♦", "7♣", "7♥"],
+    },
+    {
+      name: "Four of a Kind",
+      description: "Empat kartu dengan angka yang sama, ditambah satu kartu lain.",
+      cards: ["A♠", "A♥", "A♦", "A♣", "9♠"],
+    },
+    {
+      name: "Straight Flush",
+      description: "Lima kartu berurutan dengan simbol yang sama.",
+      cards: ["9♥", "8♥", "7♥", "6♥", "5♥"],
+    },
+    {
+      name: "Royal Flush",
+      description: "Lima kartu berurutan dari 10 sampai As dengan simbol yang sama.",
+      cards: ["A♠", "K♠", "Q♠", "J♠", "10♠"],
+    },
+  ];
+  const suitNames = { "♠": "sekop", "♥": "hati", "♦": "wajik", "♣": "keriting" };
+  const handMarkup = hands
+    .map(
+      ({ name, description, cards }, index) => `
+        <article class="poker-hand-guide-item">
+          <div class="poker-hand-guide-heading">
+            <span class="poker-hand-guide-rank">${index + 1}</span>
+            <h3>${translateText(name)}</h3>
+          </div>
+          <div class="poker-hand-guide-cards" aria-label="${translateText("Contoh kartu")}">
+            ${cards
+              .map((card) => {
+                const rank = card.slice(0, -1);
+                const suit = card.slice(-1);
+                const color = suit === "♥" || suit === "♦" ? "red" : "black";
+                return `<span class="poker-playing-card ${color}" aria-label="${rank} ${translateText(suitNames[suit])}"><span>${rank}</span><span>${suit}</span></span>`;
+              })
+              .join("")}
+          </div>
+          <p>${translateText(description)}</p>
+        </article>`,
+    )
+    .join("");
+  $("#modal").innerHTML = `
+    <div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closePokerHandGuide)">
+      <div class="mbox poker-hand-guide-modal" role="dialog" aria-modal="true" aria-labelledby="pokerHandGuideTitle">
+        <div class="row sp poker-hand-guide-title">
+          <h2 id="pokerHandGuideTitle">${translateText("Urutan Hand Poker")}</h2>
+          <button class="g s" aria-label="${translateText("Tutup")}" onclick="closePokerHandGuide()">×</button>
+        </div>
+        <p class="mut poker-hand-guide-intro">${translateText("Menangkan pot dengan membuat semua pemain lain fold atau bertahan hingga showdown dengan kombinasi lima kartu terkuat. Berikut urutan hand dari yang terendah hingga tertinggi.")}</p>
+        <div class="poker-hand-guide-list">${handMarkup}</div>
+      </div>
+    </div>`;
+  localizeTree($("#modal"));
+  if (pokerHandGuideKeyHandler)
+    document.removeEventListener("keydown", pokerHandGuideKeyHandler);
+  pokerHandGuideKeyHandler = (event) => {
+    if (event.key === "Escape") closePokerHandGuide();
+  };
+  document.addEventListener("keydown", pokerHandGuideKeyHandler);
+  $("#modal .poker-hand-guide-title button")?.focus();
+}
+
+let pokerHandGuideKeyHandler = null;
+
+function closePokerHandGuide() {
+  if (pokerHandGuideKeyHandler) {
+    document.removeEventListener("keydown", pokerHandGuideKeyHandler);
+    pokerHandGuideKeyHandler = null;
+  }
+  $("#modal").innerHTML = "";
 }
 
 function pokerCall() {
