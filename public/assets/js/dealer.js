@@ -2,7 +2,7 @@ function hostPanel() {
   const orderLocked = st.poker.active || st.bj.phase === "playing";
   let h =
     `<div class="card"><h3>Pengaturan Meja</h3>
-    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" onclick="api('setup',{mode:'poker'})">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" onclick="api('setup',{mode:'blackjack'})">♣ Blackjack</button></div>
+    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" onclick="changeGameMode('poker')">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" onclick="changeGameMode('blackjack')">♣ Blackjack</button></div>
     <div class="row"><div style="flex:1"><div class="mut">Chip Awal</div><input id="sc" type="number" value="${d("sc", st.startChips)}" oninput="setD('sc',this.value)"></div>
     ${
       st.mode === "poker"
@@ -31,6 +31,25 @@ function hostPanel() {
       : `<div class="mut">${translateText("Belum ada pemain yang join, sebarkan kode room agar mereka bisa bergabung.")}</div>`) +
     `</div>`;
   return h;
+}
+function changeGameMode(mode) {
+  const hasBlackjackBets = (st.players || []).some(
+    (player) => player.bjBet || player.bjSplitBet,
+  );
+  if (
+    mode === "poker" &&
+    st.mode === "blackjack" &&
+    hasBlackjackBets
+  ) {
+    const message = translateText(
+      "Pindah ke Poker? Taruhan Blackjack yang belum dikunci akan dibatalkan dan chip dikembalikan.",
+    );
+    if (!confirm(message))
+      return;
+    api("setup", { mode, cancelBlackjackBets: true });
+    return;
+  }
+  api("setup", { mode });
 }
 function movePlayer(id, offset) {
   const order = (st.players || []).map((p) => p.id);

@@ -64,6 +64,10 @@ const EN_TEXT = {
   "Tidak bisa mengirim chip ke diri sendiri":
     "You cannot send chips to yourself",
   "Jumlah chip penerima terlalu besar": "Recipient balance is too large",
+  "Pindah ke Poker? Taruhan Blackjack yang belum dikunci akan dibatalkan dan chip dikembalikan.":
+    "Switch to Poker? Unlocked Blackjack bets will be canceled and the chips refunded.",
+  "Ada taruhan Blackjack yang belum dikunci. Konfirmasi pembatalan taruhan untuk pindah ke Poker.":
+    "There are unlocked Blackjack bets. Confirm bet cancellation to switch to Poker.",
   "Join Room": "Join Room",
   "Scan QR Room dengan Kamera": "Scan Room QR with Camera",
   "Scan QR Room": "Scan Room QR",

@@ -774,10 +774,27 @@ function handle(b) {
       needHost();
       if (room.poker.active || room.bj.phase === "playing")
         throw "Selesaikan ronde yang berjalan terlebih dahulu!";
+      const cancelBlackjackBets =
+        b.mode === "poker" &&
+        room.mode === "blackjack" &&
+        room.players.some((p) => p.bjBet || p.bjSplitBet);
+      if (cancelBlackjackBets && b.cancelBlackjackBets !== true)
+        throw "Ada taruhan Blackjack yang belum dikunci. Konfirmasi pembatalan taruhan untuk pindah ke Poker.";
+      if (cancelBlackjackBets) {
+        room.players.forEach((p) => {
+          p.chips += (p.bjBet || 0) + (p.bjSplitBet || 0);
+          p.bjBet = p.bjSplitBet = 0;
+          p.bjDoubled = false;
+        });
+        room.bj.phase = "betting";
+        room.bj.resolved = false;
+      }
       if (b.mode && b.mode !== room.mode) {
         room.mode = b.mode;
         room.log = [];
         logRoom(room, `Mode game diubah ke ${b.mode.toUpperCase()}`);
+        if (cancelBlackjackBets)
+          logRoom(room, "Taruhan Blackjack dibatalkan. Chip dikembalikan");
       }
       const oldStartChips = room.startChips;
       const oldSb = room.sb;

@@ -426,52 +426,51 @@ select {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.pl-name-fire {
+.pl-fire-leader {
   position: relative;
-  display: inline-block;
   isolation: isolate;
-  padding: 2px 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background:
-    linear-gradient(#241008, #241008) padding-box,
-    linear-gradient(110deg, #fff176, #ff6b00, #ef2020, #ffad00, #fff176)
-      border-box;
-  background-size: auto, 250% 250%;
-  animation:
-    fire-frame-flow 1.6s linear infinite,
-    fire-frame-glow 0.7s ease-in-out infinite alternate;
+  border-color: transparent;
+  box-shadow: 0 0 8px 1px #ff5a0066;
 }
-.pl-name-fire::before {
+.pl-fire-leader::before {
   position: absolute;
-  z-index: -1;
-  inset: -3px;
+  z-index: 0;
+  inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(110deg, #ffb000, #ff3c00, #ffb000);
   content: "";
-  filter: blur(6px);
-  opacity: 0.8;
-  animation: fire-frame-flicker 0.45s ease-in-out infinite alternate;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--fire-frame-angle),
+    #fff176,
+    #ff6b00,
+    #ef2020,
+    #ffad00,
+    #fff176
+  );
+  animation: fire-frame-rotate 2.4s linear infinite;
+  pointer-events: none;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
 }
-@keyframes fire-frame-flow {
-  to {
-    background-position: 0 0, 100% 100%;
-  }
+@property --fire-frame-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
-@keyframes fire-frame-glow {
+@keyframes fire-frame-rotate {
   to {
-    box-shadow: 0 0 9px 2px #ff5a00aa;
-  }
-}
-@keyframes fire-frame-flicker {
-  to {
-    opacity: 0.45;
-    transform: scale(0.94);
+    --fire-frame-angle: 1turn;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pl-name-fire,
-  .pl-name-fire::before {
+  .pl-fire-leader,
+  .pl-fire-leader::before {
     animation: none;
   }
 }
