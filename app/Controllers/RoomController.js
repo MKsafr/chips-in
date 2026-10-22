@@ -1,7 +1,8 @@
 const http = require("http"),
   fs = require("fs"),
   path = require("path"),
-  crypto = require("crypto");
+  crypto = require("crypto"),
+  net = require("net");
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
@@ -60,9 +61,52 @@ const rooms = {};
 const clients = new Set();
 const disconnectTimers = new Map();
 const DISCONNECT_GRACE_MS = 2 * 60 * 1000;
+const API_MAX_BODY_BYTES = 64 * 1024;
+const API_RATE_LIMIT_CAPACITY = 120;
+const API_RATE_LIMIT_REFILL_PER_SECOND = 5;
+const API_RATE_LIMIT_IDLE_MS = 5 * 60 * 1000;
+const API_RATE_LIMIT_MAX_CLIENTS = 10000;
+const apiRateLimits = new Map();
 
 function disconnectKey(token, roomCode) {
   return JSON.stringify([token, roomCode]);
+}
+
+function getClientAddress(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const forwardedAddress =
+    forwardedFor && String(forwardedFor).split(",")[0].trim();
+  if (forwardedAddress && net.isIP(forwardedAddress)) return forwardedAddress;
+  return req.socket.remoteAddress || "unknown";
+}
+
+function getApiRateLimitRetryAfter(req, now = Date.now()) {
+  const clientAddress = getClientAddress(req);
+  let bucket = apiRateLimits.get(clientAddress);
+  if (!bucket) {
+    if (apiRateLimits.size >= API_RATE_LIMIT_MAX_CLIENTS) {
+      for (const [address, entry] of apiRateLimits) {
+        if (now - entry.updatedAt >= API_RATE_LIMIT_IDLE_MS)
+          apiRateLimits.delete(address);
+      }
+    }
+    if (apiRateLimits.size >= API_RATE_LIMIT_MAX_CLIENTS) return 60;
+    bucket = { tokens: API_RATE_LIMIT_CAPACITY, updatedAt: now };
+    apiRateLimits.set(clientAddress, bucket);
+  } else {
+    bucket.tokens = Math.min(
+      API_RATE_LIMIT_CAPACITY,
+      bucket.tokens +
+        ((now - bucket.updatedAt) / 1000) * API_RATE_LIMIT_REFILL_PER_SECOND,
+    );
+    bucket.updatedAt = now;
+  }
+
+  if (bucket.tokens >= 1) {
+    bucket.tokens -= 1;
+    return 0;
+  }
+  return Math.ceil((1 - bucket.tokens) / API_RATE_LIMIT_REFILL_PER_SECOND);
 }
 
 function generateRoomCode() {
@@ -1139,6 +1183,46 @@ const broadcast = (code) =>
     if (c.roomCode === code) send(c);
   });
 
+function sendStaticFile(req, res, filePath, contentType) {
+  const stats = fs.statSync(filePath);
+  const etag = `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+  const lastModified = stats.mtime.toUTCString();
+  const ifNoneMatch = req.headers["if-none-match"];
+  let notModified = false;
+
+  if (ifNoneMatch) {
+    notModified = ifNoneMatch.split(",").some((tag) => {
+      const candidate = tag.trim();
+      return (
+        candidate === "*" ||
+        candidate.replace(/^W\//, "") === etag.replace(/^W\//, "")
+      );
+    });
+  } else if (req.headers["if-modified-since"]) {
+    const ifModifiedSince = Date.parse(req.headers["if-modified-since"]);
+    notModified =
+      Number.isFinite(ifModifiedSince) &&
+      Math.floor(stats.mtimeMs / 1000) <= Math.floor(ifModifiedSince / 1000);
+  }
+
+  const headers = {
+    "Cache-Control": "no-cache",
+    ETag: etag,
+    "Last-Modified": lastModified,
+  };
+  if (notModified) {
+    res.writeHead(304, headers);
+    return res.end();
+  }
+
+  res.writeHead(200, {
+    ...headers,
+    "Content-Type": contentType,
+    "Content-Length": stats.size,
+  });
+  return fs.createReadStream(filePath).pipe(res);
+}
+
 http
   .createServer((req, res) => {
     const u = new URL(req.url, "http://x");
@@ -1252,18 +1336,22 @@ http
       if (
         relativePath.startsWith("..") ||
         path.isAbsolute(relativePath) ||
-        !allowedExtensions.includes(extension) ||
-        !fs.existsSync(assetPath) ||
-        !fs.statSync(assetPath).isFile()
+        !allowedExtensions.includes(extension)
       ) {
         res.writeHead(404, { "Content-Type": "text/plain" });
         return res.end("Asset tidak ditemukan");
       }
-      res.writeHead(200, {
-        "Content-Type": contentTypes[extension],
-        "Cache-Control": "no-cache",
-      });
-      return fs.createReadStream(assetPath).pipe(res);
+      let assetStats;
+      try {
+        assetStats = fs.statSync(assetPath);
+      } catch (error) {
+        if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error;
+      }
+      if (!assetStats || !assetStats.isFile()) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        return res.end("Asset tidak ditemukan");
+      }
+      return sendStaticFile(req, res, assetPath, contentTypes[extension]);
     }
     if (
       u.pathname.startsWith("/assets/sound/") ||
@@ -1305,11 +1393,7 @@ http
           : path.join(PUBLIC_PATH, "logo.png");
       const logoPath = fs.existsSync(p) ? p : fallback;
       if (fs.existsSync(logoPath)) {
-        res.writeHead(200, {
-          "Content-Type": "image/png",
-          "Cache-Control": "no-cache",
-        });
-        return fs.createReadStream(logoPath).pipe(res);
+        return sendStaticFile(req, res, logoPath, "image/png");
       }
       res.writeHead(404, { "Content-Type": "text/plain" });
       return res.end("Logo belum ada");
@@ -1350,12 +1434,53 @@ http
     }
 
     if (req.method === "POST" && u.pathname === "/api") {
-      let d = "";
-      req.on("data", (x) => (d += x));
+      const retryAfter = getApiRateLimitRetryAfter(req);
+      if (retryAfter) {
+        res.writeHead(429, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": String(retryAfter),
+        });
+        return res.end(
+          JSON.stringify({
+            err: "Terlalu banyak permintaan. Coba lagi sebentar.",
+          }),
+        );
+      }
+
+      const contentLength = Number(req.headers["content-length"]);
+      if (contentLength > API_MAX_BODY_BYTES) {
+        res.writeHead(413, {
+          "Content-Type": "application/json; charset=utf-8",
+        });
+        res.end(JSON.stringify({ err: "Ukuran permintaan terlalu besar." }));
+        req.resume();
+        return;
+      }
+
+      let bodyBytes = 0;
+      let tooLarge = false;
+      const chunks = [];
+      req.on("data", (chunk) => {
+        if (tooLarge) return;
+        bodyBytes += chunk.length;
+        if (bodyBytes > API_MAX_BODY_BYTES) {
+          tooLarge = true;
+          chunks.length = 0;
+          res.writeHead(413, {
+            "Content-Type": "application/json; charset=utf-8",
+          });
+          res.end(JSON.stringify({ err: "Ukuran permintaan terlalu besar." }));
+          return;
+        }
+        chunks.push(chunk);
+      });
       req.on("end", () => {
+        if (tooLarge) return;
         let out;
         try {
-          const parsed = JSON.parse(d);
+          const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+            throw new Error("Format permintaan tidak valid");
           const resData = handle(parsed);
           out = { ok: 1, ...resData };
           if (parsed.roomCode || out.roomCode) {
