@@ -24,8 +24,17 @@
             : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
+        const maxChips = Math.max(
+          0,
+          ...(st.players || []).map((player) => player.chips || 0),
+        );
+        const hasUniqueLeader =
+          maxChips > 0 &&
+          (st.players || []).filter((player) => player.chips === maxChips)
+            .length === 1;
+        const fireLeader = hasUniqueLeader && p.chips === maxChips;
 
         return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}">
-    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
+    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name${fireLeader ? ' class="pl-name-fire"' : ""}>${name}</b>${t.join("")}${extra}</div></div>
     <div style="text-align:right">${blackjackHand ? "" : `<b style="color:var(--gold)">${fmt(p.chips)}</b>`}${bet}</div></div>`;
       }

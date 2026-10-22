@@ -38,11 +38,11 @@ function pokerView(me) {
       const canRaise = maxTo > (k.currentBet || 0);
       h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3>
         <div class="row"><button class="r f" onclick="api('act',{a:'fold'})">Fold</button>
-        <button class="ok f" onclick="api('act',{a:'call'})">${toCall > 0 ? "Call " + fmt(callAmt) : "Check"}</button></div>`;
+        <button class="ok f" onclick="pokerCall()">${toCall > 0 ? "Call " + fmt(callAmt) : "Check"}</button></div>`;
       if (canRaise) {
         h += `<div class="mut" style="margin:10px 0 4px">Raise ke (Min ${fmt(minTo)})</div>
         <div class="row"><input id="raise" type="number" inputmode="numeric" value="${d("raise", minTo)}" oninput="setD('raise',this.value)">
-        <button class="y" onclick="api('act',{a:'raise',amount:num('raise')})">Raise</button></div>
+        <button class="y" onclick="pokerRaise()">Raise</button></div>
         <div class="row" style="margin-top:6px">
         <button class="g s" onclick="qr(${minTo},0)">Min</button>
         <button class="g s" onclick="qr(0,.5)">½ Pot</button>
@@ -61,6 +61,28 @@ function pokerView(me) {
     h += resetAllControl();
   }
   return h;
+}
+
+function pokerCall() {
+  const me = (st.players || []).find((p) => p.id === st.you);
+  const callAmount = Math.min(
+    (st.poker.currentBet || 0) - (me?.bet || 0),
+    me?.chips || 0,
+  );
+  if (callAmount > 0 && callAmount === me.chips) {
+    askAllInConfirmation("poker", me.chips);
+    return;
+  }
+  api("act", { a: "call" });
+}
+
+function pokerRaise() {
+  const me = (st.players || []).find((p) => p.id === st.you);
+  if (me && num("raise") >= me.bet + me.chips) {
+    askAllInConfirmation("poker", me.chips);
+    return;
+  }
+  api("act", { a: "raise", amount: num("raise") });
 }
 
 function qr(minTo, frac) {

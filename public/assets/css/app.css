@@ -254,21 +254,20 @@ h3 {
   align-items: center;
   gap: 8px;
 }
-.chip-transfer-button {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 7px;
+.chip-transfer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: none;
 }
-.chip-transfer-button svg {
-  width: 20px;
-  height: 20px;
+.chip-transfer-action svg {
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.4;
+  stroke-width: 2;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .row {
@@ -426,6 +425,55 @@ select {
 .pl > * {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.pl-name-fire {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background:
+    linear-gradient(#241008, #241008) padding-box,
+    linear-gradient(110deg, #fff176, #ff6b00, #ef2020, #ffad00, #fff176)
+      border-box;
+  background-size: auto, 250% 250%;
+  animation:
+    fire-frame-flow 1.6s linear infinite,
+    fire-frame-glow 0.7s ease-in-out infinite alternate;
+}
+.pl-name-fire::before {
+  position: absolute;
+  z-index: -1;
+  inset: -3px;
+  border-radius: inherit;
+  background: linear-gradient(110deg, #ffb000, #ff3c00, #ffb000);
+  content: "";
+  filter: blur(6px);
+  opacity: 0.8;
+  animation: fire-frame-flicker 0.45s ease-in-out infinite alternate;
+}
+@keyframes fire-frame-flow {
+  to {
+    background-position: 0 0, 100% 100%;
+  }
+}
+@keyframes fire-frame-glow {
+  to {
+    box-shadow: 0 0 9px 2px #ff5a00aa;
+  }
+}
+@keyframes fire-frame-flicker {
+  to {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-name-fire,
+  .pl-name-fire::before {
+    animation: none;
+  }
 }
 .manage-player {
   display: grid;

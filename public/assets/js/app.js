@@ -75,9 +75,9 @@ function render() {
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
   } else if (me) {
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div><button class="g chip-transfer-button" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div></div></div>
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s chip-transfer-action" aria-label="Transfer Chips" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>Transfer Chips</button></div></div>`;
   }
 
   const ph = st.pendingHost;

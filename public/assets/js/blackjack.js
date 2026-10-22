@@ -55,12 +55,12 @@ function bjView(me) {
       [5, 10, 25, 100, 500]
         .map(
           (v) =>
-            `<button class="chip c${v}" onclick="api('bet',{amount:${(me.bjBet || 0) + v}})">${v}</button>`,
+            `<button class="chip c${v}" onclick="placeBlackjackBet(${(me.bjBet || 0) + v})">${v}</button>`,
         )
         .join("") +
       `<button class="chip callin" onclick="askAllInConfirmation('blackjack',${(me.chips || 0) + (me.bjBet || 0)})">ALL IN</button>` +
-      `</div><div class="row"><button class="g f" onclick="api('bet',{amount:0})">Reset</button>
-      ${me.last ? `<button class="g f" onclick="api('bet',{amount:${me.last}})">Ulang (${fmt(me.last)})</button>` : ""}</div></div>`;
+      `</div><div class="row"><button class="g f" onclick="placeBlackjackBet(0)">Reset</button>
+      ${me.last ? `<button class="g f" onclick="placeBlackjackBet(${me.last})">Ulang (${fmt(me.last)})</button>` : ""}</div></div>`;
   }
 
   if (
@@ -83,4 +83,16 @@ function bjView(me) {
   }
 
   return h;
+}
+
+function placeBlackjackBet(amount) {
+  const me = (st.players || []).find((p) => p.id === st.you);
+  if (!me) return;
+  const allInAmount = me.chips + (me.bjBet || 0);
+  const targetAmount = Math.min(amount, allInAmount);
+  if (me.chips > 0 && targetAmount === allInAmount) {
+    askAllInConfirmation("blackjack", targetAmount);
+    return;
+  }
+  api("bet", { amount: targetAmount });
 }
