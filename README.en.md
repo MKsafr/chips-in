@@ -1,12 +1,29 @@
-<h1><img src="public/assets/logo/logo-main.png" alt="Chips-in logo" width="48" height="48" align="absmiddle"> Chips-in</h1>
+<p align="center">
+  <img src="public/assets/logo/logo-main.png" alt="Chips-in logo" width="120">
+</p>
 
-[Bahasa Indonesia](README.md) | [English](README.en.md)
+<h1 align="center">Chips-in</h1>
 
-A digital chip app for playing **Poker** and **Blackjack** with friends. Create a room, share its code with players, and manage chips and rounds together at one table.
+<p align="center">
+  A digital chip app for playing <strong>Poker</strong> and <strong>Blackjack</strong> with friends.
+  Create a room, share its code, and manage the game together at one table.
+</p>
 
-> **Play Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
+<p align="center">
+  <a href="https://online-poker-chips.onrender.com/"><strong>Play Chips-in</strong></a>
+  &nbsp;·&nbsp;
+  <a href="README.md">Bahasa Indonesia</a>
+</p>
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
+
+## Table of contents
+
+- [Features](#features)
+- [How to use](#how-to-use)
+- [Run locally](#run-locally)
+- [Project structure](#project-structure)
+- [Credits](#credits)
 
 ## Features
 
@@ -103,47 +120,43 @@ To stop the server, return to the terminal and press **Ctrl+C**.
 
 ```text
 app/
-  Config/
-    paths.js
-  Controllers/
-    RoomController.js
-  Views/
-    index.html
+  Config/paths.js
+  Controllers/RoomController.js
+  Views/index.html
 public/
   assets/
-    css/
-      app.css
-    images/
-      poker-felt-pattern.svg
+    css/app.css
+    images/poker-felt-pattern.svg
     js/
-      state.js
-      sound.js
-      room.js
-      display.js
-      i18n.js
-      ui-controls.js
-      profile.js
-      player-row.js
-      poker.js
+      app.js
       blackjack.js
       dealer.js
-      app.js
+      display.js
+      html5-qrcode.min.js
+      i18n.js
+      player-row.js
+      poker.js
+      profile.js
+      room.js
+      sound.js
+      state.js
+      ui-controls.js
     logo/
       logo-main.png
       logo-small.png
-    sounds/
-      ...
+    sounds/*.mp3
   manifest.json
   sw.js
 server.js
 package.json
+package-lock.json
 start.bat
 ```
 
 - `server.js` is the application entry point.
 - `app/Controllers/RoomController.js` handles the HTTP server, rooms, and game logic.
 - `app/Views/index.html` is the main page.
-- `public/` contains stylesheets, browser scripts, images, sounds, the manifest, and the service worker.
+- `public/` contains stylesheets, browser scripts, the QR scanner, images, sounds, the manifest, and the service worker.
 - Browser scripts are loaded in order from `app/Views/index.html` because some files use state and helpers defined by earlier files.
 - Room data is stored in server memory, so unfinished rooms do not persist when the server process restarts.
 

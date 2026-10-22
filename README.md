@@ -1,12 +1,28 @@
-<h1><img src="public/assets/logo/logo-main.png" alt="Chips-in logo" width="48" height="48" align="absmiddle"> Chips-in</h1>
+<p align="center">
+  <img src="public/assets/logo/logo-main.png" alt="Logo Chips-in" width="120">
+</p>
 
-[Bahasa Indonesia](README.md) | [English](README.en.md)
+<h1 align="center">Chips-in</h1>
 
-Aplikasi chip digital untuk membantu bermain **Poker** dan **Blackjack** bersama teman. Buat room, bagikan kode kepada pemain, lalu kelola chip dan jalannya ronde dari satu meja bersama.
+<p align="center">
+  Aplikasi chip digital untuk bermain <strong>Poker</strong> dan <strong>Blackjack</strong> bersama teman.
+  Buat room, bagikan kodenya, dan kelola permainan dari satu meja bersama.
+</p>
 
-> **Mainkan Chips-in:** [https://online-poker-chips.onrender.com/](https://online-poker-chips.onrender.com/)
+<p align="center">
+  <a href="https://online-poker-chips.onrender.com/"><strong> Mainkan Chips-in </strong></a>
+  &nbsp;·&nbsp;
+  <a href="README.en.md">English</a>
+</p>
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
+
+## Daftar isi
+
+- [Fitur](#fitur)
+- [Cara menggunakan](#cara-menggunakan)
+- [Struktur project](#struktur-project)
+- [Kredit](#kredit)
 
 ## Fitur
 
@@ -45,105 +61,47 @@ Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap
 
 Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang sama. Jika room dan sesi masih tersedia, akan muncul pilihan untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali mengambil lagi perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
 
-## Menjalankan secara lokal
-
-Panduan ini untuk menjalankan server Chips-in di komputer sendiri (localhost).
-
-### 1. Pasang Node.js
-
-Unduh dan pasang **Node.js versi 18 atau lebih baru** dari [nodejs.org](https://nodejs.org/). Installer Node.js juga menyertakan npm, yang digunakan untuk menjalankan aplikasi.
-
-Setelah instalasi selesai, buka terminal baru dan pastikan keduanya tersedia:
-
-```bash
-node --version
-npm --version
-```
-
-Jika perintah belum dikenali, tutup lalu buka kembali terminal atau VS Code setelah memasang Node.js.
-
-### 2. Buka folder project di terminal
-
-Di VS Code, buka folder project `online-poker-chips`, lalu pilih **Terminal → New Terminal**. Pastikan terminal berada di folder yang berisi `package.json`. Jika belum, pindah ke folder tersebut menggunakan `cd`, misalnya:
-
-```powershell
-cd "C:\path\ke\online-poker-chips"
-```
-
-### 3. Jalankan server
-
-Di terminal, jalankan:
-
-```bash
-npm start
-```
-
-Saat server berhasil berjalan, terminal akan menampilkan alamat/port server. Biarkan terminal tetap terbuka selama aplikasi digunakan.
-
-### 4. Buka aplikasi
-
-Buka browser dan kunjungi [http://localhost:3000](http://localhost:3000). Alamat `localhost` hanya dapat dibuka dari komputer yang menjalankan server.
-
-Untuk menghentikan server, kembali ke terminal lalu tekan **Ctrl+C**.
-
-### Kendala umum
-
-- **`npm` atau `node` tidak dikenali:** pastikan Node.js 18 atau lebih baru sudah terpasang, lalu buka terminal baru.
-- **Port 3000 sudah digunakan:** jalankan server pada port lain. Di PowerShell:
-
-  ```powershell
-  $env:PORT=3001
-  npm start
-  ```
-
-  Kemudian buka [http://localhost:3001](http://localhost:3001).
-- **Halaman tidak bisa dibuka:** pastikan proses `npm start` masih berjalan dan periksa pesan error di terminal.
-
 ## Struktur project
 
 ```text
 app/
-  Config/
-    paths.js
-  Controllers/
-    RoomController.js
-  Views/
-    index.html
+  Config/paths.js
+  Controllers/RoomController.js
+  Views/index.html
 public/
   assets/
-    css/
-      app.css
-    images/
-      poker-felt-pattern.svg
+    css/app.css
+    images/poker-felt-pattern.svg
     js/
-      state.js
-      sound.js
-      room.js
-      display.js
-      i18n.js
-      ui-controls.js
-      profile.js
-      player-row.js
-      poker.js
+      app.js
       blackjack.js
       dealer.js
-      app.js
+      display.js
+      html5-qrcode.min.js
+      i18n.js
+      player-row.js
+      poker.js
+      profile.js
+      room.js
+      sound.js
+      state.js
+      ui-controls.js
     logo/
       logo-main.png
       logo-small.png
-    sounds/
-      ...
+    sounds/*.mp3
   manifest.json
   sw.js
 server.js
 package.json
+package-lock.json
 start.bat
 ```
 
 - `server.js` adalah entry point aplikasi.
 - `app/Controllers/RoomController.js` menangani server HTTP, room, dan logika permainan.
 - `app/Views/index.html` adalah halaman utama.
-- `public/` berisi stylesheet, script browser, gambar, suara, manifest, dan service worker.
+- `public/` berisi stylesheet, script browser, QR scanner, gambar, suara, manifest, dan service worker.
 - Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
 - Data room disimpan di memori server, sehingga room yang belum selesai tidak bertahan jika proses server dimulai ulang.
 
