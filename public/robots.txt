@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /*?room=
+Disallow: /events
+Disallow: /room-qr
 
 Sitemap: https://chips-in-online.onrender.com/sitemap.xml
