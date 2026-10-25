@@ -19,7 +19,12 @@
         return hasTie ? null : leaderId;
       }
 
-      function playerSpotlight(player, game, fireLeader = false) {
+      function playerSpotlight(
+        player,
+        game,
+        fireLeader = false,
+        extraContent = "",
+      ) {
         if (!player) return "";
         const isPoker = game === "poker";
         const hasPokerTurn = isPoker && st.poker?.active && st.poker.turn === player.id;
@@ -44,6 +49,7 @@
       <div class="player-spotlight-stat"><span>${translateText("Total Taruhan")}</span><b>${fmt(bet)}</b>${betDetails}</div>
       <div class="player-spotlight-stat"><span>${translateText("Chip Tersisa")}</span><b>${fmt(player.chips)}</b></div>
     </div>
+    ${extraContent}
   </section>`;
       }
 

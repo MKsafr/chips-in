@@ -557,6 +557,27 @@ textarea {
 .player-spotlight-stats {
   align-items: stretch;
 }
+.player-spotlight-actions {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.player-spotlight-actions .player-spotlight-heading {
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.player-spotlight-actions .player-spotlight-heading span:last-child {
+  text-align: right;
+}
+.player-spotlight-actions .bj-dealer-controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.player-spotlight-actions .bj-dealer-controls button {
+  padding-inline: 4px;
+  font-size: clamp(13px, 4vw, 16px);
+}
 .player-spotlight-stat {
   display: grid;
   flex: 1;

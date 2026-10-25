@@ -18,7 +18,7 @@
 
 Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
 
-Versi aplikasi saat ini: **3.7.3** (versi klien/server, terpisah dari versi paket Node.js).
+Versi aplikasi saat ini: **3.7.4** (versi klien/server, terpisah dari versi paket Node.js).
 
 ## Daftar isi
 

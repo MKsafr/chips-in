@@ -26,12 +26,7 @@ function bjView(me) {
     players.find((player) => player.id === st.you) ||
     players.find((player) => player.bjBet || player.bjSplitBet) ||
     players[0];
-  h += playerSpotlight(
-    spotlightPlayer,
-    "blackjack",
-    spotlightPlayer?.id === uniqueLeaderId,
-  );
-  h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  let dealerActions = "";
   if (st.isHost && playing) {
     if (dealerTurnPlayer && dealerTurnAmount > 0) {
       const betLabel =
@@ -44,19 +39,26 @@ function bjView(me) {
         dealerTurn.betSlot === "main" &&
         !dealerTurnPlayer.bjHasSplit &&
         !dealerTurnPlayer.bjDoubled;
-      h += `<div class="card"><h3>${translateText("Giliran Bandar")}</h3>
-        <div style="margin-bottom:10px"><b>${esc(dealerTurnPlayer.name)}</b> · ${translateText(betLabel)}: ${fmt(dealerTurnAmount)}</div>
+      dealerActions = `<div class="player-spotlight-actions">
+        <div class="player-spotlight-heading"><span>${translateText("Giliran Bandar")}</span><span>${esc(dealerTurnPlayer.name)} · ${translateText(betLabel)}: ${fmt(dealerTurnAmount)}</span></div>
         <div class="bj-dealer-controls">
           <button class="y" ${canBlackjack ? `onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'bj'})"` : "disabled"}>${translateText("Blackjack")}</button>
           <button class="r" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'lose'})">${translateText("Bust")}</button>
           <button class="g" onclick="api('bjNext')">${translateText("Next")}</button>
         </div>
-        ${canBlackjack ? "" : `<div class="mut" style="margin-top:8px">${translateText("Blackjack natural tidak berlaku untuk Split atau Double.")}</div>`}
+        ${canBlackjack ? "" : `<div class="mut">${translateText("Blackjack natural tidak berlaku untuk Split atau Double.")}</div>`}
       </div>`;
     } else {
-      h += `<div class="card"><h3>${translateText("Giliran Bandar")}</h3><div class="mut">${translateText("Semua taruhan sudah mendapat giliran.")}</div></div>`;
+      dealerActions = `<div class="player-spotlight-actions"><div class="mut">${translateText("Semua taruhan sudah mendapat giliran.")}</div></div>`;
     }
   }
+  h += playerSpotlight(
+    spotlightPlayer,
+    "blackjack",
+    spotlightPlayer?.id === uniqueLeaderId,
+    dealerActions,
+  );
+  h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
   h += roundStartControl();
   h += resetAllControl();
   h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
