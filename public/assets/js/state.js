@@ -337,6 +337,13 @@ const EN_TEXT = {
   "Daftar Taruhan Pemain": "Player Bets",
   Menang: "Win",
   "BJ 3:2": "Blackjack 3:2",
+  Bust: "Bust",
+  Next: "Next",
+  "Giliran Bandar": "Dealer's Turn",
+  "Semua taruhan sudah mendapat giliran.":
+    "All bets have had a turn.",
+  "Blackjack natural tidak berlaku untuk Split atau Double.":
+    "Natural Blackjack does not apply after a Split or Double.",
   Seri: "Push",
   Kalah: "Lose",
   "Taruhanmu:": "Your Bet:",

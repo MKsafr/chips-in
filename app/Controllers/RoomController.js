@@ -157,12 +157,40 @@ function initRoom(code) {
       sbId: null,
       bbId: null,
     },
-    bj: { phase: "betting", resolved: false },
+    bj: { phase: "betting", resolved: false, dealerTurn: null },
   };
 }
 
 const P = (room, id) => room.players.find((p) => p.id === id);
 const pot = (room) => room.players.reduce((a, p) => a + (p.contrib || 0), 0);
+
+function bjTurnHands(room) {
+  return room.players.flatMap((player) => [
+    { id: player.id, betSlot: "main" },
+    { id: player.id, betSlot: "split" },
+  ]);
+}
+
+function bjTurnHasBet(room, turn) {
+  const player = turn && P(room, turn.id);
+  return Boolean(
+    player &&
+      (turn.betSlot === "main" ? player.bjBet : player.bjSplitBet) > 0,
+  );
+}
+
+function nextBJTurn(room, after = null) {
+  const hands = bjTurnHands(room);
+  const start = after
+    ? hands.findIndex(
+        (turn) => turn.id === after.id && turn.betSlot === after.betSlot,
+      ) + 1
+    : 0;
+  for (let index = Math.max(0, start); index < hands.length; index++) {
+    if (bjTurnHasBet(room, hands[index])) return hands[index];
+  }
+  return null;
+}
 
 function put(p, a) {
   p.chips -= a;
@@ -423,6 +451,11 @@ function bjResolve(room, p, res, betSlot) {
   if (betSlot !== undefined && betSlot !== "main" && betSlot !== "split")
     throw "Taruhan tidak valid";
   if (!p.bjBet && !p.bjSplitBet) return;
+  const resolvedTurn = betSlot
+    ? { id: p.id, betSlot }
+    : room.bj.dealerTurn?.id === p.id
+      ? room.bj.dealerTurn
+      : null;
 
   let totalPay = 0;
   if ((!betSlot || betSlot === "main") && p.bjBet > 0) {
@@ -437,6 +470,14 @@ function bjResolve(room, p, res, betSlot) {
   if (!p.bjBet && !p.bjSplitBet) p.bjHasSplit = false;
   p.chips += totalPay;
   room.bj.resolved = true;
+  if (
+    resolvedTurn &&
+    room.bj.dealerTurn?.id === resolvedTurn.id &&
+    room.bj.dealerTurn?.betSlot === resolvedTurn.betSlot &&
+    !bjTurnHasBet(room, resolvedTurn)
+  ) {
+    room.bj.dealerTurn = nextBJTurn(room, resolvedTurn);
+  }
   const betLabel =
     betSlot === "main" && p.bjSplitBet > 0
       ? " (Bet 1)"
@@ -447,8 +488,10 @@ function bjResolve(room, p, res, betSlot) {
     room,
     `${p.name}${betLabel}: ${res.toUpperCase()} (Menerima ${totalPay} chip)`,
   );
-  if (!room.players.some((q) => q.bjBet > 0 || q.bjSplitBet > 0))
+  if (!room.players.some((q) => q.bjBet > 0 || q.bjSplitBet > 0)) {
     room.bj.phase = "betting";
+    room.bj.dealerTurn = null;
+  }
 }
 
 // ---------- Meja: pemain hanya duduk setelah mengonfirmasi profil ----------
@@ -1049,6 +1092,7 @@ function handle(b) {
       });
       room.bj.phase = "betting";
       room.bj.resolved = false;
+      room.bj.dealerTurn = null;
       room.log = [];
       logRoom(room, "Semua chip pemain berhasil direset");
       break;
@@ -1064,6 +1108,7 @@ function handle(b) {
       });
       room.bj.resolved = false;
       room.bj.phase = "playing";
+      room.bj.dealerTurn = nextBJTurn(room);
       logRoom(room, "Kartu dikocok & taruhan dikunci");
       break;
     case "bjResolve":
@@ -1072,6 +1117,12 @@ function handle(b) {
         const p = P(room, b.id);
         if (p) bjResolve(room, p, b.result, b.betSlot);
       }
+      break;
+    case "bjNext":
+      needHost();
+      if (room.mode !== "blackjack" || room.bj.phase !== "playing")
+        throw "Ronde Blackjack tidak sedang berlangsung";
+      room.bj.dealerTurn = nextBJTurn(room, room.bj.dealerTurn);
       break;
     case "bjAll":
       needHost();
@@ -1091,6 +1142,7 @@ function handle(b) {
       });
       room.bj.phase = "betting";
       room.bj.resolved = false;
+      room.bj.dealerTurn = null;
       logRoom(room, "Ronde Blackjack dibatalkan");
       break;
     default:

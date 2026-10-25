@@ -12,6 +12,15 @@ function bjView(me) {
   </div>`;
 
   const playing = bj.phase === "playing";
+  const dealerTurn = bj.dealerTurn;
+  const dealerTurnPlayer = dealerTurn
+    ? players.find((player) => player.id === dealerTurn.id)
+    : null;
+  const dealerTurnAmount =
+    dealerTurnPlayer &&
+    (dealerTurn.betSlot === "main"
+      ? dealerTurnPlayer.bjBet
+      : dealerTurnPlayer.bjSplitBet);
   const spotlightPlayer =
     players.find((player) => player.id === uniqueLeaderId) ||
     players.find((player) => player.id === st.you) ||
@@ -23,6 +32,31 @@ function bjView(me) {
     spotlightPlayer?.id === uniqueLeaderId,
   );
   h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
+  if (st.isHost && playing) {
+    if (dealerTurnPlayer && dealerTurnAmount > 0) {
+      const betLabel =
+        dealerTurn.betSlot === "split"
+          ? "Bet 2"
+          : dealerTurnPlayer.bjSplitBet
+            ? "Bet 1"
+            : "Taruhan";
+      const canBlackjack =
+        dealerTurn.betSlot === "main" &&
+        !dealerTurnPlayer.bjHasSplit &&
+        !dealerTurnPlayer.bjDoubled;
+      h += `<div class="card"><h3>${translateText("Giliran Bandar")}</h3>
+        <div style="margin-bottom:10px"><b>${esc(dealerTurnPlayer.name)}</b> · ${translateText(betLabel)}: ${fmt(dealerTurnAmount)}</div>
+        <div class="bj-dealer-controls">
+          <button class="y" ${canBlackjack ? `onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'bj'})"` : "disabled"}>${translateText("Blackjack")}</button>
+          <button class="r" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'lose'})">${translateText("Bust")}</button>
+          <button class="g" onclick="api('bjNext')">${translateText("Next")}</button>
+        </div>
+        ${canBlackjack ? "" : `<div class="mut" style="margin-top:8px">${translateText("Blackjack natural tidak berlaku untuk Split atau Double.")}</div>`}
+      </div>`;
+    } else {
+      h += `<div class="card"><h3>${translateText("Giliran Bandar")}</h3><div class="mut">${translateText("Semua taruhan sudah mendapat giliran.")}</div></div>`;
+    }
+  }
   h += roundStartControl();
   h += resetAllControl();
   h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
