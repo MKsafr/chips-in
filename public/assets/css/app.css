@@ -512,6 +512,74 @@ textarea {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.player-spotlight {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  margin: 0 0 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, var(--line));
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--gold) 17%, transparent), transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--card) 88%, var(--gold)), var(--card) 72%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+.player-spotlight-heading,
+.player-spotlight-identity,
+.player-spotlight-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.player-spotlight-heading {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.player-spotlight-identity {
+  justify-content: flex-start;
+}
+.player-spotlight-name {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.player-spotlight-name b {
+  overflow-wrap: anywhere;
+  font-size: clamp(20px, 5vw, 26px);
+  line-height: 1.15;
+}
+.player-spotlight-stats {
+  align-items: stretch;
+}
+.player-spotlight-stat {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.player-spotlight-stat > span:first-child {
+  color: var(--mut);
+  font-size: 12px;
+}
+.player-spotlight-stat > b {
+  color: var(--gold);
+  font-size: clamp(20px, 5vw, 25px);
+  font-variant-numeric: tabular-nums;
+}
+.player-spotlight-stat > span:not(:first-child) {
+  color: var(--mut);
+  font-size: 12px;
+}
 .pl-fire-leader {
   position: relative;
   isolation: isolate;
@@ -558,6 +626,17 @@ textarea {
   .pl-fire-leader,
   .pl-fire-leader::before {
     animation: none;
+  }
+}
+@media (max-width: 360px) {
+  .player-spotlight {
+    padding: 14px;
+  }
+  .player-spotlight-stats {
+    gap: 8px;
+  }
+  .player-spotlight-stat {
+    padding: 8px;
   }
 }
 .manage-player {

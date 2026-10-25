@@ -27,6 +27,16 @@ function pokerView(me) {
 
   if (k.active) h += roundStartControl();
 
+  const spotlightPlayer =
+    (st.players || []).find((player) => player.id === k.turn) ||
+    me ||
+    (st.players || [])[0];
+  h += playerSpotlight(
+    spotlightPlayer,
+    "poker",
+    spotlightPlayer?.id === uniqueLeaderId,
+  );
+
   if (me && me.chips === 0) {
     h += `<div class="card"><div class="mut">Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.</div></div>`;
   } else if (me && k.active && k.turn === me.id) {

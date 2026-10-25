@@ -12,6 +12,15 @@ function bjView(me) {
   </div>`;
 
   const playing = bj.phase === "playing";
+  const spotlightPlayer =
+    players.find((player) => player.id === st.you) ||
+    players.find((player) => player.bjBet || player.bjSplitBet) ||
+    players[0];
+  h += playerSpotlight(
+    spotlightPlayer,
+    "blackjack",
+    spotlightPlayer?.id === uniqueLeaderId,
+  );
   h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
   h += roundStartControl();
   h += resetAllControl();

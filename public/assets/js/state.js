@@ -42,6 +42,15 @@ const THEMES = {
 };
 const LANGUAGES = { id: "Bahasa Indonesia", en: "English" };
 const EN_TEXT = {
+  "Pemain yang sedang disorot": "Featured player",
+  "Giliran pemain": "Player's turn",
+  "Pemain di meja": "At the table",
+  "Sorotan Blackjack": "Blackjack spotlight",
+  "Sedang mendapat giliran": "Taking a turn",
+  "Sorotan di meja": "Table spotlight",
+  "Chip Tersisa": "Chips remaining",
+  "Bet 1": "Bet 1",
+  "Bet 2": "Bet 2",
   "Bantuan dan FAQ": "Help & FAQ",
   "Pertanyaan Umum": "Frequently Asked Questions",
   "Bagaimana cara membuat atau bergabung ke room?":
