@@ -584,7 +584,7 @@ textarea {
   position: relative;
   isolation: isolate;
   border-color: transparent;
-  box-shadow: 0 0 8px 1px #ff5a0066;
+  box-shadow: 0 0 8px 1px rgba(157, 78, 221, 0.4);
 }
 .pl-fire-leader::before {
   position: absolute;
@@ -595,11 +595,14 @@ textarea {
   padding: 2px;
   background: conic-gradient(
     from var(--fire-frame-angle),
-    #fff176,
-    #ff6b00,
-    #ef2020,
-    #ffad00,
-    #fff176
+    #ff3b30,
+    #ff9500,
+    #ffcc00,
+    #34c759,
+    #00c7be,
+    #007aff,
+    #af52de,
+    #ff3b30
   );
   animation: fire-frame-rotate 2.4s linear infinite;
   pointer-events: none;
@@ -611,6 +614,9 @@ textarea {
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+}
+.player-spotlight.pl-fire-leader::before {
+  inset: 0;
 }
 @property --fire-frame-angle {
   syntax: "<angle>";

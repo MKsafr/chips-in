@@ -13,6 +13,7 @@ function bjView(me) {
 
   const playing = bj.phase === "playing";
   const spotlightPlayer =
+    players.find((player) => player.id === uniqueLeaderId) ||
     players.find((player) => player.id === st.you) ||
     players.find((player) => player.bjBet || player.bjSplitBet) ||
     players[0];

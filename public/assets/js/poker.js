@@ -28,6 +28,7 @@ function pokerView(me) {
   if (k.active) h += roundStartControl();
 
   const spotlightPlayer =
+    (st.players || []).find((player) => player.id === uniqueLeaderId) ||
     (st.players || []).find((player) => player.id === k.turn) ||
     me ||
     (st.players || [])[0];
