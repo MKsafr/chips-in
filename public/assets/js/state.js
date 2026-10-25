@@ -633,7 +633,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.7.2";
+const APP_VER = "3.7.3";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

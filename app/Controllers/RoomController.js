@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.7.2"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.7.3"; // klien yang versinya beda akan otomatis refresh
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [

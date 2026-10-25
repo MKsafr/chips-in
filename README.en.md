@@ -18,7 +18,7 @@
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
 
-Current app version: **3.7.2** (the client/server version, separate from the Node.js package version).
+Current app version: **3.7.3** (the client/server version, separate from the Node.js package version).
 
 ## Table of contents
 
