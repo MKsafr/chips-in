@@ -154,28 +154,9 @@ const EN_TEXT = {
   "Toko Border": "Border Store",
   "Border 1 Warna": "Single-Color Borders",
   "Border 2 Warna": "Two-Color Borders",
-  "Merah Bara": "Ember Red",
-  "Biru Safir": "Sapphire Blue",
-  "Hijau Zamrud": "Emerald Green",
-  "Ungu Nebula": "Nebula Purple",
-  "Oranye Surya": "Solar Orange",
-  "Merah Muda Sakura": "Sakura Pink",
-  "Cyan Aurora": "Aurora Cyan",
-  "Putih Mutiara": "Pearl White",
-  "Aurora Neon": "Neon Aurora",
-  "Toxic Night": "Toxic Night",
-  "Magma Pop": "Magma Pop",
-  "Voltage Sunset": "Voltage Sunset",
-  "Denim Grove": "Denim Grove",
-  "Oranye Neon + Biru Listrik": "Neon Orange + Electric Blue",
-  "Hijau Neon + Denim Biru Muda": "Neon Green + Light Denim Blue",
+  "Gaya Pemimpin Chip": "Chip Leader Style",
   "Border satu warna seharga 5.000 chip dan border dua warna seharga 10.000 chip.":
     "Single-color borders cost 5,000 chips and two-color borders cost 10,000 chips.",
-  "Hijau Neon + Putih": "Neon Green + White",
-  "Hijau Neon + Hitam": "Neon Green + Black",
-  "Oranye Neon + Magenta": "Neon Orange + Magenta",
-  "Oranye Neon + Biru Listrik": "Neon Orange + Electric Blue",
-  "Hijau Neon + Denim Biru Muda": "Neon Green + Light Denim Blue",
   "Pembelian hanya tersedia saat ronde tidak aktif. Border tersimpan di room ini.":
     "Purchases are only available between rounds. Borders are saved in this room.",
   Merah: "Red",
@@ -192,15 +173,55 @@ const EN_TEXT = {
   Beli: "Buy",
   "Lepas border": "Remove border",
   "Border berhasil dibeli dan dipakai": "Border purchased and equipped",
+  "Border profil berhasil dibeli dan dipakai":
+    "Profile border purchased and equipped",
+  "Bundle border berhasil dibeli dan dipakai":
+    "Border bundle purchased and equipped",
   "Border berhasil dipakai": "Border equipped",
+  "Border profil berhasil dipakai": "Profile border equipped",
   "Border dilepas": "Border removed",
+  "Border profil dilepas": "Profile border removed",
   "Warna border tidak tersedia": "Border color is unavailable",
   "Warna border sudah dimiliki": "You already own this border color",
+  "Warna border profil sudah dimiliki":
+    "You already own this profile border color",
   "Border hanya dapat dibeli saat ronde tidak aktif":
     "Borders can only be purchased between rounds",
   "Chip tidak mencukupi untuk membeli border":
     "Not enough chips to purchase this border",
+  "Chip tidak mencukupi untuk membeli border profil":
+    "Not enough chips to purchase this profile border",
+  "Bundle border sudah dimiliki": "You already own this border bundle",
+  "Chip tidak mencukupi untuk membeli bundle border":
+    "Not enough chips to purchase this border bundle",
   "Warna border belum dimiliki": "You do not own this border color",
+  "Warna border profil belum dimiliki":
+    "You do not own this profile border color",
+  "RGB gratis. Buka semua trial border lain seharga 5.000 chip. Gaya pilihan hanya aktif saat kamu memimpin.":
+    "RGB is free. Unlock all other trial borders for 5,000 chips. Selected styles only apply while you lead.",
+  "RGB gratis. Buka semua trial border lain seharga 5.000 chip. Border yang sudah dimiliki juga bisa dipilih. Gaya pilihan hanya aktif saat kamu memimpin.":
+    "RGB is free. Unlock all other trial borders for 5,000 chips. You can also choose borders you already own. Selected styles only apply while you lead.",
+  "Border Profil": "Profile Borders",
+  "Lepas border profil": "Remove profile border",
+  "Bundle Border Serasi": "Matching Border Bundles",
+  "Sorotan + Profil": "Highlight + Profile",
+  "Beli border sorotan dan profil yang serasi sekaligus dengan diskon 25%. Jika salah satunya sudah dimiliki, diskon hanya berlaku untuk border yang belum dimiliki.":
+    "Buy matching highlight and profile borders together with 25% off. If you already own one, the discount applies to the remaining border.",
+  "Gaya pemimpin chip berhasil diubah": "Chip leader style updated",
+  "Semua trial border terbuka": "All trial borders unlocked",
+  "Buka semua trial border": "Unlock all trial borders",
+  Terkunci: "Locked",
+  "Hanya pemimpin chip yang dapat membuka trial border":
+    "Only the chip leader can unlock trial borders",
+  "Hanya pemimpin chip yang dapat memilih gaya border":
+    "Only the chip leader can choose a border style",
+  "Trial border sudah terbuka": "Trial borders are already unlocked",
+  "Chip tidak mencukupi untuk membuka trial border":
+    "Not enough chips to unlock trial borders",
+  "Buka trial border pemimpin terlebih dahulu":
+    "Unlock the chip leader trial borders first",
+  "Trial border pemimpin berhasil dibuka":
+    "Chip leader trial borders unlocked",
   "Aksi store tidak valid": "Invalid store action",
   Tema: "Theme",
   Bahasa: "Language",
@@ -684,7 +705,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.7.14";
+const APP_VER = "3.9";
 let st = null,
   draft = { w: {} },
   toastMsg = "",
@@ -744,6 +765,48 @@ function avatar(id, size) {
   if (a.chip)
     return `<span class="av" style="${wh}font-size:${Math.round(size * 0.3)}px;background:${a.chip};border:${bw}px dashed rgba(255,255,255,.6)">${a.t}</span>`;
   return `<span class="av" style="${wh}font-size:${Math.round(size * 0.55)}px;background:${a.bg}">${a.t}</span>`;
+}
+function avatarWithBorder(
+  player,
+  size,
+  isLeader = false,
+) {
+  if (!player) return avatar("default", size);
+  const borderProducts = [
+    "red",
+    "blue",
+    "green",
+    "purple",
+    "orange",
+    "pink",
+    "cyan",
+    "white",
+    "neon-green-white",
+    "neon-green-black",
+    "neon-orange-magenta",
+    "neon-orange-electric-blue",
+    "neon-green-denim",
+  ];
+  const leaderStyle =
+    isLeader &&
+    (player.leaderBorderColor === "rgb" ||
+      borderProducts.includes(player.leaderBorderColor));
+  const borderColor = leaderStyle
+    ? player.leaderBorderColor === "rgb"
+      ? null
+      : player.leaderBorderColor
+    : player.profileBorderColor;
+  const productBorder = borderProducts.includes(borderColor);
+  if (!leaderStyle && !productBorder) return avatar(player.avatar, size);
+  const classes = [
+    "avatar-border",
+    productBorder ? `pl-border-${borderColor}` : "",
+    leaderStyle && productBorder ? "pl-leader-style" : "",
+    leaderStyle && !productBorder ? "pl-fire-leader" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return `<span class="${classes}" style="width:${size}px;height:${size}px">${avatar(player.avatar, size)}</span>`;
 }
 let audioCtx = null;
 

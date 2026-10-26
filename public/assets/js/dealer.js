@@ -1,8 +1,9 @@
 function hostPanel() {
   const orderLocked = st.poker.active || st.bj.phase === "playing";
+  const leaderId = getUniqueChipLeader(st.players || [], st.mode === "poker");
   let h =
     `<div class="card"><h3>Pengaturan Meja</h3>
-    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" onclick="changeGameMode('poker')">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" onclick="changeGameMode('blackjack')">♣ Blackjack</button></div>
+    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('poker')">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('blackjack')">♣ Blackjack</button></div>
     <div class="row"><div style="flex:1"><div class="mut">Chip Awal</div><input id="sc" type="number" value="${d("sc", st.startChips)}" oninput="setD('sc',this.value)"></div>
     ${
       st.mode === "poker"
@@ -17,7 +18,7 @@ function hostPanel() {
       ? st.players
           .map(
             (p) => `<div class="manage-player" data-player-id="${p.id}">
-          <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatar(p.avatar, 34)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmtChips(p.chips)}</span></div></div>
+          <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatarWithBorder(p, 34, p.id === leaderId)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmtChips(p.chips)}</span></div></div>
       <div class="manage-player-actions manage-player-actions-primary">
       <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Tawarkan sebagai dealer")}</button>
       <button class="g s" aria-label="${translateText("Keluarkan pemain")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">${translateText("Keluarkan pemain")}</button>
@@ -32,6 +33,7 @@ function hostPanel() {
   return h;
 }
 function changeGameMode(mode) {
+  if (st.poker.active || st.bj.phase === "playing") return;
   const hasBlackjackBets = (st.players || []).some(
     (player) => player.bjBet || player.bjSplitBet,
   );

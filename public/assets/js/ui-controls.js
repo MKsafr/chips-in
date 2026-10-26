@@ -3,17 +3,17 @@ let roomScanner = null;
 let roomScanHandled = false;
 let roomScannerLibraryPromise = null;
 const BORDER_STORE_ITEMS = [
-  { id: "red", name: "Merah Bara", price: 5000 },
-  { id: "blue", name: "Biru Safir", price: 5000 },
-  { id: "green", name: "Hijau Zamrud", price: 5000 },
-  { id: "purple", name: "Ungu Nebula", price: 5000 },
-  { id: "orange", name: "Oranye Surya", price: 5000 },
-  { id: "pink", name: "Merah Muda Sakura", price: 5000 },
-  { id: "cyan", name: "Cyan Aurora", price: 5000 },
-  { id: "white", name: "Putih Mutiara", price: 5000 },
+  { id: "red", name: "Ember Red", price: 5000 },
+  { id: "blue", name: "Sapphire Blue", price: 5000 },
+  { id: "green", name: "Emerald Green", price: 5000 },
+  { id: "purple", name: "Nebula Purple", price: 5000 },
+  { id: "orange", name: "Solar Orange", price: 5000 },
+  { id: "pink", name: "Sakura Pink", price: 5000 },
+  { id: "cyan", name: "Aurora Cyan", price: 5000 },
+  { id: "white", name: "Pearl White", price: 5000 },
   {
     id: "neon-green-white",
-    name: "Aurora Neon",
+    name: "Neon Aurora",
     price: 10000,
     colors: ["#39ff14", "#f5f7fa"],
   },
@@ -77,8 +77,13 @@ function setModalContent(content) {
 function openBorderStore() {
   const me = (st.players || []).find((player) => player.id === st.you);
   if (!me) return;
+  const isChipLeader =
+    me.id === getUniqueChipLeader(st.players || [], st.mode === "poker");
   const owned = Array.isArray(me.ownedBorderColors)
     ? me.ownedBorderColors
+    : [];
+  const ownedProfile = Array.isArray(me.ownedProfileBorderColors)
+    ? me.ownedProfileBorderColors
     : [];
   const renderBorderItem = ({ id, name, price }) => {
     const isOwned = owned.includes(id);
@@ -94,10 +99,100 @@ function openBorderStore() {
       ${button}
     </article>`;
   };
+  const leaderBorderOptions = [
+    { id: "rgb", name: "Highest Chip RGB" },
+    ...BORDER_STORE_ITEMS,
+  ];
+  const renderBorderCategory = (items, renderItem, price) =>
+    `<section class="border-store-subcategory">
+      <h4>${translateText(price === 5000 ? "Border 1 Warna" : "Border 2 Warna")}</h4>
+      <div class="border-store-grid">${items.map(renderItem).join("")}</div>
+    </section>`;
+  const renderLeaderBorderOption = ({ id, name }) => {
+    const isLocked =
+      id !== "rgb" &&
+      me.leaderBordersUnlocked !== true &&
+      !owned.includes(id);
+    const selected = (me.leaderBorderColor || "rgb") === id;
+    const preview =
+      id === "rgb"
+        ? `<div class="leader-border-rgb-preview" aria-hidden="true"></div>`
+        : `<div class="border-store-preview pl-border-${id} ${isLocked ? "leader-border-preview-locked" : ""}" aria-hidden="true"></div>`;
+    return `<article class="border-store-item leader-border-item">
+      ${preview}
+      <div class="border-store-item-info"><b>${translateText(name)}</b></div>
+      <button class="${isLocked || selected ? "g" : "ok"} s" ${isLocked || selected || borderStorePending ? "disabled" : ""} ${isLocked ? "" : `onclick="chooseLeaderBorder('${id}')"`}>${translateText(isLocked ? "Terkunci" : selected ? "Sedang dipakai" : "Gunakan")}</button>
+    </article>`;
+  };
+  const renderProfileBorderItem = ({ id, name, price }) => {
+    const isOwned = ownedProfile.includes(id);
+    const isActive = me.profileBorderColor === id;
+    const button = isActive
+      ? `<button class="g s" disabled>${translateText("Sedang dipakai")}</button>`
+      : isOwned
+        ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} onclick="equipProfileBorder('${id}')">${translateText("Gunakan")}</button>`
+        : `<button class="y s" ${me.chips < price || borderStorePending ? "disabled" : ""} onclick="buyProfileBorder('${id}')">${translateText("Beli")} · ${fmt(price)}</button>`;
+    return `<article class="border-store-item">
+      <div class="border-store-preview profile-border-preview pl-border-${id}" aria-hidden="true"></div>
+      <div class="border-store-item-info"><b>${translateText(name)}</b></div>
+      ${button}
+    </article>`;
+  };
+  const bundlePrice = (id, price) =>
+    Math.ceil(
+      price *
+        (Number(!owned.includes(id)) + Number(!ownedProfile.includes(id))) *
+        0.75,
+    );
+  const renderBorderBundle = ({ id, name, price }) => {
+    const ownsBoth = owned.includes(id) && ownedProfile.includes(id);
+    const cost = bundlePrice(id, price);
+    return `<article class="border-store-item">
+      <div class="border-store-preview pl-border-${id}" aria-hidden="true"></div>
+      <div class="border-store-item-info"><b>${translateText(name)}</b><span class="mut">${translateText("Sorotan + Profil")}</span></div>
+      <button class="${ownsBoth ? "g" : "y"} s" ${ownsBoth || me.chips < cost || borderStorePending ? "disabled" : ""} onclick="buyBorderBundle('${id}')">${translateText(ownsBoth ? "Sudah dimiliki" : "Beli Bundle")} · ${fmt(cost)}</button>
+    </article>`;
+  };
   setModalContent(
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeBorderStore)"><div class="mbox border-store-modal" role="dialog" aria-modal="true" aria-labelledby="borderStoreTitle">
       <div class="row sp"><h2 id="borderStoreTitle">${translateText("Toko Border")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeBorderStore()">×</button></div>
       <div class="border-store-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
+      ${
+        isChipLeader
+          ? `<section class="leader-border-section" aria-labelledby="leaderBorderTitle">
+        <h3 id="leaderBorderTitle">${translateText("Gaya Pemimpin Chip")}</h3>
+        <p class="mut">${translateText("RGB gratis. Buka semua trial border lain seharga 5.000 chip. Border yang sudah dimiliki juga bisa dipilih. Gaya pilihan hanya aktif saat kamu memimpin.")}</p>
+        ${
+          me.leaderBordersUnlocked
+            ? `<div class="leader-border-unlocked">${translateText("Semua trial border terbuka")}</div>`
+            : `<button class="y f leader-border-unlock" ${me.chips < 5000 || borderStorePending || st.poker.active || st.bj.phase === "playing" || (st.players || []).some((player) => player.bjBet || player.bjSplitBet) ? "disabled" : ""} onclick="unlockLeaderBorders()">${translateText("Buka semua trial border")} · ${fmt(5000)}</button>`
+        }
+        <div class="border-store-grid">${renderLeaderBorderOption(
+          leaderBorderOptions[0],
+        )}</div>
+        <div class="border-store-category-pair">
+          ${renderBorderCategory(
+            leaderBorderOptions.filter(
+              ({ id }) =>
+                BORDER_STORE_ITEMS.find((item) => item.id === id)?.price ===
+                5000,
+            ),
+            renderLeaderBorderOption,
+            5000,
+          )}
+          ${renderBorderCategory(
+            leaderBorderOptions.filter(
+              ({ id }) =>
+                BORDER_STORE_ITEMS.find((item) => item.id === id)?.price ===
+                10000,
+            ),
+            renderLeaderBorderOption,
+            10000,
+          )}
+        </div>
+      </section>`
+          : ""
+      }
       <div class="border-store-categories">
         <section class="border-store-category" aria-labelledby="singleBorderTitle">
           <h3 id="singleBorderTitle">${translateText("Border 1 Warna")}</h3>
@@ -108,6 +203,38 @@ function openBorderStore() {
           <div class="border-store-grid">${BORDER_STORE_ITEMS.filter(({ price }) => price === 10000).map(renderBorderItem).join("")}</div>
         </section>
       </div>
+      <section class="profile-border-store-section" aria-labelledby="profileBorderTitle">
+      <h3 id="profileBorderTitle">${translateText("Border Profil")}</h3>
+        <div class="border-store-category-pair">
+          ${renderBorderCategory(
+            BORDER_STORE_ITEMS.filter(({ price }) => price === 5000),
+            renderProfileBorderItem,
+            5000,
+          )}
+          ${renderBorderCategory(
+            BORDER_STORE_ITEMS.filter(({ price }) => price === 10000),
+            renderProfileBorderItem,
+            10000,
+          )}
+        </div>
+      <button class="g f profile-border-clear" ${!me.profileBorderColor || borderStorePending ? "disabled" : ""} onclick="clearProfilePlayerBorder()">${translateText("Lepas border profil")}</button>
+      </section>
+      <section class="profile-border-store-section" aria-labelledby="borderBundleTitle">
+      <h3 id="borderBundleTitle">${translateText("Bundle Border Serasi")}</h3>
+      <p class="mut border-store-note">${translateText("Beli border sorotan dan profil yang serasi sekaligus dengan diskon 25%. Jika salah satunya sudah dimiliki, diskon hanya berlaku untuk border yang belum dimiliki.")}</p>
+        <div class="border-store-category-pair">
+          ${renderBorderCategory(
+            BORDER_STORE_ITEMS.filter(({ price }) => price === 5000),
+            renderBorderBundle,
+            5000,
+          )}
+          ${renderBorderCategory(
+            BORDER_STORE_ITEMS.filter(({ price }) => price === 10000),
+            renderBorderBundle,
+            10000,
+          )}
+        </div>
+      </section>
       <div class="row border-store-actions"><button class="g f" ${!me.borderColor || borderStorePending ? "disabled" : ""} onclick="clearPlayerBorder()">${translateText("Lepas border")}</button><button class="g f" onclick="closeBorderStore()">${translateText("Tutup")}</button></div>
       <p class="mut border-store-note">${translateText("Pembelian hanya tersedia saat ronde tidak aktif. Border tersimpan di room ini.")}</p>
     </div></div>`,
@@ -117,6 +244,10 @@ function openBorderStore() {
 function closeBorderStore() {
   $("#modal").innerHTML = "";
 }
+
+window.addEventListener("chipsin-language-change", () => {
+  if ($("#modal .border-store-modal")) openBorderStore();
+});
 
 async function updatePlayerBorder(action, color) {
   if (borderStorePending) return;
@@ -128,13 +259,26 @@ async function updatePlayerBorder(action, color) {
       flash(
         action === "buy"
           ? "Border berhasil dibeli dan dipakai"
+          : action === "buyProfile"
+            ? "Border profil berhasil dibeli dan dipakai"
+            : action === "buyBundle"
+              ? "Bundle border berhasil dibeli dan dipakai"
           : action === "equip"
             ? "Border berhasil dipakai"
-            : "Border dilepas",
+            : action === "equipProfile"
+              ? "Border profil berhasil dipakai"
+              : action === "clearProfile"
+                ? "Border profil dilepas"
+            : action === "leaderStyle"
+              ? "Gaya pemimpin chip berhasil diubah"
+                : action === "unlockLeaderBorders"
+                  ? "Trial border pemimpin berhasil dibuka"
+                : "Border dilepas",
       );
     }
   } finally {
     borderStorePending = false;
+    if ($("#modal .border-store-modal")) openBorderStore();
   }
 }
 
@@ -146,8 +290,32 @@ function equipPlayerBorder(color) {
   return updatePlayerBorder("equip", color);
 }
 
+function buyProfileBorder(color) {
+  return updatePlayerBorder("buyProfile", color);
+}
+
+function equipProfileBorder(color) {
+  return updatePlayerBorder("equipProfile", color);
+}
+
+function clearProfilePlayerBorder() {
+  return updatePlayerBorder("clearProfile");
+}
+
+function buyBorderBundle(color) {
+  return updatePlayerBorder("buyBundle", color);
+}
+
 function clearPlayerBorder() {
   return updatePlayerBorder("clear");
+}
+
+function chooseLeaderBorder(color) {
+  return updatePlayerBorder("leaderStyle", color);
+}
+
+function unlockLeaderBorders() {
+  return updatePlayerBorder("unlockLeaderBorders");
 }
 
 function openHelp() {

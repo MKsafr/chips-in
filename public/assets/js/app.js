@@ -77,8 +77,10 @@ function render() {
       <button class="g s" onclick="leaveHostRoom()">Keluar</button></div>
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
   } else if (me) {
+    const meIsChipLeader =
+      me.id === getUniqueChipLeader(st.players || [], st.mode === "poker");
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(me.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatarWithBorder(me, 54, meIsChipLeader)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
       <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s" onclick="openBorderStore()">🎨 ${translateText("Toko Border")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
   }
@@ -121,6 +123,7 @@ function render() {
   if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
   $("#app").innerHTML = h;
   localizeTree($("#app"));
+  if ($("#modal .border-store-modal")) openBorderStore();
 
   const prof = myProfile(); // berlaku juga untuk Bandar: wajib pilih nama & foto sebelum memegang kontrol room
   if (prof && !prof.ready && !pfOpen) openProfile("full");

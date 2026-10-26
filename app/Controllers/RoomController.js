@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.7.14"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.9"; // klien yang versinya beda akan otomatis refresh
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -178,6 +178,28 @@ function initRoom(code) {
 
 const P = (room, id) => room.players.find((p) => p.id === id);
 const pot = (room) => room.players.reduce((a, p) => a + (p.contrib || 0), 0);
+
+function uniqueChipLeaderId(room) {
+  const isPoker = room.mode === "poker";
+  let leaderId = null;
+  let maxChips = 0;
+  let hasTie = false;
+  for (const player of room.players) {
+    const total =
+      (player.chips || 0) +
+      (isPoker
+        ? player.contrib || 0
+        : (player.bjBet || 0) + (player.bjSplitBet || 0));
+    if (total > maxChips) {
+      leaderId = player.id;
+      maxChips = total;
+      hasTie = false;
+    } else if (total === maxChips && total > 0) {
+      hasTie = true;
+    }
+  }
+  return hasTie ? null : leaderId;
+}
 
 function bjTurnHands(room) {
   return room.players.flatMap((player) => [
@@ -557,6 +579,21 @@ function seatPlayer(room, token, profile) {
           PLAYER_BORDER_PRODUCTS.has(color),
         )
       : [],
+    ownedProfileBorderColors: Array.isArray(
+      old && old.ownedProfileBorderColors,
+    )
+      ? old.ownedProfileBorderColors.filter((color) =>
+          PLAYER_BORDER_PRODUCTS.has(color),
+        )
+      : [],
+    profileBorderColor:
+      old &&
+      PLAYER_BORDER_PRODUCTS.has(old.profileBorderColor) &&
+      old.ownedProfileBorderColors?.includes(old.profileBorderColor)
+        ? old.profileBorderColor
+        : null,
+    leaderBordersUnlocked: old?.leaderBordersUnlocked === true,
+    leaderBorderColor: null,
     borderColor:
       old &&
       PLAYER_BORDER_PRODUCTS.has(old.borderColor) &&
@@ -593,6 +630,9 @@ function unseatPlayer(room, p) {
     ready: p.ready,
     ownedBorderColors: p.ownedBorderColors || [],
     borderColor: p.borderColor || null,
+    ownedProfileBorderColors: p.ownedProfileBorderColors || [],
+    profileBorderColor: p.profileBorderColor || null,
+    leaderBordersUnlocked: p.leaderBordersUnlocked === true,
   };
   room.players = room.players.filter((q) => q !== p);
   if (room.pendingHost && room.pendingHost.targetId === p.id) clearOffer(room);
@@ -1101,22 +1141,60 @@ function handle(b) {
       const color = b.color;
       if (!Array.isArray(player.ownedBorderColors))
         player.ownedBorderColors = [];
-      if (action === "buy") {
-        const price = PLAYER_BORDER_PRODUCTS.get(color);
-        if (price === undefined) throw "Warna border tidak tersedia";
-        if (player.ownedBorderColors.includes(color))
-          throw "Warna border sudah dimiliki";
+      if (!Array.isArray(player.ownedProfileBorderColors))
+        player.ownedProfileBorderColors = [];
+      const ensureBorderPurchasable = () => {
         if (
           room.poker.active ||
           room.bj.phase === "playing" ||
           room.players.some((p) => p.bjBet || p.bjSplitBet)
         )
           throw "Border hanya dapat dibeli saat ronde tidak aktif";
+      };
+      if (action === "buy") {
+        const price = PLAYER_BORDER_PRODUCTS.get(color);
+        if (price === undefined) throw "Warna border tidak tersedia";
+        if (player.ownedBorderColors.includes(color))
+          throw "Warna border sudah dimiliki";
+        ensureBorderPurchasable();
         if (player.chips < price)
           throw "Chip tidak mencukupi untuk membeli border";
         player.chips -= price;
         player.ownedBorderColors.push(color);
         player.borderColor = color;
+        break;
+      }
+      if (action === "buyProfile") {
+        const price = PLAYER_BORDER_PRODUCTS.get(color);
+        if (price === undefined) throw "Warna border tidak tersedia";
+        if (player.ownedProfileBorderColors.includes(color))
+          throw "Warna border profil sudah dimiliki";
+        ensureBorderPurchasable();
+        if (player.chips < price)
+          throw "Chip tidak mencukupi untuk membeli border profil";
+        player.chips -= price;
+        player.ownedProfileBorderColors.push(color);
+        player.profileBorderColor = color;
+        break;
+      }
+      if (action === "buyBundle") {
+        const price = PLAYER_BORDER_PRODUCTS.get(color);
+        if (price === undefined) throw "Warna border tidak tersedia";
+        const needsSpotlight = !player.ownedBorderColors.includes(color);
+        const needsProfile = !player.ownedProfileBorderColors.includes(color);
+        if (!needsSpotlight && !needsProfile)
+          throw "Bundle border sudah dimiliki";
+        ensureBorderPurchasable();
+        const bundlePrice = Math.ceil(
+          price * (Number(needsSpotlight) + Number(needsProfile)) * 0.75,
+        );
+        if (player.chips < bundlePrice)
+          throw "Chip tidak mencukupi untuk membeli bundle border";
+        player.chips -= bundlePrice;
+        if (needsSpotlight) player.ownedBorderColors.push(color);
+        if (needsProfile) player.ownedProfileBorderColors.push(color);
+        player.borderColor = color;
+        player.profileBorderColor = color;
         break;
       }
       if (action === "equip") {
@@ -1127,8 +1205,52 @@ function handle(b) {
         player.borderColor = color;
         break;
       }
+      if (action === "equipProfile") {
+        if (!PLAYER_BORDER_PRODUCTS.has(color))
+          throw "Warna border tidak tersedia";
+        if (!player.ownedProfileBorderColors.includes(color))
+          throw "Warna border profil belum dimiliki";
+        player.profileBorderColor = color;
+        break;
+      }
       if (action === "clear") {
         player.borderColor = null;
+        break;
+      }
+      if (action === "clearProfile") {
+        player.profileBorderColor = null;
+        break;
+      }
+      if (action === "unlockLeaderBorders") {
+        if (uniqueChipLeaderId(room) !== player.id)
+          throw "Hanya pemimpin chip yang dapat membuka trial border";
+        if (player.leaderBordersUnlocked) throw "Trial border sudah terbuka";
+        ensureBorderPurchasable();
+        if (player.chips < 5000)
+          throw "Chip tidak mencukupi untuk membuka trial border";
+        player.chips -= 5000;
+        player.leaderBordersUnlocked = true;
+        break;
+      }
+      if (action === "leaderStyle") {
+        if (uniqueChipLeaderId(room) !== player.id)
+          throw "Hanya pemimpin chip yang dapat memilih gaya border";
+        if (color === "default") {
+          player.leaderBorderColor = null;
+          break;
+        }
+        if (
+          color !== "rgb" &&
+          (typeof color !== "string" || !PLAYER_BORDER_PRODUCTS.has(color))
+        )
+          throw "Warna border tidak tersedia";
+        if (
+          color !== "rgb" &&
+          !player.leaderBordersUnlocked &&
+          !player.ownedBorderColors.includes(color)
+        )
+          throw "Buka trial border pemimpin terlebih dahulu";
+        player.leaderBorderColor = color;
         break;
       }
       throw "Aksi store tidak valid";
