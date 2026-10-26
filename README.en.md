@@ -18,7 +18,7 @@
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
 
-Current app version: **3.7.5** (the client/server version, separate from the Node.js package version).
+Current app version: **3.7.14** (the client/server version, separate from the Node.js package version).
 
 ## Table of contents
 
@@ -32,7 +32,7 @@ Current app version: **3.7.5** (the client/server version, separate from the Nod
 - Separate rooms with a unique code for each table.
 - Poker and Blackjack modes.
 - Chip balances, bets, pots, and game history.
-- A border store where players can purchase and equip colored player and spotlight borders for 10,000 chips each.
+- A border store with separate single-color and animated two-color sections, featuring distinctive border tiles players can purchase for chips.
 - Interactive Poker and Blackjack guides explaining hands, rules, and how to play.
 - A dealer panel to configure the table and manage players.
 - Player management: change seating order, add or remove chips, offer the dealer role, and remove players.
@@ -62,7 +62,7 @@ Current app version: **3.7.5** (the client/server version, separate from the Nod
 
 1. Enter the room code from the dealer, then select **Join Room**.
 2. Change your name and choose an avatar.
-3. Open **Border Store** to buy and equip colored borders for 10,000 chips each. Purchases are available between rounds and are saved in the room.
+3. Open **Border Store** to buy and equip single-color borders for 5,000 chips or animated two-color borders for 10,000 chips. Purchases are available between rounds and are saved in the room.
 4. Play according to the selected mode:
    - **Poker:** take your turn by folding, calling/checking, raising, or going all-in. If you run out of chips while all-in, wait for the showdown and for the dealer to award the pot.
    - **Blackjack:** choose chips to set your bet before the dealer deals. During a round, use **Double** or **Split** when available.

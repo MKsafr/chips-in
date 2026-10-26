@@ -152,8 +152,30 @@ const EN_TEXT = {
   Tutup: "Close",
   "Tampilan (hanya di perangkat ini)": "Appearance (this device only)",
   "Toko Border": "Border Store",
-  "Beli border warna untuk pemain dan sorotan. Harga setiap warna 10.000 chip.":
-    "Buy a colored border for your player row and spotlight. Each color costs 10,000 chips.",
+  "Border 1 Warna": "Single-Color Borders",
+  "Border 2 Warna": "Two-Color Borders",
+  "Merah Bara": "Ember Red",
+  "Biru Safir": "Sapphire Blue",
+  "Hijau Zamrud": "Emerald Green",
+  "Ungu Nebula": "Nebula Purple",
+  "Oranye Surya": "Solar Orange",
+  "Merah Muda Sakura": "Sakura Pink",
+  "Cyan Aurora": "Aurora Cyan",
+  "Putih Mutiara": "Pearl White",
+  "Aurora Neon": "Neon Aurora",
+  "Toxic Night": "Toxic Night",
+  "Magma Pop": "Magma Pop",
+  "Voltage Sunset": "Voltage Sunset",
+  "Denim Grove": "Denim Grove",
+  "Oranye Neon + Biru Listrik": "Neon Orange + Electric Blue",
+  "Hijau Neon + Denim Biru Muda": "Neon Green + Light Denim Blue",
+  "Border satu warna seharga 5.000 chip dan border dua warna seharga 10.000 chip.":
+    "Single-color borders cost 5,000 chips and two-color borders cost 10,000 chips.",
+  "Hijau Neon + Putih": "Neon Green + White",
+  "Hijau Neon + Hitam": "Neon Green + Black",
+  "Oranye Neon + Magenta": "Neon Orange + Magenta",
+  "Oranye Neon + Biru Listrik": "Neon Orange + Electric Blue",
+  "Hijau Neon + Denim Biru Muda": "Neon Green + Light Denim Blue",
   "Pembelian hanya tersedia saat ronde tidak aktif. Border tersimpan di room ini.":
     "Purchases are only available between rounds. Borders are saved in this room.",
   Merah: "Red",
@@ -662,7 +684,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.7.5";
+const APP_VER = "3.7.14";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

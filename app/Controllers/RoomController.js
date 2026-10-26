@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.7.5"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.7.14"; // klien yang versinya beda akan otomatis refresh
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -67,16 +67,20 @@ const API_RATE_LIMIT_REFILL_PER_SECOND = 5;
 const API_RATE_LIMIT_IDLE_MS = 5 * 60 * 1000;
 const API_RATE_LIMIT_MAX_CLIENTS = 10000;
 const apiRateLimits = new Map();
-const BORDER_STORE_PRICE = 10000;
-const PLAYER_BORDER_COLORS = new Set([
-  "red",
-  "blue",
-  "green",
-  "purple",
-  "orange",
-  "pink",
-  "cyan",
-  "white",
+const PLAYER_BORDER_PRODUCTS = new Map([
+  ["red", 5000],
+  ["blue", 5000],
+  ["green", 5000],
+  ["purple", 5000],
+  ["orange", 5000],
+  ["pink", 5000],
+  ["cyan", 5000],
+  ["white", 5000],
+  ["neon-green-white", 10000],
+  ["neon-green-black", 10000],
+  ["neon-orange-magenta", 10000],
+  ["neon-orange-electric-blue", 10000],
+  ["neon-green-denim", 10000],
 ]);
 
 function disconnectKey(token, roomCode) {
@@ -549,11 +553,13 @@ function seatPlayer(room, token, profile) {
     ready: profile ? true : !!(old && old.ready),
     chips: old ? old.chips : room.startChips,
     ownedBorderColors: Array.isArray(old && old.ownedBorderColors)
-      ? old.ownedBorderColors.filter((color) => PLAYER_BORDER_COLORS.has(color))
+      ? old.ownedBorderColors.filter((color) =>
+          PLAYER_BORDER_PRODUCTS.has(color),
+        )
       : [],
     borderColor:
       old &&
-      PLAYER_BORDER_COLORS.has(old.borderColor) &&
+      PLAYER_BORDER_PRODUCTS.has(old.borderColor) &&
       old.ownedBorderColors?.includes(old.borderColor)
         ? old.borderColor
         : null,
@@ -1096,8 +1102,8 @@ function handle(b) {
       if (!Array.isArray(player.ownedBorderColors))
         player.ownedBorderColors = [];
       if (action === "buy") {
-        if (!PLAYER_BORDER_COLORS.has(color))
-          throw "Warna border tidak tersedia";
+        const price = PLAYER_BORDER_PRODUCTS.get(color);
+        if (price === undefined) throw "Warna border tidak tersedia";
         if (player.ownedBorderColors.includes(color))
           throw "Warna border sudah dimiliki";
         if (
@@ -1106,15 +1112,15 @@ function handle(b) {
           room.players.some((p) => p.bjBet || p.bjSplitBet)
         )
           throw "Border hanya dapat dibeli saat ronde tidak aktif";
-        if (player.chips < BORDER_STORE_PRICE)
+        if (player.chips < price)
           throw "Chip tidak mencukupi untuk membeli border";
-        player.chips -= BORDER_STORE_PRICE;
+        player.chips -= price;
         player.ownedBorderColors.push(color);
         player.borderColor = color;
         break;
       }
       if (action === "equip") {
-        if (!PLAYER_BORDER_COLORS.has(color))
+        if (!PLAYER_BORDER_PRODUCTS.has(color))
           throw "Warna border tidak tersedia";
         if (!player.ownedBorderColors.includes(color))
           throw "Warna border belum dimiliki";
