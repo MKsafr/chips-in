@@ -6,36 +6,24 @@
 
 <p align="center">
   Aplikasi chip digital untuk bermain <strong>Poker</strong> dan <strong>Blackjack</strong> bersama teman.
-  Buat room, bagikan kodenya, dan kelola permainan dari satu meja bersama.
+  Buat room, bagikan kodenya, dan kelola permainan bersama di satu meja.
 </p>
 
 <p align="center">
-<<<<<<< HEAD
   <a href="https://chips-in-online.onrender.com/"><strong>Mainkan Chips-in</strong></a>
-=======
-  <a href="https://chips-in-online.onrender.com/"><strong> Mainkan Chips-in </strong></a>
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
   &nbsp;·&nbsp;
   <a href="README.en.md">English</a> ·
   <a href="https://github.com/MKsafr/chips-in">GitHub</a>
 </p>
 
-Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil ronde. Kartu tetap dimainkan secara fisik; aplikasi ini menyediakan pencatatan chip dan kontrol permainan.
+Chips-in menyinkronkan room, pemain, chip, taruhan, dan hasil permainan. Kartu tetap dimainkan secara fisik; aplikasi ini mencatat chip dan membantu mengelola permainan.
 
-<<<<<<< HEAD
 Versi aplikasi saat ini: **3.9** (versi klien/server, terpisah dari versi paket Node.js).
-=======
-Versi aplikasi saat ini: **3.7.4** (versi klien/server, terpisah dari versi paket Node.js).
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 
 ## Daftar isi
 
 - [Fitur](#fitur)
 - [Cara menggunakan](#cara-menggunakan)
-<<<<<<< HEAD
-- [Menjalankan secara lokal](#menjalankan-secara-lokal)
-=======
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 - [Struktur project](#struktur-project)
 - [Kredit](#kredit)
 
@@ -44,75 +32,48 @@ Versi aplikasi saat ini: **3.7.4** (versi klien/server, terpisah dari versi pake
 - Room terpisah dengan kode unik untuk setiap meja.
 - Mode Poker dan Blackjack.
 - Saldo chip, taruhan, pot, dan riwayat permainan.
-<<<<<<< HEAD
-- Toko border dengan kategori border satu warna seharga 5.000 chip dan border dua warna animasi seharga 10.000 chip.
-- Border dapat dibeli untuk sorotan pemain dan avatar profil secara terpisah, atau dibeli sebagai bundle serasi dengan diskon 25%.
-- Border sorotan ditampilkan dalam bentuk persegi, sedangkan preview border profil berbentuk lingkaran.
-- Pemimpin chip unik dapat menggunakan gaya RGB gratis atau memilih border toko saat memimpin. Gaya pemimpin tidak memberikan kepemilikan border.
-- Pemimpin chip unik dapat membuka semua gaya trial non-RGB seharga 5.000 chip. Pembukaan trial tersimpan pada pemain, tetapi gaya pilihannya hanya aktif saat ia memimpin.
-- Antarmuka toko border tersedia dalam Bahasa Indonesia dan English, termasuk kategori untuk gaya pemimpin, border profil, dan bundle.
-=======
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
-- Panduan interaktif Poker dan Blackjack yang menjelaskan hand, aturan, dan cara bermain.
+- Toko border dengan kategori border satu warna dan border dua warna animasi yang ditampilkan berdampingan, serta preview persegi yang dapat dibeli dengan chip.
+- Border yang dibeli dapat digunakan secara terpisah untuk sorotan pemain atau avatar profil, atau dibeli bersama sebagai bundle serasi dengan diskon 25%.
+- Preview border profil berbentuk lingkaran dan dikelompokkan ke dalam kategori satu warna dan dua warna, sama seperti bundle border serasi.
+- Pemimpin chip unik dapat menggunakan gaya RGB gratis atau gaya border toko dari kategori satu warna atau dua warna; gaya hanya tampil selama pemain memimpin dan tidak memberikan kepemilikan permanen.
+- Pemimpin chip unik dapat membuka semua gaya trial non-RGB seharga 5.000 chip; pembukaan tersimpan pada pemain, sedangkan gaya trial yang dipilih hanya aktif selama pemain memimpin.
+- Panduan interaktif Poker dan Blackjack yang menjelaskan kombinasi kartu, aturan, dan cara bermain.
 - Panel dealer untuk mengatur meja dan mengelola pemain.
-- Pengelolaan pemain: ubah urutan duduk, tambah/kurangi chip, tawarkan peran dealer, dan keluarkan pemain.
+- Pengelolaan pemain: mengubah urutan duduk, menambah atau mengurangi chip, menawarkan peran dealer, dan mengeluarkan pemain.
 - Pemain dapat bergabung menggunakan kode room dan mengatur profil.
-- Pemulihan sesi pemain maupun dealer setelah koneksi terputus, selama room dan sesi masih tersedia.
-- Bisa dipasang sebagai aplikasi web progresif (PWA) pada browser/perangkat yang mendukung.
-- Antarmuka tersedia dalam Bahasa Indonesia dan English, dengan pilihan tema.
-- FAQ dan formulir pelaporan bug tersedia dari tombol bantuan di lobby.
+- Sesi pemain dan dealer dapat dilanjutkan setelah koneksi terputus selama room dan sesi masih tersedia.
+- Dapat dipasang sebagai aplikasi web progresif (PWA) di browser dan perangkat yang mendukung.
+- Antarmuka dalam Bahasa Indonesia dan English, dengan pilihan tema.
+- FAQ dan formulir pelaporan bug tersedia melalui tombol bantuan di lobby.
 - Kontak dukungan: chips.in.support@gmail.com.
-- Laporan bug dibuka sebagai GitHub Issue yang dapat dilihat publik; pengguna harus login dan mengirimkannya dari GitHub.
+- Laporan bug dibuka sebagai GitHub Issue publik; pengguna harus login dan mengirim laporan melalui GitHub.
 
 ## Cara menggunakan
 
 ### Dealer
 
-<<<<<<< HEAD
 1. Buka [Chips-in](https://chips-in-online.onrender.com/) dan pilih **Buat Ruangan**.
-=======
-1. Buka [Chips-in](https://chips-in-online.onrender.com/) dan pilih **Host Room (Buat Meja Baru)**.
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
-2. Ubah nama lalu pilih avatar.
-3. Bagikan kode room yang tampil kepada para pemain.
+2. Ubah nama dan pilih avatar.
+3. Bagikan kode room kepada para pemain.
 4. Buka **Kontrol Dealer** untuk memilih Poker atau Blackjack, mengatur chip awal, dan—untuk Poker—mengatur Small Blind serta Big Blind.
-5. Kelola pemain melalui panel **Kontrol Dealer**: ubah urutan duduk, tambah/kurangi chip, tawarkan peran dealer, atau keluarkan pemain.
-6. Aksi ronde dilakukan langsung dari meja:
-   - **Poker:** pilih **Mulai Hand Baru**. Saat permainan meminta kartu komunitas dibuka, dealer membuka kartu di meja fisik lalu menekan tombol konfirmasi di meja aplikasi. Pada **Showdown**, pilih nama pemenang untuk setiap pot (termasuk side pot), lalu pilih **Kirim Pot**.
-   - **Blackjack:** pemain memasang taruhan terlebih dahulu. Dealer memilih **Kunci Taruhan & Bagi Kartu**, lalu setelah permainan kartu fisik selesai mencatat hasil tiap pemain. Tombol hasil massal tersedia untuk menyelesaikan semua taruhan dengan hasil yang sama; **Batal** mengembalikan taruhan ronde.
-7. Tombol **Reset Semua Chip** tersedia di meja saat ronde tidak sedang berjalan.
+5. Kelola pemain melalui **Kontrol Dealer**: ubah urutan duduk, tambah atau kurangi chip, tawarkan peran dealer, atau keluarkan pemain.
+6. Jalankan setiap ronde dari meja:
+   - **Poker:** pilih **Mulai Hand Baru**. Saat diminta membuka kartu komunitas, buka kartu di meja fisik lalu pilih **Konfirmasi Kartu** di aplikasi. Pada **Showdown**, pilih pemenang untuk setiap pot (termasuk side pot), lalu pilih **Bagikan Pot**.
+   - **Blackjack:** pemain memasang taruhan terlebih dahulu. Pilih **Kunci Taruhan & Bagi Kartu**, lalu catat hasil setiap pemain setelah permainan kartu fisik selesai. Tombol hasil massal menyelesaikan semua taruhan dengan hasil yang sama; **Batal** mengembalikan taruhan ronde tersebut.
+7. **Reset Semua Chip** tersedia saat tidak ada ronde yang berjalan.
 
 ### Pemain
 
-<<<<<<< HEAD
 1. Masukkan kode room dari dealer, lalu pilih **Gabung Room**.
-2. Ubah nama lalu pilih avatar.
-3. Buka **Toko Border** untuk membeli border satu warna seharga 5.000 chip atau border dua warna animasi seharga 10.000 chip. Pembelian tersedia di antara ronde dan tersimpan di room. Border sorotan dan profil yang serasi dapat dibeli sebagai bundle dengan diskon 25%. Saat menjadi pemimpin chip, kamu juga dapat memilih gaya RGB gratis atau border toko; gaya tersebut tidak aktif ketika kamu kehilangan posisi pemimpin dan bukan pembelian border.
-4. Ikuti permainan sesuai mode:
-   - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in. Jika chipmu habis saat all-in, tunggu sampai showdown dan dealer membagikan pot.
-   - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer membagikan kartu. Saat ronde berlangsung, gunakan opsi **Double** atau **Split** jika tersedia.
-5. Saldo chip, taruhan, dan pembaruan room akan tersinkron otomatis.
+2. Ubah nama dan pilih avatar.
+3. Buka **Toko Border** untuk membeli dan menggunakan border satu warna seharga 5.000 chip atau border dua warna animasi seharga 10.000 chip. Pembelian hanya tersedia di antara ronde dan tersimpan di room. Beli border sorotan dan profil yang serasi sekaligus untuk mendapatkan diskon 25%. Saat memimpin chip, kamu juga dapat memilih gaya RGB gratis atau gaya border toko dari kategori satu warna atau dua warna; gaya itu tidak aktif lagi saat kamu kehilangan posisi pemimpin dan bukan merupakan pembelian. Antarmuka toko tersedia dalam Bahasa Indonesia dan English.
+4. Bermain sesuai mode yang dipilih:
+   - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in. Jika chipmu habis saat all-in, tunggu showdown dan dealer membagikan pot.
+   - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer membagikan kartu. Saat ronde berlangsung, gunakan **Double** atau **Split** jika tersedia.
+5. Saldo chip, taruhan, dan pembaruan room tersinkron secara otomatis.
 
-Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang sama. Jika room dan sesi masih tersedia, akan muncul pilihan untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali mengambil lagi perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
+Jika koneksi terputus atau tab tertutup, buka kembali situs di browser yang sama. Jika room dan sesi masih tersedia, kamu dapat memilih untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali melanjutkan perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
 
-## Menjalankan secara lokal
-
-1. Pastikan Node.js versi 18 atau lebih baru sudah terpasang.
-2. Jalankan `npm install` dari folder project.
-3. Jalankan `npm start`.
-4. Buka `http://localhost:3000` di browser.
-
-=======
-1. Masukkan kode room dari dealer, lalu pilih **Join Room**.
-2. Ubah nama lalu pilih avatar.
-3. Ikuti permainan sesuai mode:
-   - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in. Jika chipmu habis saat all-in, tunggu sampai showdown dan dealer membagikan pot.
-   - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer membagikan kartu. Saat ronde berlangsung, gunakan opsi **Double** atau **Split** jika tersedia.
-4. Saldo chip, taruhan, dan pembaruan room akan tersinkron otomatis.
-
-Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang sama. Jika room dan sesi masih tersedia, akan muncul pilihan untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali mengambil lagi perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
-
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 ## Struktur project
 
 ```text
@@ -127,13 +88,6 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 ├── public/
 │   ├── assets/
 │   │   ├── css/
-<<<<<<< HEAD
-│   │   ├── images/
-│   │   ├── js/
-│   │   ├── logo/
-│   │   └── sounds/
-│   ├── pages/
-=======
 │   │   │   ├── app.css
 │   │   │   └── legal.css
 │   │   ├── images/
@@ -179,7 +133,6 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 │   │   ├── about.html
 │   │   ├── privacy.html
 │   │   └── terms.html
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 │   ├── manifest.json
 │   ├── robots.txt
 │   ├── sitemap.xml
@@ -195,25 +148,16 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs dengan browser yang 
 - `server.js` adalah entry point aplikasi.
 - `app/Controllers/RoomController.js` menangani server HTTP, room, dan logika permainan.
 - `app/Views/index.html` adalah halaman utama.
-<<<<<<< HEAD
-- `public/pages/` berisi halaman About, Privacy, dan Terms.
-=======
-- `public/pages/` berisi halaman About, Privacy, dan Terms; `public/assets/css/legal.css` dan `public/assets/js/legal.js` mendukung halaman-halaman tersebut.
+- `public/pages/` berisi halaman About, Privacy, dan Terms; `public/assets/css/legal.css` dan `public/assets/js/legal.js` mendukung halaman tersebut.
 - `public/robots.txt` dan `public/sitemap.xml` menyediakan arahan crawling dan daftar halaman publik untuk mesin pencari.
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 - `public/assets/` berisi stylesheet, script browser, QR scanner, gambar, logo, dan suara.
-- Script browser dimuat berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
-- Data room disimpan di memori server, sehingga room yang belum selesai tidak bertahan jika proses server dimulai ulang.
+- Script browser dimuat secara berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
+- Data room disimpan di memori server, sehingga room yang belum selesai tidak tersimpan jika proses server dimulai ulang.
 
 ## Kredit
 
-Diinisiasi oleh **Ado, Anoy, Isan, dan Kholid**.
+Dibuat oleh **Ado, Anoy, Isan, dan Kholid**.
 
-Kode dibuat sepenuhnya dengan menggunakan bantuan AI.
+Dibuat sepenuhnya dengan bantuan AI.
 
-<<<<<<< HEAD
-=======
-https://canva.link/un0tf2zzl0s5jy0
-
->>>>>>> e0ddb80f1ad572e0ed9783b4e87343ef82a5a1e6
 Situs: https://chips-in-online.onrender.com/ · Repo: https://github.com/MKsafr/chips-in
