@@ -2,6 +2,18 @@ let pendingAllInConfirmation = null;
 let roomScanner = null;
 let roomScanHandled = false;
 let roomScannerLibraryPromise = null;
+const BORDER_STORE_ITEMS = [
+  { id: "red", name: "Merah" },
+  { id: "blue", name: "Biru" },
+  { id: "green", name: "Hijau" },
+  { id: "purple", name: "Ungu" },
+  { id: "orange", name: "Oranye" },
+  { id: "pink", name: "Merah Muda" },
+  { id: "cyan", name: "Cyan" },
+  { id: "white", name: "Putih" },
+];
+const BORDER_STORE_PRICE = 10000;
+let borderStorePending = false;
 
 function rememberModalPointerDown(event) {
   event.currentTarget.dataset.pointerStartedInside =
@@ -31,6 +43,73 @@ function setModalContent(content) {
       });
     });
   });
+}
+
+function openBorderStore() {
+  const me = (st.players || []).find((player) => player.id === st.you);
+  if (!me) return;
+  const owned = Array.isArray(me.ownedBorderColors)
+    ? me.ownedBorderColors
+    : [];
+  setModalContent(
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeBorderStore)"><div class="mbox border-store-modal" role="dialog" aria-modal="true" aria-labelledby="borderStoreTitle">
+      <div class="row sp"><h2 id="borderStoreTitle">${translateText("Toko Border")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeBorderStore()">×</button></div>
+      <div class="border-store-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
+      <p class="mut">${translateText("Beli border warna untuk pemain dan sorotan. Harga setiap warna 10.000 chip.")}</p>
+      <div class="border-store-grid">${BORDER_STORE_ITEMS.map(({ id, name }) => {
+        const isOwned = owned.includes(id);
+        const isActive = me.borderColor === id;
+        const button = isActive
+          ? `<button class="g s" disabled>${translateText("Sedang dipakai")}</button>`
+          : isOwned
+            ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} onclick="equipPlayerBorder('${id}')">${translateText("Gunakan")}</button>`
+            : `<button class="y s" ${me.chips < BORDER_STORE_PRICE || borderStorePending ? "disabled" : ""} onclick="buyPlayerBorder('${id}')">${translateText("Beli")} · ${fmt(BORDER_STORE_PRICE)}</button>`;
+        return `<article class="border-store-item">
+          <div class="border-store-preview pl-border-${id}" aria-hidden="true"></div>
+          <div class="border-store-item-info"><b>${translateText(name)}</b><span class="mut">${isOwned ? translateText("Sudah dimiliki") : fmtChips(BORDER_STORE_PRICE)}</span></div>
+          ${button}
+        </article>`;
+      }).join("")}</div>
+      <div class="row border-store-actions"><button class="g f" ${!me.borderColor || borderStorePending ? "disabled" : ""} onclick="clearPlayerBorder()">${translateText("Lepas border")}</button><button class="g f" onclick="closeBorderStore()">${translateText("Tutup")}</button></div>
+      <p class="mut border-store-note">${translateText("Pembelian hanya tersedia saat ronde tidak aktif. Border tersimpan di room ini.")}</p>
+    </div></div>`,
+  );
+}
+
+function closeBorderStore() {
+  $("#modal").innerHTML = "";
+}
+
+async function updatePlayerBorder(action, color) {
+  if (borderStorePending) return;
+  borderStorePending = true;
+  try {
+    const result = await api("borderStore", { action, color });
+    if (result && result.ok) {
+      closeBorderStore();
+      flash(
+        action === "buy"
+          ? "Border berhasil dibeli dan dipakai"
+          : action === "equip"
+            ? "Border berhasil dipakai"
+            : "Border dilepas",
+      );
+    }
+  } finally {
+    borderStorePending = false;
+  }
+}
+
+function buyPlayerBorder(color) {
+  return updatePlayerBorder("buy", color);
+}
+
+function equipPlayerBorder(color) {
+  return updatePlayerBorder("equip", color);
+}
+
+function clearPlayerBorder() {
+  return updatePlayerBorder("clear");
 }
 
 function openHelp() {

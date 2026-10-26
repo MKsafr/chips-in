@@ -151,6 +151,35 @@ const EN_TEXT = {
   "Keluarkan pemain": "Remove Player",
   Tutup: "Close",
   "Tampilan (hanya di perangkat ini)": "Appearance (this device only)",
+  "Toko Border": "Border Store",
+  "Beli border warna untuk pemain dan sorotan. Harga setiap warna 10.000 chip.":
+    "Buy a colored border for your player row and spotlight. Each color costs 10,000 chips.",
+  "Pembelian hanya tersedia saat ronde tidak aktif. Border tersimpan di room ini.":
+    "Purchases are only available between rounds. Borders are saved in this room.",
+  Merah: "Red",
+  Biru: "Blue",
+  Hijau: "Green",
+  Ungu: "Purple",
+  Oranye: "Orange",
+  "Merah Muda": "Pink",
+  Cyan: "Cyan",
+  Putih: "White",
+  "Sudah dimiliki": "Owned",
+  "Sedang dipakai": "Equipped",
+  Gunakan: "Equip",
+  Beli: "Buy",
+  "Lepas border": "Remove border",
+  "Border berhasil dibeli dan dipakai": "Border purchased and equipped",
+  "Border berhasil dipakai": "Border equipped",
+  "Border dilepas": "Border removed",
+  "Warna border tidak tersedia": "Border color is unavailable",
+  "Warna border sudah dimiliki": "You already own this border color",
+  "Border hanya dapat dibeli saat ronde tidak aktif":
+    "Borders can only be purchased between rounds",
+  "Chip tidak mencukupi untuk membeli border":
+    "Not enough chips to purchase this border",
+  "Warna border belum dimiliki": "You do not own this border color",
+  "Aksi store tidak valid": "Invalid store action",
   Tema: "Theme",
   Bahasa: "Language",
   "Volume Efek Suara": "Sound Effects Volume",
@@ -633,7 +662,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.7.4";
+const APP_VER = "3.7.5";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

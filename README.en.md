@@ -18,7 +18,7 @@
 
 Chips-in syncs rooms, players, chips, bets, and game results. Cards are still played physically; the app tracks chips and helps manage the game.
 
-Current app version: **3.7.4** (the client/server version, separate from the Node.js package version).
+Current app version: **3.7.5** (the client/server version, separate from the Node.js package version).
 
 ## Table of contents
 
@@ -32,6 +32,7 @@ Current app version: **3.7.4** (the client/server version, separate from the Nod
 - Separate rooms with a unique code for each table.
 - Poker and Blackjack modes.
 - Chip balances, bets, pots, and game history.
+- A border store where players can purchase and equip colored player and spotlight borders for 10,000 chips each.
 - Interactive Poker and Blackjack guides explaining hands, rules, and how to play.
 - A dealer panel to configure the table and manage players.
 - Player management: change seating order, add or remove chips, offer the dealer role, and remove players.
@@ -61,10 +62,11 @@ Current app version: **3.7.4** (the client/server version, separate from the Nod
 
 1. Enter the room code from the dealer, then select **Join Room**.
 2. Change your name and choose an avatar.
-3. Play according to the selected mode:
+3. Open **Border Store** to buy and equip colored borders for 10,000 chips each. Purchases are available between rounds and are saved in the room.
+4. Play according to the selected mode:
    - **Poker:** take your turn by folding, calling/checking, raising, or going all-in. If you run out of chips while all-in, wait for the showdown and for the dealer to award the pot.
    - **Blackjack:** choose chips to set your bet before the dealer deals. During a round, use **Double** or **Split** when available.
-4. Chip balances, bets, and room updates are synced automatically.
+5. Chip balances, bets, and room updates are synced automatically.
 
 If your connection drops or the tab closes, reopen the site in the same browser. If the room and session are still available, you can choose to resume as a player or dealer. Players return with their previous balance; a returning dealer resumes their role. A session cannot be resumed if the room is no longer available, for example, after the server restarts.
 

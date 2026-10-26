@@ -27,6 +27,11 @@
       ) {
         if (!player) return "";
         const isPoker = game === "poker";
+        const borderClass = BORDER_STORE_ITEMS.some(
+          ({ id }) => id === player.borderColor,
+        )
+          ? `pl-border-${player.borderColor}`
+          : "";
         const hasPokerTurn = isPoker && st.poker?.active && st.poker.turn === player.id;
         const bet = isPoker
           ? player.bet || 0
@@ -42,7 +47,7 @@
             ? `<span>${translateText("Bet 1")}: ${fmt(player.bjBet)}</span><span>${translateText("Bet 2")}: ${fmt(player.bjSplitBet)}</span>`
             : "";
 
-        return `<section class="player-spotlight ${fireLeader ? "pl-fire-leader" : ""}" aria-label="${translateText("Pemain yang sedang disorot")}">
+        return `<section class="player-spotlight ${borderClass} ${fireLeader ? "pl-fire-leader" : ""}" aria-label="${translateText("Pemain yang sedang disorot")}">
     <div class="player-spotlight-heading"><span>${translateText(heading)}</span><span>${translateText(isPoker ? "Poker" : "Blackjack")}</span></div>
     <div class="player-spotlight-identity">${avatar(player.avatar, 56)}<div class="player-spotlight-name"><b data-player-name>${esc(player.name)}</b><div class="mut">${translateText(status)}</div></div></div>
     <div class="player-spotlight-stats">
@@ -55,6 +60,11 @@
 
       function pRow(p, extra = "", blackjackHand = null, fireLeader = false) {
         if (!p) return "";
+        const borderClass = BORDER_STORE_ITEMS.some(
+          ({ id }) => id === p.borderColor,
+        )
+          ? `pl-border-${p.borderColor}`
+          : "";
         const k = st.poker || {},
           pk = st.mode === "poker";
         const t = [];
@@ -71,7 +81,7 @@
         const bet = pk && p.bet ? `<div class="mut">bet ${fmt(p.bet)}</div>` : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
-        return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""} ${fireLeader ? "pl-fire-leader" : ""}">
+        return `<div class="pl ${borderClass} ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""} ${fireLeader ? "pl-fire-leader" : ""}">
     <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
     <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
       }
