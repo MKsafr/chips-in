@@ -572,7 +572,7 @@ textarea {
   text-align: right;
 }
 .player-spotlight-actions .bj-dealer-controls {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .player-spotlight-actions .bj-dealer-controls button {
   padding-inline: 4px;

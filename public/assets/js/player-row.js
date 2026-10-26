@@ -68,18 +68,10 @@
         if (p.allin) t.push('<span class="tag a">ALL-IN</span>');
         if (pk && k.turn === p.id) t.push('<span class="tag t">GILIRAN</span>');
 
-        const bet = pk
-          ? p.bet
-            ? `<div class="mut">bet ${fmt(p.bet)}</div>`
-            : ""
-          : blackjackHand
-            ? `<div class="mut">${blackjackHand.label ? `${blackjackHand.label}: ` : ""}${fmt(blackjackHand.amount)}</div>`
-            : p.bjBet || p.bjSplitBet
-            ? `<div class="mut">${p.bjSplitBet ? `${p.bjBet ? `Bet 1: ${fmt(p.bjBet)}<br>` : ""}Bet 2: ${fmt(p.bjSplitBet)}` : fmt(p.bjBet)}</div>`
-            : "";
+        const bet = pk && p.bet ? `<div class="mut">bet ${fmt(p.bet)}</div>` : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
         return `<div class="pl ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""} ${fireLeader ? "pl-fire-leader" : ""}">
     <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatar(p.avatar, 32)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
-    <div style="text-align:right">${blackjackHand ? "" : `<b style="color:var(--gold)">${fmt(p.chips)}</b>`}${bet}</div></div>`;
+    <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
       }

@@ -1,10 +1,7 @@
 function bjView(me) {
   const bj = st.bj || {},
     players = st.players || [],
-    uniqueLeaderId = getUniqueChipLeader(players, false),
-    bettingPlayers = players.filter(
-      (p) => (p.bjBet || 0) > 0 || (p.bjSplitBet || 0) > 0,
-    );
+    uniqueLeaderId = getUniqueChipLeader(players, false);
   let h = `<div class="grid-2">
     <div class="card pot"><div class="mut">Blackjack</div><div class="big">${fmt((st.players || []).reduce((a, p) => a + (p.bjBet || 0) + (p.bjSplitBet || 0), 0))}</div><div class="mut">Total Taruhan</div>
     <button class="y s poker-guide-trigger" onclick="openBlackjackGuide()">🃏 ${translateText("Panduan Blackjack")}</button></div>
@@ -22,6 +19,7 @@ function bjView(me) {
       ? dealerTurnPlayer.bjBet
       : dealerTurnPlayer.bjSplitBet);
   const spotlightPlayer =
+    (playing && dealerTurnPlayer) ||
     players.find((player) => player.id === uniqueLeaderId) ||
     players.find((player) => player.id === st.you) ||
     players.find((player) => player.bjBet || player.bjSplitBet) ||
@@ -42,11 +40,11 @@ function bjView(me) {
       dealerActions = `<div class="player-spotlight-actions">
         <div class="player-spotlight-heading"><span>${translateText("Giliran Bandar")}</span><span>${esc(dealerTurnPlayer.name)} · ${translateText(betLabel)}: ${fmt(dealerTurnAmount)}</span></div>
         <div class="bj-dealer-controls">
-          <button class="y" ${canBlackjack ? `onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'bj'})"` : "disabled"}>${translateText("Blackjack")}</button>
-          <button class="r" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'lose'})">${translateText("Bust")}</button>
-          <button class="g" onclick="api('bjNext')">${translateText("Next")}</button>
+          <button class="ok s" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'win'})">${translateText("Menang")}</button>
+          ${canBlackjack ? `<button class="y s" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'bj'})">${translateText("BJ 3:2")}</button>` : ""}
+          <button class="g s" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'push'})">${translateText("Seri")}</button>
+          <button class="r s" onclick="api('bjResolve',{id:${dealerTurnPlayer.id},betSlot:'${dealerTurn.betSlot}',result:'lose'})">${translateText("Kalah")}</button>
         </div>
-        ${canBlackjack ? "" : `<div class="mut">${translateText("Blackjack natural tidak berlaku untuk Split atau Double.")}</div>`}
       </div>`;
     } else {
       dealerActions = `<div class="player-spotlight-actions"><div class="mut">${translateText("Semua taruhan sudah mendapat giliran.")}</div></div>`;
@@ -58,44 +56,16 @@ function bjView(me) {
     spotlightPlayer?.id === uniqueLeaderId,
     dealerActions,
   );
+  if (st.isHost && playing) {
+    h += `<div class="card"><h3>Kontrol Blackjack</h3><div class="bj-dealer-controls">
+      <button class="ok" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
+      <button class="g" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
+      <button class="r" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
+    </div></div>`;
+  }
   h += `<div class="card"><h3>Daftar Pemain</h3>${players.map((p) => pRow(p, "", null, p.id === uniqueLeaderId)).join("") || '<div class="mut">Belum ada pemain</div>'}</div>`;
   h += roundStartControl();
   h += resetAllControl();
-  h += `<div class="card"><h3>Daftar Taruhan Pemain</h3>`;
-  if (!players.length) {
-    h += `<div class="mut">Belum ada pemain</div>`;
-  } else if (!bettingPlayers.length) {
-    h += `<div class="mut">Pemain belum memberikan taruhan</div>`;
-  } else {
-    h += bettingPlayers
-      .flatMap((p) => {
-        const hands = [
-          p.bjBet > 0
-            ? {
-                label: p.bjSplitBet > 0 ? "Bet 1" : "",
-                amount: p.bjBet,
-                betSlot: "main",
-              }
-            : null,
-          p.bjSplitBet > 0
-            ? { label: "Bet 2", amount: p.bjSplitBet, betSlot: "split" }
-            : null,
-        ].filter(Boolean);
-        return hands.map((hand) => {
-          const ex =
-            st.isHost && playing
-              ? `<div class="row bj-result-actions" style="margin-top:6px">
-        <button class="ok s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'win'})">Menang</button>
-        ${p.bjHasSplit || p.bjDoubled ? "" : `<button class="y s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'bj'})">BJ 3:2</button>`}
-        <button class="g s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'push'})">Seri</button>
-        <button class="r s" onclick="api('bjResolve',{id:${p.id},betSlot:'${hand.betSlot}',result:'lose'})">Kalah</button></div>`
-              : "";
-          return pRow(p, ex, hand, p.id === uniqueLeaderId);
-        });
-      })
-      .join("");
-  }
-  h += "</div>";
 
   if (me && me.chips > 0 && bj.phase === "betting") {
     h +=
@@ -120,14 +90,6 @@ function bjView(me) {
     h += `<div class="card"><h3>Opsi Tambahan</h3>
       <div class="row">${me.bjDoubled ? "" : `<button class="b f" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>`}
       ${me.bjSplitBet || me.bjDoubled ? "" : `<button class="y f" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button>`}</div></div>`;
-  }
-
-  if (st.isHost && playing) {
-    h += `<div class="card"><h3>Kontrol Blackjack</h3><div class="bj-dealer-controls">
-      <button class="ok" onclick="api('bjAll',{result:'win'})">Semua Menang</button>
-      <button class="g" onclick="api('bjAll',{result:'push'})">Semua Seri</button>
-      <button class="r" onclick="api('bjAll',{result:'lose'})">Semua Kalah</button>
-    </div></div>`;
   }
 
   return h;
