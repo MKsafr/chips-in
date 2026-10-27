@@ -43,6 +43,9 @@ const BORDER_STORE_ITEMS = [
   },
 ];
 let borderStorePending = false;
+let storeOpen = false;
+let storeTab = "themes";
+let mvpMusicSelectionPending = false;
 
 function rememberModalPointerDown(event) {
   event.currentTarget.dataset.pointerStartedInside =
@@ -74,7 +77,73 @@ function setModalContent(content) {
   });
 }
 
+function openStore(tab = "borders") {
+  storeOpen = true;
+  storeTab = tab;
+  renderStore();
+}
+
+function closeStore() {
+  storeOpen = false;
+  $("#modal").innerHTML = "";
+}
+
+function renderStore() {
+  if (!storeOpen) return;
+  if (storeTab === "borders") {
+    openBorderStore();
+    return;
+  }
+  const me = (st?.players || []).find((player) => player.id === st.you);
+  const canChooseMvpMusic =
+    me &&
+    (st.mvpMusicEligiblePlayerIds || []).includes(me.id) &&
+    !st.mvpMusicChosenForRound;
+  const musicContent = !mvpMusicTracksLoaded
+    ? `<p class="mut store-empty">${translateText("Memuat musik MVP…")}</p>`
+    : mvpMusicTracks.length === 0
+      ? `<p class="mut store-empty">${translateText("Belum ada musik MVP. Lagu akan muncul di sini setelah ditambahkan.")}</p>`
+      : `<p class="mut store-note">${translateText("Musik MVP hanya dapat dipilih oleh pemenang ronde. Musik yang dipilih akan diputar untuk semua pemain di room.")}</p>
+        <div class="store-music-list">${mvpMusicTracks
+          .map(
+            (track) =>
+              `<article class="store-music-item">
+                <div><b>${esc(track.title)}</b><span class="mut">${translateText("Musik MVP")}</span></div>
+                <button class="${canChooseMvpMusic ? "ok" : "g"} s" ${canChooseMvpMusic && !mvpMusicSelectionPending ? "" : "disabled"} onclick="chooseMvpMusic('${esc(track.id)}')">${translateText(canChooseMvpMusic ? "Pilih" : "Khusus pemenang")}</button>
+              </article>`,
+          )
+          .join("")}</div>`;
+  setModalContent(
+    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeStore)">
+      <div class="mbox store-modal" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
+        <div class="row sp"><h2 id="storeTitle">${translateText("Toko")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeStore()">×</button></div>
+        <div class="store-tabs" role="tablist" aria-label="${translateText("Kategori toko")}">
+          <button class="${storeTab === "borders" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "borders"}" onclick="openStore('borders')">${translateText("Toko Border")}</button>
+          <button class="${storeTab === "music" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "music"}" onclick="openStore('music')">${translateText("Toko Musik")}</button>
+        </div>
+        ${musicContent}
+      </div>
+    </div>`,
+  );
+}
+
+async function chooseMvpMusic(trackId) {
+  if (mvpMusicSelectionPending) return;
+  mvpMusicSelectionPending = true;
+  try {
+    const result = await api("setMvpMusic", { trackId });
+    if (result && result.ok) {
+      closeStore();
+      flash("Musik MVP diputar untuk semua pemain");
+    }
+  } finally {
+    mvpMusicSelectionPending = false;
+  }
+}
+
 function openBorderStore() {
+  storeOpen = true;
+  storeTab = "borders";
   const me = (st.players || []).find((player) => player.id === st.you);
   if (!me) return;
   const isChipLeader =
@@ -156,6 +225,10 @@ function openBorderStore() {
   setModalContent(
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeBorderStore)"><div class="mbox border-store-modal" role="dialog" aria-modal="true" aria-labelledby="borderStoreTitle">
       <div class="row sp"><h2 id="borderStoreTitle">${translateText("Toko Border")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeBorderStore()">×</button></div>
+      <div class="store-tabs" role="tablist" aria-label="${translateText("Kategori toko")}">
+        <button class="selected" role="tab" aria-selected="true" onclick="openStore('borders')">${translateText("Toko Border")}</button>
+        <button role="tab" aria-selected="false" onclick="openStore('music')">${translateText("Toko Musik")}</button>
+      </div>
       <div class="border-store-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
       ${
         isChipLeader
@@ -242,11 +315,12 @@ function openBorderStore() {
 }
 
 function closeBorderStore() {
-  $("#modal").innerHTML = "";
+  closeStore();
 }
 
 window.addEventListener("chipsin-language-change", () => {
-  if ($("#modal .border-store-modal")) openBorderStore();
+  if (storeOpen) renderStore();
+  else if ($("#modal .border-store-modal")) openBorderStore();
 });
 
 async function updatePlayerBorder(action, color) {
@@ -632,6 +706,7 @@ function setBackgroundMusicVolume(value) {
   backgroundMusicVolume = Math.max(0, Math.min(Number(value) / 100, 1));
   localStorage.cb_bgm_volume = String(backgroundMusicVolume);
   syncBackgroundMusic();
+  syncMvpMusicVolume();
   if (!backgroundMusicMuted && backgroundMusicVolume > 0)
     startBackgroundMusic();
   const slider = $("#bgMusicVolumeSlider");
@@ -653,6 +728,7 @@ function toggleBackgroundMusicMute() {
   backgroundMusicMuted = !backgroundMusicMuted;
   localStorage.cb_bgm_muted = String(backgroundMusicMuted);
   syncBackgroundMusic();
+  syncMvpMusicVolume();
   if (!backgroundMusicMuted && backgroundMusicVolume > 0)
     startBackgroundMusic();
   renderSettings();

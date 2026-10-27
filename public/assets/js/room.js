@@ -99,6 +99,11 @@ function connect() {
           playSFX("win");
       }
       if (
+        data.mvpMusicTrackId &&
+        (!st || data.mvpMusicEventId !== st.mvpMusicEventId)
+      )
+        playMvpMusic(data.mvpMusicTrackId);
+      if (
         data.poker.stage === "showdown" &&
         (!st || st.poker.stage !== "showdown")
       )

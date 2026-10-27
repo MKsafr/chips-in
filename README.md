@@ -37,6 +37,7 @@ Versi aplikasi saat ini: **3.9** (versi klien/server, terpisah dari versi paket 
 - Preview border profil berbentuk lingkaran dan dikelompokkan ke dalam kategori satu warna dan dua warna, sama seperti bundle border serasi.
 - Pemimpin chip unik dapat menggunakan gaya RGB gratis atau gaya border toko dari kategori satu warna atau dua warna; gaya hanya tampil selama pemain memimpin dan tidak memberikan kepemilikan permanen.
 - Pemimpin chip unik dapat membuka semua gaya trial non-RGB seharga 5.000 chip; pembukaan tersimpan pada pemain, sedangkan gaya trial yang dipilih hanya aktif selama pemain memimpin.
+- Toko umum menyediakan pilihan tema dan musik MVP; tema berlaku di perangkat sendiri, sedangkan musik yang dipilih pemenang Poker atau Blackjack diputar untuk semua pemain di room.
 - Panduan interaktif Poker dan Blackjack yang menjelaskan kombinasi kartu, aturan, dan cara bermain.
 - Panel dealer untuk mengatur meja dan mengelola pemain.
 - Pengelolaan pemain: mengubah urutan duduk, menambah atau mengurangi chip, menawarkan peran dealer, dan mengeluarkan pemain.
@@ -66,7 +67,7 @@ Versi aplikasi saat ini: **3.9** (versi klien/server, terpisah dari versi paket 
 
 1. Masukkan kode room dari dealer, lalu pilih **Gabung Room**.
 2. Ubah nama dan pilih avatar.
-3. Buka **Toko Border** untuk membeli dan menggunakan border satu warna seharga 5.000 chip atau border dua warna animasi seharga 10.000 chip. Pembelian hanya tersedia di antara ronde dan tersimpan di room. Beli border sorotan dan profil yang serasi sekaligus untuk mendapatkan diskon 25%. Saat memimpin chip, kamu juga dapat memilih gaya RGB gratis atau gaya border toko dari kategori satu warna atau dua warna; gaya itu tidak aktif lagi saat kamu kehilangan posisi pemimpin dan bukan merupakan pembelian. Antarmuka toko tersedia dalam Bahasa Indonesia dan English.
+3. Buka **Toko** dan pilih tab **Toko Border** untuk menggunakan atau membeli border. Border satu warna seharga 5.000 chip dan border dua warna animasi seharga 10.000 chip. Pembelian hanya tersedia di antara ronde dan tersimpan di room. Beli border sorotan dan profil yang serasi sekaligus untuk mendapatkan diskon 25%. Saat memimpin chip, kamu juga dapat memilih gaya RGB gratis atau gaya border toko; gaya itu tidak aktif lagi saat kamu kehilangan posisi pemimpin dan bukan merupakan pembelian. Tab **Toko Musik** menampilkan koleksi musik MVP. Musik MVP belum tersedia; tambahkan file MP3 di `public/assets/sounds/mvp/` dan daftarkan pada `tracks.json` dengan `id`, `title`, dan `src` (misalnya `/assets/sounds/mvp/nama-lagu.mp3`). Setelah itu, pemenang ronde dapat memilih lagu yang diputar untuk semua pemain di room.
 4. Bermain sesuai mode yang dipilih:
    - **Poker:** lakukan aksi saat giliranmu, seperti fold, call/check, raise, atau all-in. Jika chipmu habis saat all-in, tunggu showdown dan dealer membagikan pot.
    - **Blackjack:** pilih chip untuk menentukan taruhan sebelum dealer membagikan kartu. Saat ronde berlangsung, gunakan **Double** atau **Split** jika tersedia.
@@ -128,7 +129,9 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs di browser yang sama
 │   │       ├── split.mp3
 │   │       ├── stage.mp3
 │   │       ├── transfer.mp3
-│   │       └── win.mp3
+│   │       ├── win.mp3
+│   │       └── mvp/
+│   │           └── tracks.json
 │   ├── pages/
 │   │   ├── about.html
 │   │   ├── privacy.html

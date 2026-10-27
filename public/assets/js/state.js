@@ -134,6 +134,8 @@ const EN_TEXT = {
   "Chip kamu habis, tunggu ronde berikutnya atau minta Bandar menambahkan chip.":
     "You are out of chips. Wait for the next round or ask the dealer for more chips.",
   "Masukkan jumlah chip": "Enter the chip amount",
+  "Jumlah taruhan": "Bet amount",
+  Masukkan: "Place bet",
   "Masukkan jumlah chip bulat lebih dari nol":
     "Enter a whole number of chips greater than zero",
   "Jumlah chip harus berupa angka bulat lebih dari nol":
@@ -151,7 +153,27 @@ const EN_TEXT = {
   "Keluarkan pemain": "Remove Player",
   Tutup: "Close",
   "Tampilan (hanya di perangkat ini)": "Appearance (this device only)",
+  Toko: "Store",
   "Toko Border": "Border Store",
+  "Toko Musik": "Music Store",
+  "Kategori toko": "Store categories",
+  "Belum ada musik MVP. Lagu akan muncul di sini setelah ditambahkan.":
+    "There is no MVP music yet. Songs will appear here after they are added.",
+  "Memuat musik MVP…": "Loading MVP music…",
+  "Musik MVP": "MVP Music",
+  "Musik MVP hanya dapat dipilih oleh pemenang ronde. Musik yang dipilih akan diputar untuk semua pemain di room.":
+    "MVP music can only be selected by a round winner. The selected music will play for everyone in the room.",
+  "Khusus pemenang": "Winners only",
+  Pilih: "Choose",
+  "Pilih Musik MVP": "Choose MVP Music",
+  "Kamu menang! Pilih musik yang akan diputar untuk semua pemain di room.":
+    "You won! Choose music to play for everyone in the room.",
+  "Musik MVP diputar untuk semua pemain":
+    "MVP music is playing for everyone",
+  "Kamu belum memenangkan ronde ini": "You did not win this round",
+  "Pemenang ronde ini sudah memilih musik MVP":
+    "A winner of this round has already chosen MVP music",
+  "Musik MVP tidak tersedia": "MVP music is unavailable",
   "Border 1 Warna": "Single-Color Borders",
   "Border 2 Warna": "Two-Color Borders",
   "Gaya Pemimpin Chip": "Chip Leader Style",
@@ -705,7 +727,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.9";
+const APP_VER = "3.10";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

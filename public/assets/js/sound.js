@@ -4,6 +4,40 @@ const backgroundMusic = new Audio("/assets/sounds/bgmusic.mp3");
 backgroundMusic.loop = true;
 backgroundMusic.preload = "none";
 let backgroundMusicStarting = false;
+let mvpMusicTracks = [];
+let mvpMusicTracksLoaded = false;
+let pendingMvpMusicTrackId = null;
+let mvpMusicAudio = null;
+
+fetch("/assets/sounds/mvp/tracks.json")
+  .then((response) => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  })
+  .then((tracks) => {
+    if (
+      !Array.isArray(tracks) ||
+      tracks.some(
+        (track) =>
+          !track ||
+          typeof track.id !== "string" ||
+          !/^[a-z0-9][a-z0-9-]*$/.test(track.id) ||
+          typeof track.title !== "string" ||
+          typeof track.src !== "string" ||
+          !track.src.startsWith("/assets/sounds/mvp/"),
+      )
+    )
+      throw new Error("Format katalog musik MVP tidak valid");
+    mvpMusicTracks = tracks;
+    mvpMusicTracksLoaded = true;
+    if (pendingMvpMusicTrackId) playMvpMusic(pendingMvpMusicTrackId);
+    if (typeof render === "function") render();
+  })
+  .catch((error) => {
+    console.error("Katalog musik MVP gagal dimuat:", error);
+    mvpMusicTracksLoaded = true;
+    if (typeof render === "function") render();
+  });
 
 function getAudioContext() {
   const AudioContextConstructor =
@@ -53,6 +87,34 @@ function setMediaGain(media, volume, muted = false) {
 
 function syncBackgroundMusic() {
   setMediaGain(backgroundMusic, backgroundMusicVolume, backgroundMusicMuted);
+}
+
+function syncMvpMusicVolume() {
+  if (mvpMusicAudio)
+    setMediaGain(mvpMusicAudio, backgroundMusicVolume, backgroundMusicMuted);
+}
+
+function playMvpMusic(trackId) {
+  const track = mvpMusicTracks.find((item) => item.id === trackId);
+  if (!track) {
+    pendingMvpMusicTrackId = trackId;
+    return;
+  }
+  pendingMvpMusicTrackId = null;
+  if (!mvpMusicAudio) {
+    mvpMusicAudio = new Audio(track.src);
+    mvpMusicAudio.addEventListener("ended", () => {
+      mvpMusicAudio = null;
+    });
+  } else {
+    mvpMusicAudio.pause();
+    mvpMusicAudio.src = track.src;
+  }
+  mvpMusicAudio.currentTime = 0;
+  setMediaGain(mvpMusicAudio, backgroundMusicVolume, backgroundMusicMuted);
+  mvpMusicAudio.play().catch((error) => {
+    console.warn("Musik MVP tidak dapat diputar:", error);
+  });
 }
 
 function syncSoundEffects() {

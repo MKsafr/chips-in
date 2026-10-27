@@ -68,15 +68,22 @@ function bjView(me) {
   h += resetAllControl();
 
   if (me && me.chips > 0 && bj.phase === "betting") {
+    const maxCustomBet = me.chips + (me.bjBet || 0);
+    const minCustomBet = Math.min(100, maxCustomBet);
     h +=
       `<div class="card"><h3>${translateText("Taruhanmu:")} ${fmt(me.bjBet)}</h3><div class="chips">` +
-      [5, 10, 25, 100, 500]
+      [5, 10, 25, 100, 500, 1000]
         .map(
           (v) =>
             `<button class="chip c${v}" onclick="placeBlackjackBet(${(me.bjBet || 0) + v})">${v}</button>`,
         )
         .join("") +
-      `<button class="chip callin" onclick="askAllInConfirmation('blackjack',${(me.chips || 0) + (me.bjBet || 0)})">ALL IN</button>` +
+      `<button class="chip callin" onclick="askAllInConfirmation('blackjack',${(me.chips || 0) + (me.bjBet || 0)})">ALL IN</button>
+      <div class="bj-custom-bet">
+        <output id="bjCustomBetValue" for="bjCustomBet">${fmt(minCustomBet)}</output>
+        <input id="bjCustomBet" type="range" min="${minCustomBet}" max="${maxCustomBet}" step="1" value="${minCustomBet}" aria-label="${translateText("Jumlah taruhan")}" oninput="updateBlackjackBetAmount(this.value)">
+        <button class="y s" onclick="placeSelectedBlackjackBet()">${translateText("Masukkan")}</button>
+      </div>` +
       `</div><div class="row"><button class="g f" onclick="placeBlackjackBet(0)">Reset</button>
       ${me.last ? `<button class="g f" onclick="placeBlackjackBet(${me.last})">${translateText("Ulang")} (${fmt(me.last)})</button>` : ""}</div></div>`;
   }
@@ -93,6 +100,32 @@ function bjView(me) {
   }
 
   return h;
+}
+
+function updateBlackjackBetAmount(value) {
+  const slider = $("#bjCustomBet");
+  if (!slider) return;
+  const maxAmount = Number(slider.max);
+  const minAmount = Number(slider.min);
+  const rawAmount = Math.max(minAmount, Math.min(Number(value), maxAmount));
+  const amount =
+    rawAmount >= maxAmount - 50
+      ? maxAmount
+      : Math.max(minAmount, Math.round(rawAmount / 100) * 100);
+  slider.value = String(amount);
+  const output = $("#bjCustomBetValue");
+  if (output) output.textContent = fmt(amount);
+}
+
+function placeSelectedBlackjackBet() {
+  const slider = $("#bjCustomBet");
+  const amount = Number(slider?.value);
+  if (
+    Number.isSafeInteger(amount) &&
+    amount >= Number(slider?.min) &&
+    amount <= Number(slider?.max)
+  )
+    placeBlackjackBet(amount);
 }
 
 function openBlackjackGuide() {

@@ -935,6 +935,35 @@ textarea {
   flex-wrap: wrap;
   margin: 6px 0;
 }
+.bj-custom-bet {
+  display: flex;
+  flex: 1 1 230px;
+  align-items: center;
+  gap: 8px;
+  min-width: 210px;
+  min-height: 48px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.12);
+}
+.bj-custom-bet output {
+  min-width: 42px;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+.bj-custom-bet input[type="range"] {
+  flex: 1;
+  width: 100%;
+  min-width: 60px;
+  accent-color: var(--gold);
+}
+.bj-custom-bet button {
+  flex: 0 0 auto;
+  min-height: 36px;
+}
 .chip {
   width: 48px;
   height: 48px;
@@ -962,6 +991,9 @@ textarea {
 }
 .c500 {
   background: #7d3cc4;
+}
+.c1000 {
+  background: #d18a16;
 }
 .callin {
   background: linear-gradient(135deg, #e8c35a, #e5484d);
@@ -1465,6 +1497,90 @@ textarea {
 }
 .border-store-modal {
   max-width: 920px;
+}
+.store-modal {
+  max-width: 620px;
+}
+.store-modal h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.store-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+.store-tabs button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--btn2);
+  color: var(--tx);
+  font: inherit;
+  font-weight: 700;
+}
+.store-tabs button.selected {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, var(--card));
+  color: var(--gold);
+}
+.store-empty {
+  margin: 26px 8px;
+  text-align: center;
+}
+.store-note {
+  margin: 0 0 10px;
+  text-align: center;
+}
+.store-music-list {
+  display: grid;
+  gap: 8px;
+}
+.store-music-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.store-music-item > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.store-music-item b {
+  overflow-wrap: anywhere;
+}
+.store-music-item button {
+  flex: 0 0 auto;
+}
+.store-mvp-choices {
+  display: grid;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 300px);
+  margin-top: 14px;
+}
+.store-open-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.store-open-button svg {
+  display: block;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 .border-store-modal h2 {
   margin: 0;

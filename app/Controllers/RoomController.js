@@ -6,7 +6,14 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.9"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.10"; // klien yang versinya beda akan otomatis refresh
+const MVP_MUSIC_TRACKS = require(path.join(
+  PUBLIC_PATH,
+  "assets",
+  "sounds",
+  "mvp",
+  "tracks.json",
+));
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -158,6 +165,12 @@ function initRoom(code) {
     dealerConfirmedStage: true,
     pendingHost: null,
     hostProfile: { name: "Bandar", avatar: "crown", ready: false },
+    mvpMusicTrackId: null,
+    mvpMusicEventId: 0,
+    mvpMusicChosenBy: null,
+    mvpMusicEligiblePlayerIds: [],
+    mvpMusicChosenForRound: false,
+    mvpRoundWinnerIds: [],
     stash: {}, // chip & nama pemain yang sedang tidak duduk (supaya tidak bisa dapat chip baru dengan keluar-masuk)
     suspended: {},
     touched: Date.now(),
@@ -258,6 +271,9 @@ function startHand(room) {
   const k = room.poker;
   if (room.mode !== "poker") throw "Mode saat ini bukan Poker";
   if (k.active) throw "Hand masih berjalan";
+  room.mvpMusicEligiblePlayerIds = [];
+  room.mvpMusicChosenForRound = false;
+  room.mvpRoundWinnerIds = [];
   const order = room.players.filter((p) => p.chips > 0).map((p) => p.id);
   if (order.length < 2) throw "Minimal 2 pemain yang memiliki chip";
 
@@ -345,6 +361,8 @@ function afterAction(room) {
     const w = live[0],
       t = pot(room);
     w.chips += t;
+    room.mvpMusicEligiblePlayerIds = [w.id];
+    room.mvpMusicChosenForRound = false;
     logRoom(room, `${w.name} menang ${t} chip (semua pemain fold)`);
     endHand(room);
     return;
@@ -470,6 +488,10 @@ function award(room, winners) {
       `${i === 0 ? "Pot Utama" : "Side Pot " + i} (${l.amount}) dikirim ke: ${w.map((id) => P(room, id).name).join(", ")}`,
     );
   });
+  room.mvpMusicEligiblePlayerIds = [
+    ...new Set(selectedWinners.flat()),
+  ];
+  room.mvpMusicChosenForRound = false;
   endHand(room);
 }
 
@@ -504,6 +526,9 @@ function bjResolve(room, p, res, betSlot) {
     p.bjSplitBet = 0;
   }
 
+  if ((res === "win" || res === "bj") && !room.mvpRoundWinnerIds.includes(p.id))
+    room.mvpRoundWinnerIds.push(p.id);
+
   if (!p.bjBet && !p.bjSplitBet) p.bjHasSplit = false;
   p.chips += totalPay;
   room.bj.resolved = true;
@@ -528,6 +553,8 @@ function bjResolve(room, p, res, betSlot) {
   if (!room.players.some((q) => q.bjBet > 0 || q.bjSplitBet > 0)) {
     room.bj.phase = "betting";
     room.bj.dealerTurn = null;
+    room.mvpMusicEligiblePlayerIds = [...room.mvpRoundWinnerIds];
+    room.mvpMusicChosenForRound = false;
   }
 }
 
@@ -1084,6 +1111,24 @@ function handle(b) {
       needHost();
       award(room, b.winners);
       break;
+    case "setMvpMusic": {
+      const player = needMe();
+      const trackId = String(b.trackId || "");
+      if (!room.mvpMusicEligiblePlayerIds.includes(player.id))
+        throw "Kamu belum memenangkan ronde ini";
+      if (room.mvpMusicChosenForRound)
+        throw "Pemenang ronde ini sudah memilih musik MVP";
+      if (
+        !/^[a-z0-9][a-z0-9-]*$/.test(trackId) ||
+        !MVP_MUSIC_TRACKS.some((track) => track.id === trackId)
+      )
+        throw "Musik MVP tidak tersedia";
+      room.mvpMusicTrackId = trackId;
+      room.mvpMusicEventId += 1;
+      room.mvpMusicChosenBy = player.id;
+      room.mvpMusicChosenForRound = true;
+      break;
+    }
     case "cancel":
       needHost();
       if (room.poker.active) {
@@ -1297,6 +1342,9 @@ function handle(b) {
       room.bj.resolved = false;
       room.bj.phase = "playing";
       room.bj.dealerTurn = nextBJTurn(room);
+      room.mvpMusicEligiblePlayerIds = [];
+      room.mvpMusicChosenForRound = false;
+      room.mvpRoundWinnerIds = [];
       logRoom(room, "Kartu dikocok & taruhan dikunci");
       break;
     case "bjResolve":
@@ -1331,6 +1379,7 @@ function handle(b) {
       room.bj.phase = "betting";
       room.bj.resolved = false;
       room.bj.dealerTurn = null;
+      room.mvpRoundWinnerIds = [];
       logRoom(room, "Ronde Blackjack dibatalkan");
       break;
     default:
@@ -1388,6 +1437,11 @@ function view(token, roomCode) {
     lastEventId: room.lastEventId,
     dealerConfirmedStage: room.dealerConfirmedStage,
     winnerName,
+    mvpMusicTrackId: room.mvpMusicTrackId,
+    mvpMusicEventId: room.mvpMusicEventId,
+    mvpMusicChosenBy: room.mvpMusicChosenBy,
+    mvpMusicEligiblePlayerIds: room.mvpMusicEligiblePlayerIds,
+    mvpMusicChosenForRound: room.mvpMusicChosenForRound,
     players: room.players.map(({ token, ...r }) => r),
     poker: {
       ...k,
@@ -1547,6 +1601,45 @@ http
       });
       return res.end(
         fs.readFileSync(path.join(PUBLIC_PATH, "pages", legalPages[u.pathname])),
+      );
+    }
+    if (u.pathname.startsWith("/assets/sounds/mvp/")) {
+      let file;
+      try {
+        file = decodeURIComponent(
+          u.pathname.slice("/assets/sounds/mvp/".length),
+        );
+      } catch {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        return res.end("Invalid asset path");
+      }
+      const extension = path.extname(file).toLowerCase();
+      if (
+        !file ||
+        file !== path.basename(file) ||
+        (file !== "tracks.json" && extension !== ".mp3")
+      ) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        return res.end("Asset tidak ditemukan");
+      }
+      const assetPath = path.resolve(
+        PUBLIC_PATH,
+        "assets",
+        "sounds",
+        "mvp",
+        file,
+      );
+      if (!fs.existsSync(assetPath) || !fs.statSync(assetPath).isFile()) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        return res.end("Asset tidak ditemukan");
+      }
+      return sendStaticFile(
+        req,
+        res,
+        assetPath,
+        file === "tracks.json"
+          ? "application/json; charset=utf-8"
+          : "audio/mpeg",
       );
     }
     const assetMatch = u.pathname.match(/^\/assets\/(css|js|images)\/(.+)$/);

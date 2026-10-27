@@ -82,7 +82,7 @@ function render() {
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatarWithBorder(me, 54, meIsChipLeader)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s" onclick="openBorderStore()">🎨 ${translateText("Toko Border")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s store-open-button" aria-label="${translateText("Toko")}" onclick="openStore()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-1.6-5H4.6L3 9Zm1 2v9h16v-9M9 20v-6h6v6"/></svg>${translateText("Toko")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
   }
 
   const ph = st.pendingHost;
@@ -108,6 +108,25 @@ function render() {
     </div>`;
   }
 
+  if (
+    me &&
+    (st.mvpMusicEligiblePlayerIds || []).includes(me.id) &&
+    !st.mvpMusicChosenForRound &&
+    mvpMusicTracks.length
+  ) {
+    h += `<div class="winner-modal" style="z-index:10000">
+      <div style="font-size:48px">🎵</div>
+      <h1 style="color:var(--gold);font-size:28px;margin:10px 0">${translateText("Pilih Musik MVP")}</h1>
+      <p style="color:#fff;max-width:320px">${translateText("Kamu menang! Pilih musik yang akan diputar untuk semua pemain di room.")}</p>
+      <div class="store-mvp-choices">${mvpMusicTracks
+        .map(
+          (track) =>
+            `<button class="ok s" ${mvpMusicSelectionPending ? "disabled" : ""} onclick="chooseMvpMusic('${esc(track.id)}')">${esc(track.title)}</button>`,
+        )
+        .join("")}</div>
+    </div>`;
+  }
+
   if (st.resumeOffer) {
     h += `<div class="winner-modal" style="z-index:10000">
       <div style="font-size:48px">${st.resumeOffer.role === "host" ? "👑" : "🪙"}</div>
@@ -123,7 +142,8 @@ function render() {
   if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
   $("#app").innerHTML = h;
   localizeTree($("#app"));
-  if ($("#modal .border-store-modal")) openBorderStore();
+  if ($("#modal .store-modal")) renderStore();
+  else if ($("#modal .border-store-modal")) openBorderStore();
 
   const prof = myProfile(); // berlaku juga untuk Bandar: wajib pilih nama & foto sebelum memegang kontrol room
   if (prof && !prof.ready && !pfOpen) openProfile("full");

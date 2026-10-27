@@ -37,6 +37,7 @@ Current app version: **3.9** (the client/server version, separate from the Node.
 - Profile borders use circular previews and are grouped into single-color and two-color categories, just like matching border bundles.
 - The unique chip leader can freely choose an RGB or store border style from the matching single-color or two-color category; it only appears while they hold the lead and does not grant permanent ownership.
 - The unique chip leader can unlock all non-RGB trial border styles for 5,000 chips; the unlock stays with the player, while the chosen trial style only applies during their lead.
+- The general store offers theme and MVP music options; themes apply on the local device, while music selected by a Poker or Blackjack round winner plays for everyone in the room.
 - Interactive Poker and Blackjack guides explaining hands, rules, and how to play.
 - A dealer panel to configure the table and manage players.
 - Player management: change seating order, add or remove chips, offer the dealer role, and remove players.
@@ -66,7 +67,7 @@ Current app version: **3.9** (the client/server version, separate from the Node.
 
 1. Enter the room code from the dealer, then select **Join Room**.
 2. Change your name and choose an avatar.
-3. Open **Border Store** to buy and equip single-color borders for 5,000 chips or animated two-color borders for 10,000 chips. Purchases are available between rounds and are saved in the room. Buy a matching spotlight and profile border together for 25% off. While leading in chips, you can also choose a free RGB or store border style from the single-color or two-color category; it stops applying if you lose the lead and does not count as a purchase. The store interface is available in Indonesian and English.
+3. Open the **Store** and select the **Border Store** tab to use or purchase borders. Single-color borders cost 5,000 chips and animated two-color borders cost 10,000 chips. Purchases are available between rounds and are saved in the room. Buy a matching spotlight and profile border together for 25% off. While leading in chips, you can also choose a free RGB or store border style; it stops applying if you lose the lead and does not count as a purchase. The **Music Store** tab shows the MVP music collection. MVP music is not available yet; add MP3 files to `public/assets/sounds/mvp/` and register each in `tracks.json` with an `id`, `title`, and `src` (for example `/assets/sounds/mvp/song-name.mp3`). A round winner can then choose a song that plays for everyone in the room.
 4. Play according to the selected mode:
    - **Poker:** take your turn by folding, calling/checking, raising, or going all-in. If you run out of chips while all-in, wait for the showdown and for the dealer to award the pot.
    - **Blackjack:** choose chips to set your bet before the dealer deals. During a round, use **Double** or **Split** when available.
@@ -128,7 +129,9 @@ If your connection drops or the tab closes, reopen the site in the same browser.
 │   │       ├── split.mp3
 │   │       ├── stage.mp3
 │   │       ├── transfer.mp3
-│   │       └── win.mp3
+│   │       ├── win.mp3
+│   │       └── mvp/
+│   │           └── tracks.json
 │   ├── pages/
 │   │   ├── about.html
 │   │   ├── privacy.html
