@@ -67,13 +67,24 @@ function connect() {
         data.mvpMusicTrackId &&
           (!st || data.mvpMusicEventId !== st.mvpMusicEventId),
       );
+      const mvpMusicEventChanged =
+        st && data.mvpMusicEventId !== st.mvpMusicEventId;
+      const roomHasEmptyStack = (data.players || []).some(
+        (player) => player.chips <= 0,
+      );
+      const isChipDepletionSoundEvent =
+        typeof data.lastEvent === "string" &&
+        /(menang|\bWIN\b|\bBJ\b)/i.test(data.lastEvent);
+      const suppressDepletionSound =
+        roomHasEmptyStack && isChipDepletionSoundEvent;
       const newRoomEvent =
         data.lastEvent && (!st || st.lastEventId !== data.lastEventId);
       if (!st && pendingEntrySound && data.lastEvent) {
-        if (!mvpMusicStarted) playEventSound(data.lastEvent);
+        if (!mvpMusicStarted && !suppressDepletionSound)
+          playEventSound(data.lastEvent);
         pendingEntrySound = false;
       } else if (st && newRoomEvent && !mvpMusicStarted) {
-        playEventSound(data.lastEvent);
+        if (!suppressDepletionSound) playEventSound(data.lastEvent);
       }
       if (!data.isHost && data.you == null && !leaving) {
         if (data.resumeOffer) {
@@ -96,7 +107,12 @@ function connect() {
         else flash("Kamu sudah tidak duduk di meja ini");
         return;
       }
-      if (st && !data.isHost && !mvpMusicStarted) {
+      if (
+        st &&
+        !data.isHost &&
+        !roomHasEmptyStack &&
+        !mvpMusicStarted
+      ) {
         const blackjackFinished =
           st.bj.phase === "playing" && data.bj.phase !== "playing";
         const blackjackWinner =
@@ -106,9 +122,12 @@ function connect() {
       }
       if (
         data.mvpMusicTrackId &&
-        (!st || data.mvpMusicEventId !== st.mvpMusicEventId)
-      )
+        (!st || mvpMusicEventChanged)
+      ) {
         playMvpMusic(data.mvpMusicTrackId);
+      } else if (mvpMusicEventChanged) {
+        stopMvpMusic();
+      }
       if (
         data.poker.stage === "showdown" &&
         (!st || st.poker.stage !== "showdown")

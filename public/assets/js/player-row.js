@@ -1,4 +1,5 @@
       function getUniqueChipLeader(players, isPoker) {
+        if (players.length <= 1) return null;
         let leaderId = null;
         let maxChips = 0;
         let hasTie = false;
@@ -70,7 +71,16 @@
         if (p.allin) t.push('<span class="tag a">ALL-IN</span>');
         if (pk && k.turn === p.id) t.push('<span class="tag t">GILIRAN</span>');
 
-        const bet = pk && p.bet ? `<div class="mut">bet ${fmt(p.bet)}</div>` : "";
+        const betAmount = pk
+          ? p.bet || 0
+          : (p.bjBet || 0) + (p.bjSplitBet || 0);
+        const betDetails =
+          !pk && p.bjSplitBet
+            ? `<div class="mut">${translateText("Bet 1")}: ${fmt(p.bjBet)}</div><div class="mut">${translateText("Bet 2")}: ${fmt(p.bjSplitBet)}</div>`
+            : "";
+        const bet = betAmount
+          ? `<div class="mut">bet ${fmt(betAmount)}</div>${betDetails}`
+          : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
         return `<div class="pl ${borderClass} ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}">
@@ -79,16 +89,17 @@
       }
 
       function playerBorderClasses(player, fireLeader) {
+        const leaderBorderColor = player.leaderBorderColor || "rgb";
         const hasLeaderStyle =
           fireLeader &&
-          (player.leaderBorderColor === "rgb" ||
+          (leaderBorderColor === "rgb" ||
             BORDER_STORE_ITEMS.some(
-              ({ id }) => id === player.leaderBorderColor,
+              ({ id }) => id === leaderBorderColor,
             ));
         const borderColor = hasLeaderStyle
-          ? player.leaderBorderColor === "rgb"
+          ? leaderBorderColor === "rgb"
             ? null
-            : player.leaderBorderColor
+            : leaderBorderColor
           : player.borderColor;
         const productBorder = BORDER_STORE_ITEMS.some(
           ({ id }) => id === borderColor,

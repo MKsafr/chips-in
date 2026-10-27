@@ -99,11 +99,25 @@ function renderStore() {
   const ownedMvpMusicTrackIds = Array.isArray(me?.ownedMvpMusicTrackIds)
     ? me.ownedMvpMusicTrackIds
     : [];
+  const hasPendingBlackjackBet = (st.players || []).some(
+    (player) => player.bjBet || player.bjSplitBet,
+  );
   const canBuyMvpMusic =
-    me &&
+    Boolean(me) &&
     !st.poker.active &&
     st.bj.phase !== "playing" &&
-    !(st.players || []).some((player) => player.bjBet || player.bjSplitBet);
+    !hasPendingBlackjackBet;
+  const musicPurchaseDisabledReason = !me
+    ? ""
+    : me.chips < MVP_MUSIC_PRICE
+      ? translateText("Saldo chip tidak cukup untuk membeli musik.")
+      : st.poker.active || st.bj.phase === "playing"
+        ? translateText("Musik hanya dapat dibeli saat ronde tidak aktif.")
+        : hasPendingBlackjackBet
+          ? translateText("Selesaikan atau batalkan taruhan Blackjack sebelum membeli musik.")
+          : mvpMusicPurchasePending
+            ? translateText("Pembelian musik sedang diproses.")
+            : "";
   const musicContent = !mvpMusicTracksLoaded
     ? `<p class="mut store-empty">${translateText("Memuat musik MVP…")}</p>`
     : mvpMusicTracks.length === 0
@@ -120,7 +134,15 @@ function renderStore() {
                 ${button}
               </article>`;
           })
-          .join("")}</div>`;
+          .join("")}</div>
+        ${
+          musicPurchaseDisabledReason &&
+          mvpMusicTracks.some(
+            (track) => !ownedMvpMusicTrackIds.includes(track.id),
+          )
+            ? `<p class="mut store-note">${musicPurchaseDisabledReason}</p>`
+            : ""
+        }`;
   setModalContent(
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeStore)">
       <div class="mbox store-modal" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
@@ -635,9 +657,23 @@ function openChipTransfer() {
   const recipients = (st.players || []).filter((player) => player.id !== me.id);
   const transferLocked =
     st.poker.active ||
-    st.bj.phase === "playing" ||
-    (st.players || []).some((player) => player.bjBet || player.bjSplitBet);
-  if (!me.chips || !recipients.length || transferLocked) return;
+    (st.mode === "blackjack" &&
+      (st.bj.phase === "playing" ||
+        (st.players || []).some(
+          (player) => player.bjBet || player.bjSplitBet,
+        )));
+  if (!me.chips) {
+    flash("Chip tidak mencukupi");
+    return;
+  }
+  if (!recipients.length) {
+    flash("Minimal harus ada dua pemain di meja untuk mengirim chip.");
+    return;
+  }
+  if (transferLocked) {
+    flash("Transfer chip hanya tersedia saat ronde tidak aktif");
+    return;
+  }
   $("#modal").innerHTML =
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeChipTransfer)"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
     <div class="row sp"><h2 id="chipTransferTitle">${translateText("Kirim Chip")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeChipTransfer()">×</button></div>
@@ -723,7 +759,6 @@ function setBackgroundMusicVolume(value) {
   backgroundMusicVolume = Math.max(0, Math.min(Number(value) / 100, 1));
   localStorage.cb_bgm_volume = String(backgroundMusicVolume);
   syncBackgroundMusic();
-  syncMvpMusicVolume();
   if (!backgroundMusicMuted && backgroundMusicVolume > 0)
     startBackgroundMusic();
   const slider = $("#bgMusicVolumeSlider");
@@ -745,7 +780,6 @@ function toggleBackgroundMusicMute() {
   backgroundMusicMuted = !backgroundMusicMuted;
   localStorage.cb_bgm_muted = String(backgroundMusicMuted);
   syncBackgroundMusic();
-  syncMvpMusicVolume();
   if (!backgroundMusicMuted && backgroundMusicVolume > 0)
     startBackgroundMusic();
   renderSettings();

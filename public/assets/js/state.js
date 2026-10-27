@@ -51,6 +51,13 @@ const EN_TEXT = {
   "Chip Tersisa": "Chips remaining",
   "Bet 1": "Bet 1",
   "Bet 2": "Bet 2",
+  "Saldo chip tidak cukup untuk membeli musik.":
+    "Not enough chips to buy music.",
+  "Musik hanya dapat dibeli saat ronde tidak aktif.":
+    "Music can only be purchased between rounds.",
+  "Selesaikan atau batalkan taruhan Blackjack sebelum membeli musik.":
+    "Finish or cancel Blackjack bets before buying music.",
+  "Pembelian musik sedang diproses.": "Music purchase is processing.",
   "Bantuan dan FAQ": "Help & FAQ",
   "Pertanyaan Umum": "Frequently Asked Questions",
   "Bagaimana cara membuat atau bergabung ke room?":
@@ -100,6 +107,8 @@ const EN_TEXT = {
   "Kirim Chip": "Send Chips",
   "Transfer chip hanya tersedia saat ronde tidak aktif":
     "Chip transfers are only available between rounds",
+  "Minimal harus ada dua pemain di meja untuk mengirim chip.":
+    "At least two players must be seated to transfer chips.",
   "Saldo tersedia": "Available balance",
   Penerima: "Recipient",
   "Pilih pemain": "Select a player",
@@ -734,7 +743,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.14";
+const APP_VER = "3.21";
 let st = null,
   draft = { w: {} },
   toastMsg = "",
@@ -816,14 +825,15 @@ function avatarWithBorder(
     "neon-orange-electric-blue",
     "neon-green-denim",
   ];
+  const leaderBorderColor = player.leaderBorderColor || "rgb";
   const leaderStyle =
     isLeader &&
-    (player.leaderBorderColor === "rgb" ||
-      borderProducts.includes(player.leaderBorderColor));
+    (leaderBorderColor === "rgb" ||
+      borderProducts.includes(leaderBorderColor));
   const borderColor = leaderStyle
-    ? player.leaderBorderColor === "rgb"
+    ? leaderBorderColor === "rgb"
       ? null
-      : player.leaderBorderColor
+      : leaderBorderColor
     : player.profileBorderColor;
   const productBorder = borderProducts.includes(borderColor);
   if (!leaderStyle && !productBorder) return avatar(player.avatar, size);

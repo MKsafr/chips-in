@@ -91,12 +91,21 @@ function syncBackgroundMusic() {
 
 function syncMvpMusicVolume() {
   if (mvpMusicAudio)
-    setMediaGain(mvpMusicAudio, backgroundMusicVolume, backgroundMusicMuted);
+    setMediaGain(mvpMusicAudio, currentVolume, soundMuted);
 }
 
 function finishMvpMusic(audio) {
   if (mvpMusicAudio !== audio) return;
   mvpMusicAudio = null;
+  startBackgroundMusic(true);
+}
+
+function stopMvpMusic() {
+  pendingMvpMusicTrackId = null;
+  if (!mvpMusicAudio) return;
+  const audio = mvpMusicAudio;
+  mvpMusicAudio = null;
+  audio.pause();
   startBackgroundMusic(true);
 }
 
@@ -115,7 +124,7 @@ function playMvpMusic(trackId) {
   audio.addEventListener("ended", () => finishMvpMusic(audio), { once: true });
   audio.addEventListener("error", () => finishMvpMusic(audio), { once: true });
   audio.currentTime = 0;
-  setMediaGain(audio, backgroundMusicVolume, backgroundMusicMuted);
+  setMediaGain(audio, currentVolume, soundMuted);
   audio.play().catch((error) => {
     console.warn("Musik MVP tidak dapat diputar:", error);
     finishMvpMusic(audio);
@@ -126,6 +135,7 @@ function syncSoundEffects() {
   Object.values(sfxCache).forEach((media) => {
     setMediaGain(media, currentVolume, soundMuted);
   });
+  syncMvpMusicVolume();
 }
 
 function unlockAudio() {

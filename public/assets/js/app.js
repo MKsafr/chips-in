@@ -51,10 +51,25 @@ function render() {
   const me = st.players ? st.players.find((p) => p.id === st.you) : null;
   const transferLocked =
     st.poker.active ||
-    st.bj.phase === "playing" ||
-    (st.players || []).some((player) => player.bjBet || player.bjSplitBet);
+    (st.mode === "blackjack" &&
+      (st.bj.phase === "playing" ||
+        (st.players || []).some(
+          (player) => player.bjBet || player.bjSplitBet,
+        )));
+  const transferDisabledReason = !me
+    ? ""
+    : me.chips <= 0
+      ? "Chip tidak mencukupi"
+      : (st.players || []).length <= 1
+        ? "Minimal harus ada dua pemain di meja untuk mengirim chip."
+        : transferLocked
+          ? "Transfer chip hanya tersedia saat ronde tidak aktif"
+          : "Kirim Chip";
   const canTransferChips =
-    me && me.chips > 0 && (st.players || []).length > 1 && !transferLocked;
+    Boolean(me) &&
+    me.chips > 0 &&
+    (st.players || []).length > 1 &&
+    !transferLocked;
 
   let h = `<div class="top">
     <div class="logo-box">
@@ -82,7 +97,7 @@ function render() {
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatarWithBorder(me, 54, meIsChipLeader)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
       <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s store-open-button" aria-label="${translateText("Toko")}" onclick="openStore()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-1.6-5H4.6L3 9Zm1 2v9h16v-9M9 20v-6h6v6"/></svg>${translateText("Toko")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(canTransferChips ? "Kirim Chip" : "Transfer chip hanya tersedia saat ronde tidak aktif")}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
+      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s store-open-button" aria-label="${translateText("Toko")}" onclick="openStore()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-1.6-5H4.6L3 9Zm1 2v9h16v-9M9 20v-6h6v6"/></svg>${translateText("Toko")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(transferDisabledReason)}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
   }
 
   const ph = st.pendingHost;

@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.14"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.21"; // klien yang versinya beda akan otomatis refresh
 const MVP_MUSIC_TRACKS = require(path.join(
   PUBLIC_PATH,
   "assets",
@@ -153,6 +153,9 @@ function logRoom(room, msg) {
 function setAutomaticMvpMusic(room, winnerIds) {
   room.mvpMusicEligiblePlayerIds = [...new Set(winnerIds)];
   room.mvpMusicChosenForRound = false;
+  room.mvpMusicEventId += 1;
+  room.mvpMusicTrackId = null;
+  room.mvpMusicChosenBy = null;
   const winner = room.mvpMusicEligiblePlayerIds
     .map((id) => P(room, id))
     .find((player) =>
@@ -167,7 +170,6 @@ function setAutomaticMvpMusic(room, winnerIds) {
     : null;
   if (!winner || !track) return;
   room.mvpMusicTrackId = track.id;
-  room.mvpMusicEventId += 1;
   room.mvpMusicChosenBy = winner.id;
   room.mvpMusicChosenForRound = true;
 }
@@ -216,6 +218,7 @@ const P = (room, id) => room.players.find((p) => p.id === id);
 const pot = (room) => room.players.reduce((a, p) => a + (p.contrib || 0), 0);
 
 function uniqueChipLeaderId(room) {
+  if (room.players.length <= 1) return null;
   const isPoker = room.mode === "poker";
   let leaderId = null;
   let maxChips = 0;
@@ -1184,8 +1187,9 @@ function handle(b) {
       const sender = needMe();
       if (
         room.poker.active ||
-        room.bj.phase === "playing" ||
-        room.players.some((p) => p.bjBet || p.bjSplitBet)
+        (room.mode === "blackjack" &&
+          (room.bj.phase === "playing" ||
+            room.players.some((p) => p.bjBet || p.bjSplitBet)))
       )
         throw "Transfer chip hanya tersedia saat ronde tidak aktif";
       const targetId = Number(b.targetId);
