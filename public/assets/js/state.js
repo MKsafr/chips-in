@@ -12,7 +12,7 @@ const esc = (s) =>
       })[c],
   );
 const fmt = (n) =>
-  Number(n || 0).toLocaleString(currentLanguage === "en" ? "en-US" : "id-ID");
+  `$${Number(n || 0).toLocaleString(currentLanguage === "en" ? "en-US" : "id-ID")}`;
 const chipUnit = (amount) =>
   currentLanguage === "en" &&
   Number(String(amount).replace(/[,.]/g, "")) !== 1
@@ -743,7 +743,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.21";
+const APP_VER = "3.22";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

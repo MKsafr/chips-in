@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.21"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.22"; // klien yang versinya beda akan otomatis refresh
 const MVP_MUSIC_TRACKS = require(path.join(
   PUBLIC_PATH,
   "assets",
