@@ -45,7 +45,8 @@ const BORDER_STORE_ITEMS = [
 let borderStorePending = false;
 let storeOpen = false;
 let storeTab = "themes";
-let mvpMusicSelectionPending = false;
+let mvpMusicPurchasePending = false;
+const MVP_MUSIC_PRICE = 1000;
 
 function rememberModalPointerDown(event) {
   event.currentTarget.dataset.pointerStartedInside =
@@ -95,23 +96,30 @@ function renderStore() {
     return;
   }
   const me = (st?.players || []).find((player) => player.id === st.you);
-  const canChooseMvpMusic =
+  const ownedMvpMusicTrackIds = Array.isArray(me?.ownedMvpMusicTrackIds)
+    ? me.ownedMvpMusicTrackIds
+    : [];
+  const canBuyMvpMusic =
     me &&
-    (st.mvpMusicEligiblePlayerIds || []).includes(me.id) &&
-    !st.mvpMusicChosenForRound;
+    !st.poker.active &&
+    st.bj.phase !== "playing" &&
+    !(st.players || []).some((player) => player.bjBet || player.bjSplitBet);
   const musicContent = !mvpMusicTracksLoaded
     ? `<p class="mut store-empty">${translateText("Memuat musik MVP…")}</p>`
     : mvpMusicTracks.length === 0
       ? `<p class="mut store-empty">${translateText("Belum ada musik MVP. Lagu akan muncul di sini setelah ditambahkan.")}</p>`
-      : `<p class="mut store-note">${translateText("Musik MVP hanya dapat dipilih oleh pemenang ronde. Musik yang dipilih akan diputar untuk semua pemain di room.")}</p>
+      : `<p class="mut store-note">${translateText("Semua pemain dapat membeli musik seharga 1.000 chip. Jika menang ronde, pemilik musik dapat memilihnya untuk diputar di room.")}</p>
         <div class="store-music-list">${mvpMusicTracks
-          .map(
-            (track) =>
-              `<article class="store-music-item">
+          .map((track) => {
+            const isOwned = ownedMvpMusicTrackIds.includes(track.id);
+            const button = isOwned
+              ? `<button class="g s" disabled>${translateText("Dimiliki")}</button>`
+              : `<button class="y s" ${!canBuyMvpMusic || me.chips < MVP_MUSIC_PRICE || mvpMusicPurchasePending ? "disabled" : ""} onclick="buyMvpMusic('${esc(track.id)}')">${translateText("Beli")} · ${fmt(MVP_MUSIC_PRICE)}</button>`;
+            return `<article class="store-music-item">
                 <div><b>${esc(track.title)}</b><span class="mut">${translateText("Musik MVP")}</span></div>
-                <button class="${canChooseMvpMusic ? "ok" : "g"} s" ${canChooseMvpMusic && !mvpMusicSelectionPending ? "" : "disabled"} onclick="chooseMvpMusic('${esc(track.id)}')">${translateText(canChooseMvpMusic ? "Pilih" : "Khusus pemenang")}</button>
-              </article>`,
-          )
+                ${button}
+              </article>`;
+          })
           .join("")}</div>`;
   setModalContent(
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeStore)">
@@ -127,17 +135,26 @@ function renderStore() {
   );
 }
 
-async function chooseMvpMusic(trackId) {
-  if (mvpMusicSelectionPending) return;
-  mvpMusicSelectionPending = true;
+async function buyMvpMusic(trackId) {
+  if (mvpMusicPurchasePending) return;
+  const me = (st?.players || []).find((player) => player.id === st.you);
+  if (!me) return;
+  if (
+    me.chips === MVP_MUSIC_PRICE &&
+    !confirm(
+      translateText(
+        "Saldo Anda tepat 1.000 chip. Beli musik ini dan habiskan semua chip?",
+      ),
+    )
+  )
+    return;
+  mvpMusicPurchasePending = true;
   try {
-    const result = await api("setMvpMusic", { trackId });
-    if (result && result.ok) {
-      closeStore();
-      flash("Musik MVP diputar untuk semua pemain");
-    }
+    const result = await api("musicStore", { trackId });
+    if (result && result.ok) flash("Musik MVP berhasil dibeli");
   } finally {
-    mvpMusicSelectionPending = false;
+    mvpMusicPurchasePending = false;
+    if ($("#modal .store-modal")) renderStore();
   }
 }
 

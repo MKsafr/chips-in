@@ -6,7 +6,7 @@ const http = require("http"),
 const QRCode = require("qrcode");
 const { PUBLIC_PATH, VIEW_PATH } = require("../Config/paths");
 const PORT = process.env.PORT || 3000;
-const VERSION = "3.10"; // klien yang versinya beda akan otomatis refresh
+const VERSION = "3.14"; // klien yang versinya beda akan otomatis refresh
 const MVP_MUSIC_TRACKS = require(path.join(
   PUBLIC_PATH,
   "assets",
@@ -14,6 +14,7 @@ const MVP_MUSIC_TRACKS = require(path.join(
   "mvp",
   "tracks.json",
 ));
+const MVP_MUSIC_PRICE = 1000;
 
 // Avatar preset yang tersedia. Samakan dengan daftar di public/assets/js/state.js.
 const AVATARS = [
@@ -147,6 +148,28 @@ function logRoom(room, msg) {
   room.log.length = Math.min(room.log.length, 30);
   room.lastEvent = msg;
   room.lastEventId = (room.lastEventId || 0) + 1;
+}
+
+function setAutomaticMvpMusic(room, winnerIds) {
+  room.mvpMusicEligiblePlayerIds = [...new Set(winnerIds)];
+  room.mvpMusicChosenForRound = false;
+  const winner = room.mvpMusicEligiblePlayerIds
+    .map((id) => P(room, id))
+    .find((player) =>
+      MVP_MUSIC_TRACKS.some((track) =>
+        player?.ownedMvpMusicTrackIds?.includes(track.id),
+      ),
+    );
+  const track = winner
+    ? MVP_MUSIC_TRACKS.find((item) =>
+        winner.ownedMvpMusicTrackIds.includes(item.id),
+      )
+    : null;
+  if (!winner || !track) return;
+  room.mvpMusicTrackId = track.id;
+  room.mvpMusicEventId += 1;
+  room.mvpMusicChosenBy = winner.id;
+  room.mvpMusicChosenForRound = true;
 }
 
 function initRoom(code) {
@@ -361,8 +384,7 @@ function afterAction(room) {
     const w = live[0],
       t = pot(room);
     w.chips += t;
-    room.mvpMusicEligiblePlayerIds = [w.id];
-    room.mvpMusicChosenForRound = false;
+    setAutomaticMvpMusic(room, [w.id]);
     logRoom(room, `${w.name} menang ${t} chip (semua pemain fold)`);
     endHand(room);
     return;
@@ -488,10 +510,7 @@ function award(room, winners) {
       `${i === 0 ? "Pot Utama" : "Side Pot " + i} (${l.amount}) dikirim ke: ${w.map((id) => P(room, id).name).join(", ")}`,
     );
   });
-  room.mvpMusicEligiblePlayerIds = [
-    ...new Set(selectedWinners.flat()),
-  ];
-  room.mvpMusicChosenForRound = false;
+  setAutomaticMvpMusic(room, selectedWinners.flat());
   endHand(room);
 }
 
@@ -553,8 +572,7 @@ function bjResolve(room, p, res, betSlot) {
   if (!room.players.some((q) => q.bjBet > 0 || q.bjSplitBet > 0)) {
     room.bj.phase = "betting";
     room.bj.dealerTurn = null;
-    room.mvpMusicEligiblePlayerIds = [...room.mvpRoundWinnerIds];
-    room.mvpMusicChosenForRound = false;
+    setAutomaticMvpMusic(room, room.mvpRoundWinnerIds);
   }
 }
 
@@ -613,6 +631,11 @@ function seatPlayer(room, token, profile) {
           PLAYER_BORDER_PRODUCTS.has(color),
         )
       : [],
+    ownedMvpMusicTrackIds: Array.isArray(old && old.ownedMvpMusicTrackIds)
+      ? old.ownedMvpMusicTrackIds.filter((trackId) =>
+          MVP_MUSIC_TRACKS.some((track) => track.id === trackId),
+        )
+      : [],
     profileBorderColor:
       old &&
       PLAYER_BORDER_PRODUCTS.has(old.profileBorderColor) &&
@@ -659,6 +682,7 @@ function unseatPlayer(room, p) {
     borderColor: p.borderColor || null,
     ownedProfileBorderColors: p.ownedProfileBorderColors || [],
     profileBorderColor: p.profileBorderColor || null,
+    ownedMvpMusicTrackIds: p.ownedMvpMusicTrackIds || [],
     leaderBordersUnlocked: p.leaderBordersUnlocked === true,
   };
   room.players = room.players.filter((q) => q !== p);
@@ -1111,22 +1135,25 @@ function handle(b) {
       needHost();
       award(room, b.winners);
       break;
-    case "setMvpMusic": {
+    case "musicStore": {
       const player = needMe();
       const trackId = String(b.trackId || "");
-      if (!room.mvpMusicEligiblePlayerIds.includes(player.id))
-        throw "Kamu belum memenangkan ronde ini";
-      if (room.mvpMusicChosenForRound)
-        throw "Pemenang ronde ini sudah memilih musik MVP";
+      const track = MVP_MUSIC_TRACKS.find((item) => item.id === trackId);
+      if (!track) throw "Musik MVP tidak tersedia";
+      if (!Array.isArray(player.ownedMvpMusicTrackIds))
+        player.ownedMvpMusicTrackIds = [];
+      if (player.ownedMvpMusicTrackIds.includes(trackId))
+        throw "Musik MVP sudah dimiliki";
       if (
-        !/^[a-z0-9][a-z0-9-]*$/.test(trackId) ||
-        !MVP_MUSIC_TRACKS.some((track) => track.id === trackId)
+        room.poker.active ||
+        room.bj.phase === "playing" ||
+        room.players.some((p) => p.bjBet || p.bjSplitBet)
       )
-        throw "Musik MVP tidak tersedia";
-      room.mvpMusicTrackId = trackId;
-      room.mvpMusicEventId += 1;
-      room.mvpMusicChosenBy = player.id;
-      room.mvpMusicChosenForRound = true;
+        throw "Musik hanya dapat dibeli saat ronde tidak aktif";
+      if (player.chips < MVP_MUSIC_PRICE)
+        throw "Chip tidak mencukupi untuk membeli musik MVP";
+      player.chips -= MVP_MUSIC_PRICE;
+      player.ownedMvpMusicTrackIds.push(trackId);
       break;
     }
     case "cancel":

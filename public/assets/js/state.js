@@ -161,15 +161,22 @@ const EN_TEXT = {
     "There is no MVP music yet. Songs will appear here after they are added.",
   "Memuat musik MVP…": "Loading MVP music…",
   "Musik MVP": "MVP Music",
-  "Musik MVP hanya dapat dipilih oleh pemenang ronde. Musik yang dipilih akan diputar untuk semua pemain di room.":
-    "MVP music can only be selected by a round winner. The selected music will play for everyone in the room.",
+  "Semua pemain dapat membeli musik seharga 1.000 chip. Jika pemilik menang ronde, musiknya otomatis diputar untuk semua pemain di room.":
+    "All players can buy music for 1,000 chips. If an owner wins a round, their music automatically plays for everyone in the room.",
   "Khusus pemenang": "Winners only",
+  Dimiliki: "Owned",
   Pilih: "Choose",
-  "Pilih Musik MVP": "Choose MVP Music",
-  "Kamu menang! Pilih musik yang akan diputar untuk semua pemain di room.":
-    "You won! Choose music to play for everyone in the room.",
   "Musik MVP diputar untuk semua pemain":
     "MVP music is playing for everyone",
+  "Musik MVP berhasil dibeli": "MVP music purchased",
+  "Musik MVP sudah dimiliki": "You already own this MVP music",
+  "Musik MVP belum dimiliki": "You do not own this MVP music",
+  "Musik hanya dapat dibeli saat ronde tidak aktif":
+    "Music can only be purchased between rounds",
+  "Chip tidak mencukupi untuk membeli musik MVP":
+    "Not enough chips to purchase MVP music",
+  "Saldo Anda tepat 1.000 chip. Beli musik ini dan habiskan semua chip?":
+    "Your balance is exactly 1,000 chips. Buy this music and spend all your chips?",
   "Kamu belum memenangkan ronde ini": "You did not win this round",
   "Pemenang ronde ini sudah memilih musik MVP":
     "A winner of this round has already chosen MVP music",
@@ -727,7 +734,7 @@ let currentTheme = THEMES[localStorage.cb_theme]
   : "default";
 document.documentElement.setAttribute("data-theme", currentTheme);
 
-const APP_VER = "3.10";
+const APP_VER = "3.14";
 let st = null,
   draft = { w: {} },
   toastMsg = "",

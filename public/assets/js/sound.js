@@ -94,6 +94,12 @@ function syncMvpMusicVolume() {
     setMediaGain(mvpMusicAudio, backgroundMusicVolume, backgroundMusicMuted);
 }
 
+function finishMvpMusic(audio) {
+  if (mvpMusicAudio !== audio) return;
+  mvpMusicAudio = null;
+  startBackgroundMusic(true);
+}
+
 function playMvpMusic(trackId) {
   const track = mvpMusicTracks.find((item) => item.id === trackId);
   if (!track) {
@@ -101,19 +107,18 @@ function playMvpMusic(trackId) {
     return;
   }
   pendingMvpMusicTrackId = null;
-  if (!mvpMusicAudio) {
-    mvpMusicAudio = new Audio(track.src);
-    mvpMusicAudio.addEventListener("ended", () => {
-      mvpMusicAudio = null;
-    });
-  } else {
-    mvpMusicAudio.pause();
-    mvpMusicAudio.src = track.src;
-  }
-  mvpMusicAudio.currentTime = 0;
-  setMediaGain(mvpMusicAudio, backgroundMusicVolume, backgroundMusicMuted);
-  mvpMusicAudio.play().catch((error) => {
+  if (mvpMusicAudio) mvpMusicAudio.pause();
+  backgroundMusic.pause();
+  Object.values(sfxCache).forEach((media) => media.pause());
+  const audio = new Audio(track.src);
+  mvpMusicAudio = audio;
+  audio.addEventListener("ended", () => finishMvpMusic(audio), { once: true });
+  audio.addEventListener("error", () => finishMvpMusic(audio), { once: true });
+  audio.currentTime = 0;
+  setMediaGain(audio, backgroundMusicVolume, backgroundMusicMuted);
+  audio.play().catch((error) => {
     console.warn("Musik MVP tidak dapat diputar:", error);
+    finishMvpMusic(audio);
   });
 }
 
@@ -134,15 +139,16 @@ function unlockAudio() {
   startBackgroundMusic();
 }
 
-function startBackgroundMusic() {
+function startBackgroundMusic(resume = false) {
   if (
     !backgroundMusic.paused ||
     backgroundMusicStarting ||
+    (mvpMusicAudio && !mvpMusicAudio.paused) ||
     backgroundMusicMuted ||
     backgroundMusicVolume === 0
   )
     return;
-  backgroundMusic.currentTime = 0;
+  if (!resume) backgroundMusic.currentTime = 0;
   backgroundMusicStarting = true;
   backgroundMusic
     .play()
@@ -162,7 +168,12 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function playSFX(file) {
-  if (soundMuted || currentVolume === 0) return;
+  if (
+    soundMuted ||
+    currentVolume === 0 ||
+    (mvpMusicAudio && !mvpMusicAudio.paused)
+  )
+    return;
   try {
     if (!sfxCache[file])
       sfxCache[file] = new Audio("/assets/sounds/" + file + ".mp3");

@@ -108,25 +108,6 @@ function render() {
     </div>`;
   }
 
-  if (
-    me &&
-    (st.mvpMusicEligiblePlayerIds || []).includes(me.id) &&
-    !st.mvpMusicChosenForRound &&
-    mvpMusicTracks.length
-  ) {
-    h += `<div class="winner-modal" style="z-index:10000">
-      <div style="font-size:48px">🎵</div>
-      <h1 style="color:var(--gold);font-size:28px;margin:10px 0">${translateText("Pilih Musik MVP")}</h1>
-      <p style="color:#fff;max-width:320px">${translateText("Kamu menang! Pilih musik yang akan diputar untuk semua pemain di room.")}</p>
-      <div class="store-mvp-choices">${mvpMusicTracks
-        .map(
-          (track) =>
-            `<button class="ok s" ${mvpMusicSelectionPending ? "disabled" : ""} onclick="chooseMvpMusic('${esc(track.id)}')">${esc(track.title)}</button>`,
-        )
-        .join("")}</div>
-    </div>`;
-  }
-
   if (st.resumeOffer) {
     h += `<div class="winner-modal" style="z-index:10000">
       <div style="font-size:48px">${st.resumeOffer.role === "host" ? "👑" : "🪙"}</div>

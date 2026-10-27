@@ -63,10 +63,16 @@ function connect() {
         );
         return;
       }
+      const mvpMusicStarted = Boolean(
+        data.mvpMusicTrackId &&
+          (!st || data.mvpMusicEventId !== st.mvpMusicEventId),
+      );
+      const newRoomEvent =
+        data.lastEvent && (!st || st.lastEventId !== data.lastEventId);
       if (!st && pendingEntrySound && data.lastEvent) {
-        playEventSound(data.lastEvent);
+        if (!mvpMusicStarted) playEventSound(data.lastEvent);
         pendingEntrySound = false;
-      } else if (st && data.lastEvent && st.lastEventId !== data.lastEventId) {
+      } else if (st && newRoomEvent && !mvpMusicStarted) {
         playEventSound(data.lastEvent);
       }
       if (!data.isHost && data.you == null && !leaving) {
@@ -90,7 +96,7 @@ function connect() {
         else flash("Kamu sudah tidak duduk di meja ini");
         return;
       }
-      if (st && !data.isHost) {
+      if (st && !data.isHost && !mvpMusicStarted) {
         const blackjackFinished =
           st.bj.phase === "playing" && data.bj.phase !== "playing";
         const blackjackWinner =

@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "id": "bbno-u-mad-mvp",
+    "title": "bbno$ – u mad! [MVP]",
+    "src": "/assets/sounds/mvp/bbno%24%20%E2%80%93%20u%20mad!%20%5BMVP%5D%20%5BFNHYj23x8YY%5D.mp3"
+  },
+  {
+    "id": "ltg",
+    "title": "LTG",
+    "src": "/assets/sounds/mvp/ltg.mp3"
+  },
+  {
+    "id": "sahoor",
+    "title": "Sahoor",
+    "src": "/assets/sounds/mvp/sahoor.mp3"
+  },
+  {
+    "id": "steel-ball-run-outro",
+    "title": "Steel Ball Run Outro",
+    "src": "/assets/sounds/mvp/steel%20ball%20run%20outro%20%23jojo%20%23jjba%20%23netflix%20%23edit%20%23steelballrun%20%5BtExv2sBboHU%5D.mp3"
+  },
+  {
+    "id": "vintage",
+    "title": "Vintage",
+    "src": "/assets/sounds/mvp/vintage.mp3"
+  }
+]
