@@ -125,18 +125,18 @@ function uploadAvatar(input) {
         const sx = (image.naturalWidth - side) / 2;
         const sy = (image.naturalHeight - side) / 2;
         let output = "";
-        for (const size of [128, 96, 72]) {
+        for (const size of [96, 80, 64]) {
           canvas.width = size;
           canvas.height = size;
           context.clearRect(0, 0, size, size);
           context.drawImage(image, sx, sy, side, side, 0, 0, size, size);
-          for (const quality of [0.82, 0.68, 0.52, 0.38]) {
+          for (const quality of [0.78, 0.62, 0.46, 0.32]) {
             output = canvas.toDataURL("image/jpeg", quality);
-            if (output.length <= 48 * 1024) break;
+            if (output.length <= 24 * 1024) break;
           }
-          if (output.length <= 48 * 1024) break;
+          if (output.length <= 24 * 1024) break;
         }
-        if (!output || output.length > 48 * 1024) {
+        if (!output || output.length > 24 * 1024) {
           showAlert(
             "Foto tidak bisa dikompres",
             "Coba pilih foto lain dengan ukuran atau resolusi yang lebih kecil.",
