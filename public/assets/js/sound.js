@@ -11,6 +11,8 @@ let mvpMusicAudio = null;
 let mvpMusicPreviewAudio = null;
 let mvpMusicPreviewTrackId = null;
 let mvpMusicPreviewTimeout = null;
+let mvpMusicPreviewResumeAudio = null;
+let mvpMusicPreviewResumeBackground = false;
 
 fetch("/assets/sounds/mvp/tracks.json")
   .then((response) => {
@@ -109,10 +111,14 @@ function stopMvpMusic() {
   const audio = mvpMusicAudio;
   mvpMusicAudio = null;
   audio.pause();
+  if (mvpMusicPreviewResumeAudio === audio) {
+    mvpMusicPreviewResumeAudio = null;
+    mvpMusicPreviewResumeBackground = true;
+  }
   startBackgroundMusic(true);
 }
 
-function stopMvpMusicPreview() {
+function stopMvpMusicPreview(resumeAudio = true) {
   if (mvpMusicPreviewTimeout) {
     clearTimeout(mvpMusicPreviewTimeout);
     mvpMusicPreviewTimeout = null;
@@ -122,6 +128,18 @@ function stopMvpMusicPreview() {
     mvpMusicPreviewAudio = null;
   }
   mvpMusicPreviewTrackId = null;
+  if (!resumeAudio) return;
+  const resumeAudioElement = mvpMusicPreviewResumeAudio;
+  const resumeBackground = mvpMusicPreviewResumeBackground;
+  mvpMusicPreviewResumeAudio = null;
+  mvpMusicPreviewResumeBackground = false;
+  if (resumeAudioElement && resumeAudioElement === mvpMusicAudio) {
+    resumeAudioElement.play().catch((error) => {
+      console.warn("Musik MVP tidak dapat dilanjutkan setelah preview:", error);
+    });
+  } else if (resumeBackground || !mvpMusicAudio) {
+    startBackgroundMusic(true);
+  }
 }
 
 function playMvpMusicPreview(trackId) {
@@ -130,7 +148,16 @@ function playMvpMusicPreview(trackId) {
     console.warn("Musik MVP untuk preview tidak tersedia:", trackId);
     return false;
   }
-  stopMvpMusicPreview();
+  const replacingPreview = Boolean(mvpMusicPreviewAudio);
+  stopMvpMusicPreview(false);
+  if (!replacingPreview) {
+    mvpMusicPreviewResumeAudio =
+      mvpMusicAudio && !mvpMusicAudio.paused ? mvpMusicAudio : null;
+    mvpMusicPreviewResumeBackground =
+      !mvpMusicPreviewResumeAudio && !backgroundMusic.paused;
+  }
+  backgroundMusic.pause();
+  if (mvpMusicAudio) mvpMusicAudio.pause();
   const audio = new Audio(track.src);
   mvpMusicPreviewAudio = audio;
   mvpMusicPreviewTrackId = trackId;
@@ -146,6 +173,7 @@ function playMvpMusicPreview(trackId) {
   audio.play().catch((error) => {
     console.warn("Preview musik MVP tidak dapat diputar:", error);
     finishPreview();
+    flash("Preview musik gagal diputar");
   });
   return true;
 }
@@ -156,6 +184,9 @@ function playMvpMusic(trackId) {
     pendingMvpMusicTrackId = trackId;
     return;
   }
+  stopMvpMusicPreview(false);
+  mvpMusicPreviewResumeAudio = null;
+  mvpMusicPreviewResumeBackground = false;
   pendingMvpMusicTrackId = null;
   if (mvpMusicAudio) mvpMusicAudio.pause();
   backgroundMusic.pause();
@@ -196,6 +227,7 @@ function startBackgroundMusic(resume = false) {
   if (
     !backgroundMusic.paused ||
     backgroundMusicStarting ||
+    (mvpMusicPreviewAudio && !mvpMusicPreviewAudio.paused) ||
     (mvpMusicAudio && !mvpMusicAudio.paused) ||
     backgroundMusicMuted ||
     backgroundMusicVolume === 0
@@ -224,6 +256,7 @@ function playSFX(file) {
   if (
     soundMuted ||
     currentVolume === 0 ||
+    (mvpMusicPreviewAudio && !mvpMusicPreviewAudio.paused) ||
     (mvpMusicAudio && !mvpMusicAudio.paused)
   )
     return;

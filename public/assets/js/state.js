@@ -174,6 +174,7 @@ const EN_TEXT = {
   "Hentikan pratinjau": "Stop preview",
   "Pratinjau berlangsung maksimal 15 detik dan hanya terdengar di perangkat Anda.":
     "Previews last up to 15 seconds and are only audible on your device.",
+  "Preview musik gagal diputar": "Music preview could not be played.",
   "Semua pemain dapat membeli musik seharga 1.000 chip. Jika pemilik menang ronde, musiknya otomatis diputar untuk semua pemain di room.":
     "All players can buy music for 1,000 chips. If an owner wins a round, their music automatically plays for everyone in the room.",
   "Khusus pemenang": "Winners only",

@@ -135,7 +135,7 @@ function renderStore() {
             return `<article class="store-music-item">
                 <div><b>${esc(track.title)}</b><span class="mut">${translateText("Musik MVP")}</span></div>
                 <div class="store-music-actions">
-                  <button class="g s" aria-label="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")} ${esc(track.title)}" onclick="toggleMvpMusicPreview('${esc(track.id)}')">${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")}</button>
+                  <button class="g s store-music-preview-button" aria-label="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")} ${esc(track.title)}" title="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")}" onclick="toggleMvpMusicPreview('${esc(track.id)}')"><svg viewBox="0 0 24 24" aria-hidden="true">${isPreviewing ? '<path d="M7 7h10v10H7z"/>' : '<path transform="translate(-1.5 0)" d="M8 5v14l11-7z"/>'}</svg></button>
                   ${button}
                 </div>
               </article>`;

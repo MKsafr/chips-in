@@ -1563,6 +1563,19 @@ textarea {
   gap: 8px;
   flex: 0 0 auto;
 }
+.store-music-item > .store-music-actions > button.store-music-preview-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 32px;
+  padding: 6px;
+}
+.store-music-preview-button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
 .store-mvp-choices {
   display: grid;
   justify-content: center;
