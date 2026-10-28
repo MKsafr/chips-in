@@ -1851,7 +1851,10 @@ http
             throw new Error("Format permintaan tidak valid");
           const resData = handle(parsed);
           out = { ok: 1, ...resData };
-          if (parsed.roomCode || out.roomCode) {
+          if (
+            (parsed.roomCode && parsed.type !== "checkRoom") ||
+            out.roomCode
+          ) {
             broadcast(parsed.roomCode || out.roomCode);
           }
         } catch (e) {

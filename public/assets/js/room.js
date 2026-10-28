@@ -35,6 +35,16 @@ function flash(m) {
 }
 
 let es = null;
+let roomRenderScheduled = false;
+function scheduleRoomRender() {
+  if (roomRenderScheduled) return;
+  roomRenderScheduled = true;
+  requestAnimationFrame(() => {
+    roomRenderScheduled = false;
+    render();
+  });
+}
+
 function connect() {
   if (!roomCode) return;
   if (es) es.close();
@@ -105,7 +115,7 @@ function connect() {
       if (!data.isHost && data.you == null && !leaving) {
         if (data.resumeOffer) {
           st = data;
-          render();
+          scheduleRoomRender();
           return;
         }
         const previousMe = (st && st.players ? st.players : []).find(
@@ -151,7 +161,7 @@ function connect() {
       )
         draft.w = {};
       st = data;
-      render();
+      scheduleRoomRender();
     } catch (err) {
       console.error(err);
     }
