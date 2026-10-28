@@ -69,6 +69,13 @@ function connect() {
       );
       const mvpMusicEventChanged =
         st && data.mvpMusicEventId !== st.mvpMusicEventId;
+      const bjWinFallbackStarted = Boolean(
+        st &&
+          data.mode === "blackjack" &&
+          mvpMusicEventChanged &&
+          !data.mvpMusicTrackId &&
+          data.mvpMusicEligiblePlayerIds?.length,
+      );
       const roomHasEmptyStack = (data.players || []).some(
         (player) => player.chips <= 0,
       );
@@ -80,10 +87,19 @@ function connect() {
       const newRoomEvent =
         data.lastEvent && (!st || st.lastEventId !== data.lastEventId);
       if (!st && pendingEntrySound && data.lastEvent) {
-        if (!mvpMusicStarted && !suppressDepletionSound)
+        if (
+          !mvpMusicStarted &&
+          !bjWinFallbackStarted &&
+          !suppressDepletionSound
+        )
           playEventSound(data.lastEvent);
         pendingEntrySound = false;
-      } else if (st && newRoomEvent && !mvpMusicStarted) {
+      } else if (
+        st &&
+        newRoomEvent &&
+        !mvpMusicStarted &&
+        !bjWinFallbackStarted
+      ) {
         if (!suppressDepletionSound) playEventSound(data.lastEvent);
       }
       if (!data.isHost && data.you == null && !leaving) {
@@ -128,6 +144,7 @@ function connect() {
       } else if (mvpMusicEventChanged) {
         stopMvpMusic();
       }
+      if (bjWinFallbackStarted) playSFX("bjwin");
       if (
         data.poker.stage === "showdown" &&
         (!st || st.poker.stage !== "showdown")

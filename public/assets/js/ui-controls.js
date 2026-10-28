@@ -79,12 +79,14 @@ function setModalContent(content) {
 }
 
 function openStore(tab = "borders") {
+  if (tab !== "music") stopMvpMusicPreview();
   storeOpen = true;
   storeTab = tab;
   renderStore();
 }
 
 function closeStore() {
+  stopMvpMusicPreview();
   storeOpen = false;
   $("#modal").innerHTML = "";
 }
@@ -126,15 +128,20 @@ function renderStore() {
         <div class="store-music-list">${mvpMusicTracks
           .map((track) => {
             const isOwned = ownedMvpMusicTrackIds.includes(track.id);
+            const isPreviewing = mvpMusicPreviewTrackId === track.id;
             const button = isOwned
               ? `<button class="g s" disabled>${translateText("Dimiliki")}</button>`
               : `<button class="y s" ${!canBuyMvpMusic || me.chips < MVP_MUSIC_PRICE || mvpMusicPurchasePending ? "disabled" : ""} onclick="buyMvpMusic('${esc(track.id)}')">${translateText("Beli")} · ${fmt(MVP_MUSIC_PRICE)}</button>`;
             return `<article class="store-music-item">
                 <div><b>${esc(track.title)}</b><span class="mut">${translateText("Musik MVP")}</span></div>
-                ${button}
+                <div class="store-music-actions">
+                  <button class="g s" aria-label="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")} ${esc(track.title)}" onclick="toggleMvpMusicPreview('${esc(track.id)}')">${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")}</button>
+                  ${button}
+                </div>
               </article>`;
           })
           .join("")}</div>
+        <p class="mut store-note">${translateText("Pratinjau berlangsung maksimal 15 detik dan hanya terdengar di perangkat Anda.")}</p>
         ${
           musicPurchaseDisabledReason &&
           mvpMusicTracks.some(
@@ -155,6 +162,12 @@ function renderStore() {
       </div>
     </div>`,
   );
+}
+
+function toggleMvpMusicPreview(trackId) {
+  if (mvpMusicPreviewTrackId === trackId) stopMvpMusicPreview();
+  else playMvpMusicPreview(trackId);
+  renderStore();
 }
 
 async function buyMvpMusic(trackId) {
@@ -657,11 +670,7 @@ function openChipTransfer() {
   const recipients = (st.players || []).filter((player) => player.id !== me.id);
   const transferLocked =
     st.poker.active ||
-    (st.mode === "blackjack" &&
-      (st.bj.phase === "playing" ||
-        (st.players || []).some(
-          (player) => player.bjBet || player.bjSplitBet,
-        )));
+    (st.mode === "blackjack" && st.bj.phase === "playing");
   if (!me.chips) {
     flash("Chip tidak mencukupi");
     return;

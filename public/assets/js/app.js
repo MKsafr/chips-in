@@ -51,11 +51,7 @@ function render() {
   const me = st.players ? st.players.find((p) => p.id === st.you) : null;
   const transferLocked =
     st.poker.active ||
-    (st.mode === "blackjack" &&
-      (st.bj.phase === "playing" ||
-        (st.players || []).some(
-          (player) => player.bjBet || player.bjSplitBet,
-        )));
+    (st.mode === "blackjack" && st.bj.phase === "playing");
   const transferDisabledReason = !me
     ? ""
     : me.chips <= 0

@@ -1557,6 +1557,12 @@ textarea {
 .store-music-item button {
   flex: 0 0 auto;
 }
+.store-music-item > .store-music-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
 .store-mvp-choices {
   display: grid;
   justify-content: center;

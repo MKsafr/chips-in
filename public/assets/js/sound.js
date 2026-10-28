@@ -8,6 +8,9 @@ let mvpMusicTracks = [];
 let mvpMusicTracksLoaded = false;
 let pendingMvpMusicTrackId = null;
 let mvpMusicAudio = null;
+let mvpMusicPreviewAudio = null;
+let mvpMusicPreviewTrackId = null;
+let mvpMusicPreviewTimeout = null;
 
 fetch("/assets/sounds/mvp/tracks.json")
   .then((response) => {
@@ -109,6 +112,44 @@ function stopMvpMusic() {
   startBackgroundMusic(true);
 }
 
+function stopMvpMusicPreview() {
+  if (mvpMusicPreviewTimeout) {
+    clearTimeout(mvpMusicPreviewTimeout);
+    mvpMusicPreviewTimeout = null;
+  }
+  if (mvpMusicPreviewAudio) {
+    mvpMusicPreviewAudio.pause();
+    mvpMusicPreviewAudio = null;
+  }
+  mvpMusicPreviewTrackId = null;
+}
+
+function playMvpMusicPreview(trackId) {
+  const track = mvpMusicTracks.find((item) => item.id === trackId);
+  if (!track) {
+    console.warn("Musik MVP untuk preview tidak tersedia:", trackId);
+    return false;
+  }
+  stopMvpMusicPreview();
+  const audio = new Audio(track.src);
+  mvpMusicPreviewAudio = audio;
+  mvpMusicPreviewTrackId = trackId;
+  const finishPreview = () => {
+    if (mvpMusicPreviewAudio !== audio) return;
+    stopMvpMusicPreview();
+    if ($("#modal .store-modal")) renderStore();
+  };
+  audio.addEventListener("ended", finishPreview, { once: true });
+  audio.addEventListener("error", finishPreview, { once: true });
+  setMediaGain(audio, currentVolume, soundMuted);
+  mvpMusicPreviewTimeout = setTimeout(finishPreview, 15000);
+  audio.play().catch((error) => {
+    console.warn("Preview musik MVP tidak dapat diputar:", error);
+    finishPreview();
+  });
+  return true;
+}
+
 function playMvpMusic(trackId) {
   const track = mvpMusicTracks.find((item) => item.id === trackId);
   if (!track) {
@@ -136,6 +177,8 @@ function syncSoundEffects() {
     setMediaGain(media, currentVolume, soundMuted);
   });
   syncMvpMusicVolume();
+  if (mvpMusicPreviewAudio)
+    setMediaGain(mvpMusicPreviewAudio, currentVolume, soundMuted);
 }
 
 function unlockAudio() {

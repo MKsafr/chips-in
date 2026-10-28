@@ -156,13 +156,19 @@ function setAutomaticMvpMusic(room, winnerIds) {
   room.mvpMusicEventId += 1;
   room.mvpMusicTrackId = null;
   room.mvpMusicChosenBy = null;
-  const winner = room.mvpMusicEligiblePlayerIds
+  const winnersWithMusic = room.mvpMusicEligiblePlayerIds
     .map((id) => P(room, id))
-    .find((player) =>
+    .filter((player) =>
       MVP_MUSIC_TRACKS.some((track) =>
         player?.ownedMvpMusicTrackIds?.includes(track.id),
       ),
     );
+  const winner =
+    room.mode === "blackjack"
+      ? winnersWithMusic[
+          Math.floor(Math.random() * winnersWithMusic.length)
+        ]
+      : winnersWithMusic[0];
   const track = winner
     ? MVP_MUSIC_TRACKS.find((item) =>
         winner.ownedMvpMusicTrackIds.includes(item.id),
@@ -1187,9 +1193,7 @@ function handle(b) {
       const sender = needMe();
       if (
         room.poker.active ||
-        (room.mode === "blackjack" &&
-          (room.bj.phase === "playing" ||
-            room.players.some((p) => p.bjBet || p.bjSplitBet)))
+        (room.mode === "blackjack" && room.bj.phase === "playing")
       )
         throw "Transfer chip hanya tersedia saat ronde tidak aktif";
       const targetId = Number(b.targetId);
