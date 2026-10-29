@@ -1,0 +1,15 @@
+PHASE1_PROGRESS.md
+node_modules/
+.env
+.DS_Store
+*.log
+
+# Output test (lokal, tidak dipush)
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Aturan AI lokal
+AGENTS.md
+TESTING_PROGRESS.md

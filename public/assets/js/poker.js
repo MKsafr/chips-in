@@ -8,7 +8,7 @@ function pokerView(me) {
       ? translateText("Belum Dimulai")
       : k.stage.toUpperCase();
   h += `<div><div class="card pot"><div class="mut">${stageLabel}${k.active && k.currentBet ? " • Taruhan saat ini " + fmt(k.currentBet) : ""}</div>
-    <div class="big">${fmt(k.pot)}</div><div class="mut">${translateText("Jumlah Pot")}</div>
+    <div class="big" data-testid="poker-pot">${fmt(k.pot)}</div><div class="mut">${translateText("Jumlah Pot")}</div>
     <button class="y s poker-guide-trigger" onclick="openPokerHandGuide()">🃏 ${translateText("Panduan Hand Poker")}</button></div></div>`;
 
   h += `<div><div class="card"><h3>Feed Terbaru</h3><div class="latest-feed-message">${esc(st.lastEvent || "-")}</div></div></div></div>`;
@@ -22,7 +22,7 @@ function pokerView(me) {
     const stage = (k.stage || "").toUpperCase();
     h += `<div class="card" style="border-color:var(--gold)"><h3>Aksi Bandar</h3>
       <div class="mut" style="margin-bottom:8px">${translateText("Buka kartu")} <b>${stage}</b> ${translateText("di meja fisik, lalu tekan tombol di bawah ini agar pemain bisa bertaruh.")}</div>
-      <button class="y" style="width:100%" onclick="api('confirmDealerStage')">${translateText("Tampilkan Kartu")} ${stage}</button></div>`;
+      <button class="y" data-testid="confirm-stage" style="width:100%" onclick="api('confirmDealerStage')">${translateText("Tampilkan Kartu")} ${stage}</button></div>`;
   }
 
   if (k.active) h += roundStartControl();
@@ -49,18 +49,18 @@ function pokerView(me) {
         maxTo = me.bet + me.chips,
         minTo = Math.min((k.currentBet || 0) + (k.minRaise || 0), maxTo);
       const canRaise = maxTo > (k.currentBet || 0);
-      h += `<div class="card" style="border-color:var(--gold)"><h3>Giliranmu</h3>
-        <div class="row"><button class="r f" onclick="api('act',{a:'fold'})">Fold</button>
-        <button class="ok f" onclick="pokerCall()">${toCall > 0 ? "Call " + fmt(callAmt) : "Check"}</button></div>`;
+      h += `<div class="card" data-testid="poker-turn-card" style="border-color:var(--gold)"><h3>Giliranmu</h3>
+        <div class="row"><button class="r f" data-testid="poker-fold" onclick="api('act',{a:'fold'})">Fold</button>
+        <button class="ok f" data-testid="poker-call" onclick="pokerCall()">${toCall > 0 ? "Call " + fmt(callAmt) : "Check"}</button></div>`;
       if (canRaise) {
         h += `<div class="mut" style="margin:10px 0 4px">Raise ke (Min ${fmt(minTo)})</div>
-        <div class="row"><input id="raise" type="number" inputmode="numeric" value="${d("raise", minTo)}" oninput="setD('raise',this.value)">
-        <button class="y" onclick="pokerRaise()">Raise</button></div>
+        <div class="row"><input id="raise" data-testid="poker-raise-amount" type="number" inputmode="numeric" value="${d("raise", minTo)}" oninput="setD('raise',this.value)">
+        <button class="y" data-testid="poker-raise" onclick="pokerRaise()">Raise</button></div>
         <div class="row" style="margin-top:6px">
         <button class="g s" onclick="qr(${minTo},0)">Min</button>
         <button class="g s" onclick="qr(0,.5)">½ Pot</button>
         <button class="g s" onclick="qr(0,1)">Pot</button>
-        <button class="r s" onclick="askAllInConfirmation('poker',${me.chips})">All-in ${fmt(me.chips)}</button></div>`;
+        <button class="r s" data-testid="poker-allin" onclick="askAllInConfirmation('poker',${me.chips})">All-in ${fmt(me.chips)}</button></div>`;
       }
       h += "</div>";
     }
@@ -229,19 +229,19 @@ function showdown() {
     };
   let h = `<div class="card showdown-card" style="border-color:var(--gold)"><h3>Showdown — Tentukan Pemenang</h3>`;
   (k.layers || []).forEach((l, i) => {
-    h += `<div class="showdown-pot"><div class="showdown-pot-title"><b>${i === 0 ? "Pot Utama" : "Side Pot " + i}</b><span>${fmt(l.amount)}</span></div>`;
+    h += `<div class="showdown-pot" data-testid="showdown-pot" data-layer="${i}"><div class="showdown-pot-title"><b>${i === 0 ? "Pot Utama" : "Side Pot " + i}</b><span>${fmt(l.amount)}</span></div>`;
     h += st.isHost
       ? `<div class="winner-options">${l.elig
           .map((id) => {
             const selected = !!draft.w[i + "_" + id];
-            return `<button type="button" class="winner-choice ${selected ? "selected" : ""}" aria-pressed="${selected}" onclick="toggleWinner(${i},${id})">${nm(id)}</button>`;
+            return `<button type="button" class="winner-choice ${selected ? "selected" : ""}" data-testid="winner-${i}-${id}" aria-pressed="${selected}" onclick="toggleWinner(${i},${id})">${nm(id)}</button>`;
           })
           .join("")}</div>`
       : l.elig.map((id) => `<div class="mut">• ${nm(id)}</div>`).join("");
     h += "</div>";
   });
   h += st.isHost
-    ? `<button class="ok" style="width:100%;margin-top:10px" onclick="doAward()">Kirim Pot</button>`
+    ? `<button class="ok" data-testid="poker-award" style="width:100%;margin-top:10px" onclick="doAward()">Kirim Pot</button>`
     : `<div class="mut" style="margin-top:8px">Menunggu Bandar memilih pemenang…</div>`;
   return h + "</div>";
 }

@@ -4,7 +4,10 @@
   "description": "Aplikasi chip virtual untuk mencatat permainan Poker dan Blackjack bersama teman.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
   },
   "engines": {
     "node": ">=18"
@@ -12,5 +15,8 @@
   "dependencies": {
     "html5-qrcode": "^2.3.8",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

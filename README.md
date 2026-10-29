@@ -24,6 +24,7 @@ Versi aplikasi saat ini: **3.9** (versi klien/server, terpisah dari versi paket 
 
 - [Fitur](#fitur)
 - [Cara menggunakan](#cara-menggunakan)
+- [Testing](#testing)
 - [Struktur project](#struktur-project)
 - [Kredit](#kredit)
 
@@ -74,6 +75,21 @@ Versi aplikasi saat ini: **3.9** (versi klien/server, terpisah dari versi paket 
 5. Saldo chip, taruhan, dan pembaruan room tersinkron secara otomatis.
 
 Jika koneksi terputus atau tab tertutup, buka kembali situs di browser yang sama. Jika room dan sesi masih tersedia, kamu dapat memilih untuk melanjutkan sebagai pemain atau dealer. Pemain kembali dengan saldo sebelumnya; dealer yang kembali melanjutkan perannya. Sesi tidak dapat dilanjutkan jika room sudah tidak tersedia, misalnya setelah server dimulai ulang.
+
+## Testing
+
+Chips-in memiliki test otomatis berbasis **Playwright** yang memakai Google Chrome bawaan perangkat, sehingga tidak perlu mengunduh browser tambahan.
+
+```bash
+npm install
+npm run test:e2e          # headless
+npm run test:e2e:headed   # dengan jendela Chrome
+npm run test:e2e:ui       # mode debug interaktif
+```
+
+Test berjalan di port **3100** dengan profil Chrome sementara, jadi tidak mengganggu sesi manual di `localhost:3000`. Saat ini terdapat **48 test** otomatis (`smoke`, `room`, `store`, `poker`, `blackjack`, `chips`, `session`, `borders`, `music`, `qr`, `profile-i18n`, `legal`, `responsive`). Laporan HTML tersedia di `playwright-report/`, sedangkan screenshot dan trace kegagalan ada di `test-results/`.
+
+Panduan lengkap (prasyarat, konvensi penulisan test, dan troubleshooting) ada di [`TESTING.md`](TESTING.md).
 
 ## Struktur project
 
@@ -156,6 +172,7 @@ Jika koneksi terputus atau tab tertutup, buka kembali situs di browser yang sama
 - `public/assets/` berisi stylesheet, script browser, QR scanner, gambar, logo, dan suara.
 - Script browser dimuat secara berurutan dari `app/Views/index.html` karena beberapa file menggunakan state dan helper yang didefinisikan oleh file sebelumnya.
 - Data room disimpan di memori server, sehingga room yang belum selesai tidak tersimpan jika proses server dimulai ulang.
+- `tests/e2e/` berisi test Playwright, `playwright.config.js` mengatur konfigurasi test, dan `TESTING.md` berisi panduan menjalankan serta menulis test.
 
 ## Kredit
 

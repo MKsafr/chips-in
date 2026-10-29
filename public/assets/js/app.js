@@ -1,3 +1,28 @@
+let renderScheduled = false;
+
+function scheduleRender() {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(() => {
+    renderScheduled = false;
+    render();
+  });
+}
+
+function initPerformanceMonitoring() {
+  if (typeof PerformanceObserver === 'undefined') return;
+  try {
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration > 100) console.warn('Slow render:', entry.duration, entry.name);
+      }
+    });
+    observer.observe({ entryTypes: ['measure'] });
+  } catch (error) {
+    console.warn('Performance monitoring unavailable', error);
+  }
+}
+
 function render() {
   document.body.classList.toggle("in-room", Boolean(roomCode));
   $("#app-version").textContent = `version ${APP_VER}`;
@@ -27,16 +52,16 @@ function render() {
         <h3>Selamat Datang di Chips-in</h3>
         <p class="mut">Aplikasi chip virtual untuk mencatat permainan Poker & Blackjack bersama teman.</p>
         <div class="row" style="margin-top:12px">
-          <button class="y f" onclick="beginHostCreation()">${translateText("Buat Ruangan")}</button>
+          <button class="y f" data-testid="create-room" onclick="beginHostCreation()">${translateText("Buat Ruangan")}</button>
         </div>
         <div style="margin:16px 0;text-align:center" class="mut">— ATAU —</div>
         <div class="row">
-          <input id="rc" value="${esc(invitedRoomCode)}" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6" onkeydown="if(event.key==='Enter')joinRoom()">
-          <button class="ok" onclick="joinRoom()">${translateText("Gabung Room")}</button>
-          <button class="g room-camera-button" aria-label="${translateText("Scan QR Room dengan Kamera")}" title="${translateText("Scan QR Room dengan Kamera")}" onclick="openRoomScanner()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h-4L8.5 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14 5Z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+          <input id="rc" data-testid="room-code-input" value="${esc(invitedRoomCode)}" placeholder="Kode Room (6 Karakter)" style="text-transform:uppercase" maxlength="6" onkeydown="if(event.key==='Enter')joinRoom()">
+          <button class="ok" data-testid="join-room" onclick="joinRoom()">${translateText("Gabung Room")}</button>
+          <button class="g room-camera-button" data-testid="room-scanner-open" aria-label="${translateText("Scan QR Room dengan Kamera")}" title="${translateText("Scan QR Room dengan Kamera")}" onclick="openRoomScanner()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h-4L8.5 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L14 5Z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
         </div>
       </div>
-      <button class="lobby-help-button" aria-label="${translateText("Bantuan dan FAQ")}" title="${translateText("Bantuan dan FAQ")}" onclick="openHelp()">?</button>`;
+      <button class="lobby-help-button" data-testid="help-open" aria-label="${translateText("Bantuan dan FAQ")}" title="${translateText("Bantuan dan FAQ")}" onclick="openHelp()">?</button>`;
     localizeTree($("#app"));
     return;
   }
@@ -69,11 +94,11 @@ function render() {
 
   let h = `<div class="top">
     <div class="logo-box">
-      ${logoHTML(36)}<div><div class="room-code-line"><div class="logo">Room: <b>${st.code || roomCode}</b></div><button class="g room-qr-button" aria-label="${translateText("Tampilkan QR Room")}" title="${translateText("Tampilkan QR Room")}" onclick="openRoomQr()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3zM17 17h2v2h-2z"/></svg></button></div><div class="logo">${st.mode === "poker" ? "♠ Poker" : "♣ Blackjack"}</div></div>
+      ${logoHTML(36)}<div><div class="room-code-line"><div class="logo">Room: <b data-testid="room-code">${st.code || roomCode}</b></div><button class="g room-qr-button" data-testid="qr-open" aria-label="${translateText("Tampilkan QR Room")}" title="${translateText("Tampilkan QR Room")}" onclick="openRoomQr()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM19 14h2v2h-2zM19 19h2v2h-2zM14 19h3v2h-3zM17 17h2v2h-2z"/></svg></button></div><div class="logo" data-testid="game-mode">${st.mode === "poker" ? "♠ Poker" : "♣ Blackjack"}</div></div>
     </div>
     <div class="row">
       ${settingsButtonHTML()}
-      ${st.isHost ? `<button class="y s" onclick="openDealerControls()">👑 Kontrol Dealer</button>` : ""}
+      ${st.isHost ? `<button class="y s" data-testid="dealer-controls-open" onclick="openDealerControls()">👑 Kontrol Dealer</button>` : ""}
     </div>
   </div>`;
 
@@ -85,15 +110,15 @@ function render() {
     const hp = st.host || {};
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
       <div class="row" style="flex-wrap:nowrap;gap:12px">${avatar(hp.avatar, 54)}<div><div data-player-name style="font-weight:800">${esc(hp.name)}</div><div class="mut">👑 Bandar</div></div></div>
-      <button class="g s" onclick="leaveHostRoom()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
+      <button class="g s" data-testid="leave-host" onclick="leaveHostRoom()">Keluar</button></div>
+      <div class="row" style="margin-top:8px"><button class="g s" data-testid="edit-profile-host" onclick="openProfile('edit')">✎ Edit Profil</button></div></div>`;
   } else if (me) {
     const meIsChipLeader =
       me.id === getUniqueChipLeader(st.players || [], st.mode === "poker");
     h += `<div class="card"><div class="row sp" style="flex-wrap:nowrap">
-      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatarWithBorder(me, 54, meIsChipLeader)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big">${fmt(me.chips)}</div></div></div></div>
-      <button class="g s" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
-      <div class="row" style="margin-top:8px"><button class="g s" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s store-open-button" aria-label="${translateText("Toko")}" onclick="openStore()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-1.6-5H4.6L3 9Zm1 2v9h16v-9M9 20v-6h6v6"/></svg>${translateText("Toko")}</button><button class="g s chip-transfer-action" aria-label="${translateText("Kirim Chip")}" title="${translateText(transferDisabledReason)}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
+      <div class="row" style="flex-wrap:nowrap;gap:12px">${avatarWithBorder(me, 54, meIsChipLeader)}<div><div data-player-name style="font-weight:800">${esc(me.name)}</div><div class="chip-balance-row"><div class="big" data-testid="my-balance">${fmt(me.chips)}</div></div></div></div>
+      <button class="g s" data-testid="leave-seat" onclick="if(confirm(translateText('Keluar dari room?')))leaveSeat()">Keluar</button></div>
+      <div class="row" style="margin-top:8px"><button class="g s" data-testid="edit-profile-player" onclick="openProfile('edit')">✎ Edit Profil</button><button class="g s store-open-button" data-testid="store-open" aria-label="${translateText("Toko")}" onclick="openStore()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-1.6-5H4.6L3 9Zm1 2v9h16v-9M9 20v-6h6v6"/></svg>${translateText("Toko")}</button><button class="g s chip-transfer-action" data-testid="chip-transfer-open" aria-label="${translateText("Kirim Chip")}" title="${translateText(transferDisabledReason)}" ${canTransferChips ? "" : "disabled"} onclick="openChipTransfer()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 15 22l-4-9-9-4 20-7ZM22 2 11 13"/></svg>${translateText("Kirim Chip")}</button></div></div>`;
   }
 
   const ph = st.pendingHost;
@@ -113,8 +138,8 @@ function render() {
       <h1 style="color:var(--gold);font-size:28px;margin:10px 0">Jadi Bandar?</h1>
       <p style="color:#fff;max-width:320px">Bandar menawarkan peran <b>Bandar</b> kepadamu. Jika kamu terima, kamu <b>keluar dari meja</b> dan tidak ikut bermain lagi (chipmu disimpan), sedangkan Bandar lama otomatis duduk sebagai pemain.</p>
       <div class="row" style="margin-top:14px;justify-content:center">
-        <button class="ok" onclick="api('respondHost',{accept:true})">Terima</button>
-        <button class="r" onclick="api('respondHost',{accept:false})">Tolak</button>
+        <button class="ok" data-testid="respond-host-accept" onclick="api('respondHost',{accept:true})">Terima</button>
+        <button class="r" data-testid="respond-host-decline" onclick="api('respondHost',{accept:false})">Tolak</button>
       </div>
     </div>`;
   }
@@ -125,8 +150,8 @@ function render() {
       <h1 style="color:var(--gold);font-size:28px;margin:10px 0">Lanjutkan ke room sebelumnya?</h1>
       <p style="color:#fff;max-width:320px">Kembali sebagai ${st.resumeOffer.role === "host" ? "Bandar" : `pemain ${esc(st.resumeOffer.name)}`}${st.resumeOffer.chips == null ? "" : ` dengan ${fmt(st.resumeOffer.chips)} chip`}.</p>
       <div class="row" style="margin-top:14px;justify-content:center">
-        <button class="ok" onclick="api('resumeSession')">Lanjutkan</button>
-        <button class="g" onclick="declineResume()">Tidak</button>
+        <button class="ok" data-testid="resume-continue" onclick="api('resumeSession')">Lanjutkan</button>
+        <button class="g" data-testid="resume-decline" onclick="declineResume()">Tidak</button>
       </div>
     </div>`;
   }
@@ -174,5 +199,6 @@ function render() {
 }
 
 // PENTING: tampilkan UI dulu, baru sambungkan (kalau tidak, layar kosong saat belum ada room)
-render();
+initPerformanceMonitoring();
+scheduleRender();
 connect();

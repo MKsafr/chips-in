@@ -1,7 +1,4 @@
 let pendingAllInConfirmation = null;
-let roomScanner = null;
-let roomScanHandled = false;
-let roomScannerLibraryPromise = null;
 const BORDER_STORE_ITEMS = [
   { id: "red", name: "Ember Red", price: 5000 },
   { id: "blue", name: "Sapphire Blue", price: 5000 },
@@ -131,11 +128,11 @@ function renderStore() {
             const isPreviewing = mvpMusicPreviewTrackId === track.id;
             const button = isOwned
               ? `<button class="g s" disabled>${translateText("Dimiliki")}</button>`
-              : `<button class="y s" ${!canBuyMvpMusic || me.chips < MVP_MUSIC_PRICE || mvpMusicPurchasePending ? "disabled" : ""} onclick="buyMvpMusic('${esc(track.id)}')">${translateText("Beli")} · ${fmt(MVP_MUSIC_PRICE)}</button>`;
-            return `<article class="store-music-item">
+              : `<button class="y s" ${!canBuyMvpMusic || me.chips < MVP_MUSIC_PRICE || mvpMusicPurchasePending ? "disabled" : ""} data-testid="music-buy-${esc(track.id)}" onclick="buyMvpMusic('${esc(track.id)}')">${translateText("Beli")} · ${fmt(MVP_MUSIC_PRICE)}</button>`;
+            return `<article class="store-music-item" data-testid="music-item-${esc(track.id)}">
                 <div><b>${esc(track.title)}</b><span class="mut">${translateText("Musik MVP")}</span></div>
                 <div class="store-music-actions">
-                  <button class="g s store-music-preview-button" aria-label="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")} ${esc(track.title)}" title="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")}" onclick="toggleMvpMusicPreview('${esc(track.id)}')"><svg viewBox="0 0 24 24" aria-hidden="true">${isPreviewing ? '<path d="M7 7h10v10H7z"/>' : '<path transform="translate(-1.5 0)" d="M8 5v14l11-7z"/>'}</svg></button>
+                  <button class="g s store-music-preview-button" data-testid="music-preview-${esc(track.id)}" aria-label="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")} ${esc(track.title)}" title="${translateText(isPreviewing ? "Hentikan pratinjau" : "Pratinjau")}" onclick="toggleMvpMusicPreview('${esc(track.id)}')"><svg viewBox="0 0 24 24" aria-hidden="true">${isPreviewing ? '<path d="M7 7h10v10H7z"/>' : '<path transform="translate(-1.5 0)" d="M8 5v14l11-7z"/>'}</svg></button>
                   ${button}
                 </div>
               </article>`;
@@ -155,8 +152,8 @@ function renderStore() {
       <div class="mbox store-modal" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
         <div class="row sp"><h2 id="storeTitle">${translateText("Toko")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeStore()">×</button></div>
         <div class="store-tabs" role="tablist" aria-label="${translateText("Kategori toko")}">
-          <button class="${storeTab === "borders" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "borders"}" onclick="openStore('borders')">${translateText("Toko Border")}</button>
-          <button class="${storeTab === "music" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "music"}" onclick="openStore('music')">${translateText("Toko Musik")}</button>
+          <button class="${storeTab === "borders" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "borders"}" data-testid="store-tab-border" onclick="openStore('borders')">${translateText("Toko Border")}</button>
+          <button class="${storeTab === "music" ? "selected" : ""}" role="tab" aria-selected="${storeTab === "music"}" data-testid="store-tab-music" onclick="openStore('music')">${translateText("Toko Musik")}</button>
         </div>
         ${musicContent}
       </div>
@@ -212,8 +209,8 @@ function openBorderStore() {
     const button = isActive
       ? `<button class="g s" disabled>${translateText("Sedang dipakai")}</button>`
       : isOwned
-        ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} onclick="equipPlayerBorder('${id}')">${translateText("Gunakan")}</button>`
-        : `<button class="y s" ${me.chips < price || borderStorePending ? "disabled" : ""} onclick="buyPlayerBorder('${id}')">${translateText("Beli")} · ${fmt(price)}</button>`;
+        ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} data-testid="border-equip-${id}" onclick="equipPlayerBorder('${id}')">${translateText("Gunakan")}</button>`
+        : `<button class="y s" ${me.chips < price || borderStorePending ? "disabled" : ""} data-testid="border-buy-${id}" onclick="buyPlayerBorder('${id}')">${translateText("Beli")} · ${fmt(price)}</button>`;
     return `<article class="border-store-item">
       <div class="border-store-preview pl-border-${id}" aria-hidden="true"></div>
       <div class="border-store-item-info"><b>${translateText(name)}</b></div>
@@ -242,7 +239,7 @@ function openBorderStore() {
     return `<article class="border-store-item leader-border-item">
       ${preview}
       <div class="border-store-item-info"><b>${translateText(name)}</b></div>
-      <button class="${isLocked || selected ? "g" : "ok"} s" ${isLocked || selected || borderStorePending ? "disabled" : ""} ${isLocked ? "" : `onclick="chooseLeaderBorder('${id}')"`}>${translateText(isLocked ? "Terkunci" : selected ? "Sedang dipakai" : "Gunakan")}</button>
+      <button class="${isLocked || selected ? "g" : "ok"} s" ${isLocked || selected || borderStorePending ? "disabled" : ""} ${isLocked ? "" : `data-testid="leader-style-${id}" onclick="chooseLeaderBorder('${id}')"`}>${translateText(isLocked ? "Terkunci" : selected ? "Sedang dipakai" : "Gunakan")}</button>
     </article>`;
   };
   const renderProfileBorderItem = ({ id, name, price }) => {
@@ -251,8 +248,8 @@ function openBorderStore() {
     const button = isActive
       ? `<button class="g s" disabled>${translateText("Sedang dipakai")}</button>`
       : isOwned
-        ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} onclick="equipProfileBorder('${id}')">${translateText("Gunakan")}</button>`
-        : `<button class="y s" ${me.chips < price || borderStorePending ? "disabled" : ""} onclick="buyProfileBorder('${id}')">${translateText("Beli")} · ${fmt(price)}</button>`;
+        ? `<button class="ok s" ${borderStorePending ? "disabled" : ""} data-testid="profile-border-equip-${id}" onclick="equipProfileBorder('${id}')">${translateText("Gunakan")}</button>`
+        : `<button class="y s" ${me.chips < price || borderStorePending ? "disabled" : ""} data-testid="profile-border-buy-${id}" onclick="buyProfileBorder('${id}')">${translateText("Beli")} · ${fmt(price)}</button>`;
     return `<article class="border-store-item">
       <div class="border-store-preview profile-border-preview pl-border-${id}" aria-hidden="true"></div>
       <div class="border-store-item-info"><b>${translateText(name)}</b></div>
@@ -271,15 +268,15 @@ function openBorderStore() {
     return `<article class="border-store-item">
       <div class="border-store-preview pl-border-${id}" aria-hidden="true"></div>
       <div class="border-store-item-info"><b>${translateText(name)}</b><span class="mut">${translateText("Sorotan + Profil")}</span></div>
-      <button class="${ownsBoth ? "g" : "y"} s" ${ownsBoth || me.chips < cost || borderStorePending ? "disabled" : ""} onclick="buyBorderBundle('${id}')">${translateText(ownsBoth ? "Sudah dimiliki" : "Beli Bundle")} · ${fmt(cost)}</button>
+      <button class="${ownsBoth ? "g" : "y"} s" ${ownsBoth || me.chips < cost || borderStorePending ? "disabled" : ""} data-testid="border-bundle-${id}" onclick="buyBorderBundle('${id}')">${translateText(ownsBoth ? "Sudah dimiliki" : "Beli Bundle")} · ${fmt(cost)}</button>
     </article>`;
   };
   setModalContent(
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeBorderStore)"><div class="mbox border-store-modal" role="dialog" aria-modal="true" aria-labelledby="borderStoreTitle">
       <div class="row sp"><h2 id="borderStoreTitle">${translateText("Toko Border")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeBorderStore()">×</button></div>
       <div class="store-tabs" role="tablist" aria-label="${translateText("Kategori toko")}">
-        <button class="selected" role="tab" aria-selected="true" onclick="openStore('borders')">${translateText("Toko Border")}</button>
-        <button role="tab" aria-selected="false" onclick="openStore('music')">${translateText("Toko Musik")}</button>
+        <button class="selected" role="tab" aria-selected="true" data-testid="store-tab-border" onclick="openStore('borders')">${translateText("Toko Border")}</button>
+        <button role="tab" aria-selected="false" data-testid="store-tab-music" onclick="openStore('music')">${translateText("Toko Musik")}</button>
       </div>
       <div class="border-store-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
       ${
@@ -290,7 +287,7 @@ function openBorderStore() {
         ${
           me.leaderBordersUnlocked
             ? `<div class="leader-border-unlocked">${translateText("Semua trial border terbuka")}</div>`
-            : `<button class="y f leader-border-unlock" ${me.chips < 5000 || borderStorePending || st.poker.active || st.bj.phase === "playing" || (st.players || []).some((player) => player.bjBet || player.bjSplitBet) ? "disabled" : ""} onclick="unlockLeaderBorders()">${translateText("Buka semua trial border")} · ${fmt(5000)}</button>`
+            : `<button class="y f leader-border-unlock" ${me.chips < 5000 || borderStorePending || st.poker.active || st.bj.phase === "playing" || (st.players || []).some((player) => player.bjBet || player.bjSplitBet) ? "disabled" : ""} data-testid="leader-unlock" onclick="unlockLeaderBorders()">${translateText("Buka semua trial border")} · ${fmt(5000)}</button>`
         }
         <div class="border-store-grid">${renderLeaderBorderOption(
           leaderBorderOptions[0],
@@ -444,164 +441,16 @@ function unlockLeaderBorders() {
   return updatePlayerBorder("unlockLeaderBorders");
 }
 
+
+// Phase 2: lazy entry points. Heavy modal code lives in components/ and loads on first use.
 function openHelp() {
-  setModalContent(
-    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeHelp)"><div class="mbox help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
-    <div class="row sp"><h2 id="helpTitle">${translateText("Bantuan dan FAQ")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeHelp()">×</button></div>
-    <section class="help-section">
-      <h3>${translateText("Pertanyaan Umum")}</h3>
-      <details><summary>${translateText("Bagaimana cara membuat atau bergabung ke room?")}</summary><p>${translateText("Pilih Buat Ruangan untuk menjadi Bandar, atau masukkan kode room dari Bandar lalu pilih Gabung Room. Kamu juga bisa memindai QR room.")}</p></details>
-      <details><summary>${translateText("Apakah kartu dimainkan di aplikasi?")}</summary><p>${translateText("Tidak. Kartu dimainkan secara fisik. Aplikasi membantu mencatat pemain, chip, taruhan, pot, dan hasil permainan.")}</p></details>
-      <details><summary>${translateText("Bagaimana cara kerja chip?")}</summary><p>${translateText("Chip hanya untuk mencatat permainan sosial. Chip tidak memiliki nilai uang, tidak dapat dibeli, dan tidak dapat dicairkan.")}</p></details>
-      <details><summary>${translateText("Pengaturan suara saya tidak tersimpan di perangkat lain, kenapa?")}</summary><p>${translateText("Pengaturan suara disimpan di browser dan perangkat yang kamu gunakan, jadi tidak otomatis dibagikan ke perangkat lain.")}</p></details>
-      <details><summary>${translateText("Apa yang harus dilakukan jika koneksi terputus?")}</summary><p>${translateText("Kembali ke tab Chips-in dan tunggu browser menyambungkan ulang. Sesi room dapat dipulihkan selama room masih tersedia.")}</p></details>
-    </section>
-    <section class="help-section">
-      <h3>${translateText("Laporkan Bug")}</h3>
-      <p class="mut">${translateText("Isi judul dan langkah untuk mengulangi masalah. Kamu akan diarahkan ke GitHub untuk meninjau dan mengirim laporan.")}</p>
-      <form class="bug-report-form" action="https://github.com/MKsafr/chips-in/issues/new" method="get" target="_blank" onsubmit="prepareBugReport(event)">
-        <label>${translateText("Judul masalah")}<input name="title" maxlength="120" required placeholder="${translateText("Contoh: Suara tidak bisa diatur di Safari")}"></label>
-        <label>${translateText("Langkah atau keterangan")}<textarea name="body" maxlength="4000" required placeholder="${translateText("Apa yang kamu lakukan, apa yang terjadi, dan apa yang seharusnya terjadi?")}"></textarea></label>
-        <p class="mut">${translateText("GitHub akan menampilkan laporan secara publik. Login dan tekan Submit new issue untuk mengirim. Jangan sertakan kata sandi atau informasi pribadi.")}</p>
-        <button class="ok" type="submit">${translateText("Lanjutkan ke GitHub")}</button>
-      </form>
-    </section>
-  </div></div>`,
-  );
-}
-
-function closeHelp() {
-  $("#modal").innerHTML = "";
-}
-
-function prepareBugReport(event) {
-  const form = event.currentTarget;
-  if (form.dataset.metadataAdded) return;
-  const details = form.elements.body.value.trim();
-  form.elements.body.value =
-    `${details}\n\n---\nApp version: ${APP_VER}\nLanguage: ${currentLanguage}`;
-  form.dataset.metadataAdded = "true";
+  return loadScriptOnce("/assets/js/components/help.js").then(() => openHelpModal());
 }
 
 function openRoomScanner() {
-  roomScanHandled = false;
-  $("#modal").innerHTML =
-    `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeRoomScanner)"><div class="mbox room-scanner-modal" role="dialog" aria-modal="true" aria-label="${translateText("Scan QR Room dengan Kamera")}">
-    <div class="row sp"><h2>${translateText("Scan QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomScanner()">×</button></div>
-    <p class="mut">${translateText("Arahkan kamera ke QR room.")}</p>
-    <div id="roomQrReader"></div>
-    <p id="roomScannerStatus" class="mut room-scanner-status" role="status">${translateText("Meminta akses kamera…")}</p>
-    <button class="g" style="width:100%" onclick="closeRoomScanner()">${translateText("Batal")}</button>
-  </div></div>`;
-  localizeTree($("#modal"));
-  startRoomScanner();
+  return loadScriptOnce("/assets/js/components/room-scanner.js").then(() => openRoomScannerModal());
 }
 
-async function startRoomScanner() {
-  if (!window.Html5Qrcode) {
-    try {
-      await loadRoomScannerLibrary();
-    } catch {
-      setRoomScannerStatus("Pemindai QR tidak dapat dimuat.");
-      return;
-    }
-  }
-  const scanner = new Html5Qrcode("roomQrReader");
-  roomScanner = scanner;
-  try {
-    await scanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        aspectRatio: 1,
-        qrbox: (width, height) => {
-          const size = Math.floor(Math.min(width, height, 280) * 0.82);
-          return { width: size, height: size };
-        },
-      },
-      async (decodedText) => {
-        if (roomScanHandled) return;
-        const code = roomCodeFromScan(decodedText);
-        if (!code) {
-          setRoomScannerStatus("QR bukan kode atau link room yang valid.");
-          return;
-        }
-        roomScanHandled = true;
-        await closeRoomScanner();
-        const input = $("#rc");
-        if (input) {
-          input.value = code;
-          joinRoom();
-        }
-      },
-      () => {},
-    );
-    if (roomScanner !== scanner) {
-      await scanner.stop();
-      scanner.clear();
-    }
-  } catch {
-    if (roomScanner === scanner) {
-      roomScanner = null;
-      try {
-        scanner.clear();
-      } catch {}
-      setRoomScannerStatus(
-        "Kamera tidak dapat dibuka. Izinkan akses kamera dan gunakan HTTPS.",
-      );
-    }
-  }
-}
-
-function loadRoomScannerLibrary() {
-  if (window.Html5Qrcode) return Promise.resolve();
-  if (!roomScannerLibraryPromise) {
-    roomScannerLibraryPromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "/assets/js/html5-qrcode.min.js";
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = () => {
-        roomScannerLibraryPromise = null;
-        reject(new Error("QR scanner script failed to load"));
-      };
-      document.head.appendChild(script);
-    });
-  }
-  return roomScannerLibraryPromise;
-}
-
-function roomCodeFromScan(value) {
-  const text = String(value || "").trim();
-  if (/^[A-Z0-9]{6}$/i.test(text)) return text.toUpperCase();
-  try {
-    const url = new URL(text);
-    if (url.origin !== window.location.origin) return "";
-    const code = (url.searchParams.get("room") || "").trim().toUpperCase();
-    return /^[A-Z0-9]{6}$/.test(code) ? code : "";
-  } catch {
-    return "";
-  }
-}
-
-function setRoomScannerStatus(message) {
-  const status = $("#roomScannerStatus");
-  if (status) status.textContent = translateText(message);
-}
-
-async function closeRoomScanner() {
-  const scanner = roomScanner;
-  roomScanner = null;
-  if (scanner) {
-    try {
-      await scanner.stop();
-    } catch {}
-    try {
-      scanner.clear();
-    } catch {}
-  }
-  $("#modal").innerHTML = "";
-}
 
 function askAllInConfirmation(mode, amount) {
   pendingAllInConfirmation = { mode, amount };
@@ -610,7 +459,7 @@ function askAllInConfirmation(mode, amount) {
     <h2 id="allInConfirmationTitle">${translateText("Konfirmasi All-in")}</h2>
     <p class="mut">${translateText("Apakah kamu yakin ingin All-in?")}</p>
     <p style="font-size:20px;font-weight:800;color:var(--gold)">${translateText("Jumlah All-in")}: ${fmt(amount)}</p>
-    <div class="row"><button class="g f" onclick="cancelAllInConfirmation()">${translateText("Batal")}</button><button class="r f" onclick="confirmAllIn()">${translateText("Ya, All-in")}</button></div>
+    <div class="row"><button class="g f" data-testid="allin-cancel" onclick="cancelAllInConfirmation()">${translateText("Batal")}</button><button class="r f" data-testid="allin-confirm" onclick="confirmAllIn()">${translateText("Ya, All-in")}</button></div>
   </div></div>`;
   localizeTree($("#modal"));
 }
@@ -630,7 +479,7 @@ function confirmAllIn() {
 }
 
 function settingsButtonHTML() {
-  return `<button class="g s" aria-label="${translateText("Pengaturan")}" onclick="openSettings()">⚙ ${translateText("Pengaturan")}</button>`;
+  return `<button class="g s" data-testid="settings-open" aria-label="${translateText("Pengaturan")}" onclick="openSettings()">⚙ ${translateText("Pengaturan")}</button>`;
 }
 function openRoomQr() {
   const code = String((st && st.code) || roomCode || "").toUpperCase();
@@ -640,10 +489,10 @@ function openRoomQr() {
   const link = inviteUrl.toString();
   $("#modal").innerHTML =
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeRoomQr)"><div class="mbox room-qr-modal" role="dialog" aria-modal="true" aria-label="${translateText("QR Room")}">
-    <div class="row sp"><h2>${translateText("QR Room")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeRoomQr()">×</button></div>
+    <div class="row sp"><h2>${translateText("QR Room")}</h2><button class="g s" data-testid="qr-close" aria-label="${translateText("Tutup")}" onclick="closeRoomQr()">×</button></div>
     <p class="mut">${translateText("Scan QR ini untuk membuka room.")}</p>
-    <img class="room-qr-image" src="/room-qr?room=${encodeURIComponent(code)}" alt="${translateText("QR Room")}">
-    <div class="room-qr-code"><span class="mut">${translateText("Kode Room")}</span><b>${esc(code)}</b></div>
+    <img class="room-qr-image" data-testid="qr-image" src="/room-qr?room=${encodeURIComponent(code)}" alt="${translateText("QR Room")}">
+    <div class="room-qr-code" data-testid="qr-code"><span class="mut">${translateText("Kode Room")}</span><b>${esc(code)}</b></div>
     <div class="room-qr-link"><input id="roomInviteUrl" type="url" value="${esc(link)}" readonly aria-label="${translateText("Link Undangan Room")}"><button class="ok" onclick="copyRoomInviteLink()">${translateText("Salin Link")}</button></div>
   </div></div>`;
   localizeTree($("#modal"));
@@ -687,9 +536,9 @@ function openChipTransfer() {
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeChipTransfer)"><div class="mbox chip-transfer-modal" role="dialog" aria-modal="true" aria-labelledby="chipTransferTitle">
     <div class="row sp"><h2 id="chipTransferTitle">${translateText("Kirim Chip")}</h2><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeChipTransfer()">×</button></div>
     <div class="chip-transfer-balance"><span class="mut">${translateText("Saldo tersedia")}</span><b>${fmtChips(me.chips)}</b></div>
-    <label class="chip-transfer-field"><span>${translateText("Penerima")}</span><select id="chipTransferTarget"><option value="">${translateText("Pilih pemain")}</option>${recipients.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select></label>
-    <label class="chip-transfer-field"><span>${translateText("Jumlah Chip")}</span><input id="chipTransferAmount" type="number" min="1" max="${me.chips}" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}"></label>
-    <div class="row chip-transfer-actions"><button class="g f" onclick="closeChipTransfer()">${translateText("Batal")}</button><button class="ok f" onclick="submitChipTransfer()">${translateText("Kirim Chip")}</button></div>
+    <label class="chip-transfer-field"><span>${translateText("Penerima")}</span><select id="chipTransferTarget" data-testid="transfer-target"><option value="">${translateText("Pilih pemain")}</option>${recipients.map((player) => `<option value="${player.id}">${esc(player.name)}</option>`).join("")}</select></label>
+    <label class="chip-transfer-field"><span>${translateText("Jumlah Chip")}</span><input id="chipTransferAmount" data-testid="transfer-amount" type="number" min="1" max="${me.chips}" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}"></label>
+    <div class="row chip-transfer-actions"><button class="g f" onclick="closeChipTransfer()">${translateText("Batal")}</button><button class="ok f" data-testid="transfer-submit" onclick="submitChipTransfer()">${translateText("Kirim Chip")}</button></div>
   </div></div>`;
   localizeTree($("#modal"));
 }
@@ -799,7 +648,7 @@ function renderSettings() {
     <div class="row sp"><div style="font-size:18px;font-weight:800">⚙ ${translateText("Pengaturan")}</div><button class="g s" aria-label="${translateText("Tutup")}" onclick="closeSettings()">×</button></div>
     <div class="settings-grid">
       <label class="settings-option"><span class="mut">${translateText("Tema")}</span>
-        <select onchange="changeTheme(this.value);renderSettings()">${Object.keys(
+        <select data-testid="theme-select" onchange="changeTheme(this.value);renderSettings()">${Object.keys(
           THEMES,
         )
           .map(
@@ -809,7 +658,7 @@ function renderSettings() {
           .join("")}</select>
       </label>
       <label class="settings-option"><span class="mut">${translateText("Bahasa")}</span>
-        <select onchange="updateLanguage(this.value)">${Object.keys(LANGUAGES)
+        <select data-testid="language-select" onchange="updateLanguage(this.value)">${Object.keys(LANGUAGES)
           .map(
             (key) =>
               `<option value="${key}" ${key === currentLanguage ? "selected" : ""}>${LANGUAGES[key]}</option>`,
@@ -818,8 +667,8 @@ function renderSettings() {
       </label>
       <div class="settings-option"><span class="mut">${translateText("Volume Efek Suara")}</span>
         <div class="volume-control">
-          <input id="volumeSlider" type="range" min="0" max="100" step="1" value="${Math.round(currentVolume * 100)}" style="--volume-level:${currentVolume * 100}%" aria-label="${translateText("Volume Efek Suara")}" oninput="setVolume(this.value)">
-          <button class="g mute-toggle" aria-label="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" title="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" aria-pressed="${soundMuted}" onclick="toggleMute()">
+          <input id="volumeSlider" data-testid="volume-slider" type="range" min="0" max="100" step="1" value="${Math.round(currentVolume * 100)}" style="--volume-level:${currentVolume * 100}%" aria-label="${translateText("Volume Efek Suara")}" oninput="setVolume(this.value)">
+          <button class="g mute-toggle" data-testid="mute-toggle" aria-label="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" title="${translateText(soundMuted ? "Nyalakan Suara" : "Matikan Suara")}" aria-pressed="${soundMuted}" onclick="toggleMute()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"></path>${soundMuted ? "" : '<path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path>'}${soundMuted ? '<path class="mute-slash" d="m4 4 16 16"></path>' : ""}</svg>
           </button>
           <span id="volumeValue">${Math.round(currentVolume * 100)}%</span>
@@ -827,8 +676,8 @@ function renderSettings() {
       </div>
       <div class="settings-option"><span class="mut">${translateText("Volume Musik Latar")}</span>
         <div class="volume-control">
-          <input id="bgMusicVolumeSlider" type="range" min="0" max="100" step="1" value="${Math.round(backgroundMusicVolume * 100)}" style="--volume-level:${backgroundMusicVolume * 100}%" aria-label="${translateText("Volume Musik Latar")}" oninput="setBackgroundMusicVolume(this.value)">
-          <button class="g mute-toggle" aria-label="${translateText(backgroundMusicMuted ? "Nyalakan Musik" : "Matikan Musik")}" title="${translateText(backgroundMusicMuted ? "Nyalakan Musik" : "Matikan Musik")}" aria-pressed="${backgroundMusicMuted}" onclick="toggleBackgroundMusicMute()">
+          <input id="bgMusicVolumeSlider" data-testid="bgm-volume-slider" type="range" min="0" max="100" step="1" value="${Math.round(backgroundMusicVolume * 100)}" style="--volume-level:${backgroundMusicVolume * 100}%" aria-label="${translateText("Volume Musik Latar")}" oninput="setBackgroundMusicVolume(this.value)">
+          <button class="g mute-toggle" data-testid="bgm-mute-toggle" aria-label="${translateText(backgroundMusicMuted ? "Nyalakan Musik" : "Matikan Musik")}" title="${translateText(backgroundMusicMuted ? "Nyalakan Musik" : "Matikan Musik")}" aria-pressed="${backgroundMusicMuted}" onclick="toggleBackgroundMusicMute()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"></path>${backgroundMusicMuted ? "" : '<path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path>'}${backgroundMusicMuted ? '<path class="mute-slash" d="m4 4 16 16"></path>' : ""}</svg>
           </button>
           <span id="bgMusicVolumeValue">${Math.round(backgroundMusicVolume * 100)}%</span>
@@ -912,8 +761,8 @@ function renderChipAdjustment() {
     `<div class="modal" onpointerdown="rememberModalPointerDown(event)" onclick="closeOnModalBackdrop(event,closeChipAdjustment)"><div class="mbox">
     <div class="row sp"><div style="font-size:18px;font-weight:800">${translateText(adding ? "+ Chip" : "- Chip")} • ${esc(player.name)}</div><button class="g s" onclick="closeChipAdjustment()">×</button></div>
     <div class="mut" style="margin:10px 0 4px">Masukkan jumlah chip</div>
-    <input id="chipAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
-    <div class="row" style="margin-top:12px"><button class="g f" onclick="closeChipAdjustment()">Batal</button><button class="${adding ? "ok" : "r"} f" onclick="submitChipAdjustment()">Simpan</button></div>
+    <input id="chipAmount" data-testid="chip-adjust-amount" type="number" min="1" step="1" inputmode="numeric" placeholder="${translateText("Jumlah Chip")}" onkeydown="if(event.key==='Enter')submitChipAdjustment()">
+    <div class="row" style="margin-top:12px"><button class="g f" onclick="closeChipAdjustment()">Batal</button><button class="${adding ? "ok" : "r"} f" data-testid="chip-adjust-save" onclick="submitChipAdjustment()">Simpan</button></div>
   </div></div>`,
   );
 }

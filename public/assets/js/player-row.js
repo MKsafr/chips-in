@@ -83,9 +83,9 @@
           : "";
         const out = pk && k.active && (!p.inHand || p.folded);
         const name = `${esc(p.name)}${blackjackHand && blackjackHand.label ? ` (${blackjackHand.label})` : ""}`;
-        return `<div class="pl ${borderClass} ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}">
-    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatarWithBorder(p, 32, fireLeader)}<div><b data-player-name>${name}</b>${t.join("")}${extra}</div></div>
-    <div style="text-align:right"><b style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
+        return `<div class="pl ${borderClass} ${k.turn === p.id && pk ? "turn" : ""} ${out ? "out" : ""} ${p.id === st.you ? "me" : ""}" data-testid="player-row" data-player-id="${p.id}">
+    <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">${avatarWithBorder(p, 32, fireLeader)}<div><b data-player-name data-testid="player-name">${name}</b>${t.join("")}${extra}</div></div>
+    <div style="text-align:right"><b data-testid="player-balance" style="color:var(--gold)">${fmt(p.chips)}</b>${bet}</div></div>`;
       }
 
       function playerBorderClasses(player, fireLeader) {

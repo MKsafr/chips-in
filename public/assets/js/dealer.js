@@ -3,28 +3,28 @@ function hostPanel() {
   const leaderId = getUniqueChipLeader(st.players || [], st.mode === "poker");
   let h =
     `<div class="card"><h3>Pengaturan Meja</h3>
-    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('poker')">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('blackjack')">♣ Blackjack</button></div>
-    <div class="row"><div style="flex:1"><div class="mut">Chip Awal</div><input id="sc" type="number" value="${d("sc", st.startChips)}" oninput="setD('sc',this.value)"></div>
+    <div class="tabs row" style="margin-bottom:8px"><button class="${st.mode === "poker" ? "y" : "g"}" data-testid="mode-poker" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('poker')">♠ Poker</button><button class="${st.mode === "blackjack" ? "y" : "g"}" data-testid="mode-blackjack" ${orderLocked ? "disabled" : ""} onclick="changeGameMode('blackjack')">♣ Blackjack</button></div>
+    <div class="row"><div style="flex:1"><div class="mut">Chip Awal</div><input id="sc" data-testid="table-chips" type="number" value="${d("sc", st.startChips)}" oninput="setD('sc',this.value)"></div>
     ${
       st.mode === "poker"
-        ? `<div style="flex:1"><div class="mut">Small Blind</div><input id="sb" type="number" value="${d("sb", st.sb)}" oninput="setD('sb',this.value)"></div>
-    <div style="flex:1"><div class="mut">Big Blind</div><input id="bb" type="number" value="${d("bb", st.bb)}" oninput="setD('bb',this.value)"></div>`
+        ? `<div style="flex:1"><div class="mut">Small Blind</div><input id="sb" data-testid="table-sb" type="number" value="${d("sb", st.sb)}" oninput="setD('sb',this.value)"></div>
+    <div style="flex:1"><div class="mut">Big Blind</div><input id="bb" data-testid="table-bb" type="number" value="${d("bb", st.bb)}" oninput="setD('bb',this.value)"></div>`
         : ""
     }</div>
-    <button class="ok" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),${st.mode === "poker" ? "sb:num('sb'),bb:num('bb')" : ""}})">Simpan Pengaturan</button></div>
+    <button class="ok" data-testid="table-save" style="width:100%;margin-top:8px" onclick="api('setup',{startChips:num('sc'),${st.mode === "poker" ? "sb:num('sb'),bb:num('bb')" : ""}})">Simpan Pengaturan</button></div>
     
     <div class="card"><h3>Kelola Pemain</h3>` +
     ((st.players || []).length
       ? st.players
           .map(
-            (p) => `<div class="manage-player" data-player-id="${p.id}">
+            (p) => `<div class="manage-player" data-player-id="${p.id}" data-testid="manage-player-${p.id}">
           <div class="manage-player-summary"><button class="g manage-player-drag-handle" aria-label="${translateText("Seret untuk memindahkan")} ${esc(p.name)}" title="${translateText("Seret untuk memindahkan")}" ${orderLocked ? "disabled" : ""} onpointerdown="startPlayerDrag(event,${p.id})"><svg viewBox="0 0 16 24" aria-hidden="true"><circle cx="5" cy="5" r="1.5"/><circle cx="11" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg></button>${avatarWithBorder(p, 34, p.id === leaderId)}<div class="manage-player-identity"><b data-player-name>${esc(p.name)}</b><span class="manage-player-chips">${fmtChips(p.chips)}</span></div></div>
       <div class="manage-player-actions manage-player-actions-primary">
-      <button class="g s" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Tawarkan sebagai dealer")}</button>
-      <button class="g s" aria-label="${translateText("Keluarkan pemain")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">${translateText("Keluarkan pemain")}</button>
+      <button class="g s" data-testid="offer-host-${p.id}" onclick="if(confirm(translateText('Tawarkan peran Bandar ke ${esc(p.name)}? Dia harus menyetujui dulu.')))api('transferHost',{targetId:${p.id}})">${translateText("Tawarkan sebagai dealer")}</button>
+      <button class="g s" data-testid="kick-${p.id}" aria-label="${translateText("Keluarkan pemain")} ${esc(p.name)}" onclick="if(confirm(translateText('Keluarkan ${esc(p.name)}?')))api('kick',{id:${p.id}})">${translateText("Keluarkan pemain")}</button>
       </div><div class="manage-player-actions manage-player-actions-secondary">
-      <button class="ok s" onclick="openChipAdjustment(${p.id},1)">${translateText("Tambah Chip")}</button>
-      <button class="r s" onclick="openChipAdjustment(${p.id},-1)">${translateText("Kurangi Chip")}</button>
+      <button class="ok s" data-testid="chip-add-${p.id}" onclick="openChipAdjustment(${p.id},1)">${translateText("Tambah Chip")}</button>
+      <button class="r s" data-testid="chip-remove-${p.id}" onclick="openChipAdjustment(${p.id},-1)">${translateText("Kurangi Chip")}</button>
       </div></div>`,
           )
           .join("")
@@ -137,17 +137,17 @@ function roundStartControl() {
   if (pokerActive || blackjackActive) {
     if (blackjackActive && st.bj.resolved) return "";
     const cancelAction = pokerActive ? "cancel" : "bjCancel";
-    return `<button class="r" style="width:100%;margin-bottom:10px;padding:12px" onclick="if(confirm(translateText('Batalkan ronde?')))api('${cancelAction}')">Batalkan Hand & Kembalikan Chip</button>`;
+    return `<button class="r" data-testid="cancel-round" style="width:100%;margin-bottom:10px;padding:12px" onclick="if(confirm(translateText('Batalkan ronde?')))api('${cancelAction}')">Batalkan Hand & Kembalikan Chip</button>`;
   }
 
   let h = "";
   if (st.mode === "poker" && st.poker && !st.poker.active) {
     const canStart = (st.players || []).filter((p) => p.chips > 0).length >= 2;
-    h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${canStart ? "" : "disabled"} onclick="api('start')">▶ Mulai Hand Baru</button>`;
+    h += `<button class="y" data-testid="start-hand" style="width:100%;margin-bottom:10px;padding:14px" ${canStart ? "" : "disabled"} onclick="api('start')">▶ Mulai Hand Baru</button>`;
   }
   if (st.mode === "blackjack" && st.bj.phase !== "playing") {
     const hasBets = (st.players || []).some((p) => p.bjBet > 0);
-    h += `<button class="y" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
+    h += `<button class="y" data-testid="bj-deal" style="width:100%;margin-bottom:10px;padding:14px" ${hasBets ? "" : "disabled"} onclick="api('bjDeal')">▶ Kunci Taruhan & Bagi Kartu</button>`;
   }
   return h;
 }
@@ -155,5 +155,5 @@ function roundStartControl() {
 function resetAllControl() {
   if (!st.isHost || st.poker.active || st.bj.phase === "playing") return "";
   const hasPlayers = (st.players || []).length > 0;
-  return `<button class="g s" style="width:100%;margin-bottom:10px" ${hasPlayers ? "" : "disabled"} onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button>`;
+  return `<button class="g s" data-testid="reset-all" style="width:100%;margin-bottom:10px" ${hasPlayers ? "" : "disabled"} onclick="if(confirm(translateText('Reset semua chip?')))api('resetAll')">Reset Semua Chip</button>`;
 }

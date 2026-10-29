@@ -189,19 +189,19 @@ function renderProfile() {
     <div class="mut profile-helper">${helper}</div>
     <div class="profile-editor">
       <div class="profile-avatar-wrap">
-        <button class="profile-avatar-trigger" aria-label="Pilih avatar" onclick="openAvatarPicker()">
+        <button class="profile-avatar-trigger" data-testid="profile-avatar" aria-label="Pilih avatar" onclick="openAvatarPicker()">
           ${avatar(pf.avatar, 104)}<span class="profile-avatar-plus" aria-hidden="true"></span>
         </button>
         <span class="mut">Pilih avatar</span>
       </div>
       <div class="profile-fields">
-        ${showName ? `<label class="profile-label" for="pfName">${translateText("Nama")}</label><input id="pfName" maxlength="16" value="${esc(pf.name)}" autocomplete="nickname" placeholder="${translateText("Masukkan nama")}" onkeydown="if(event.key==='Enter')saveProfile()">` : ""}
+        ${showName ? `<label class="profile-label" for="pfName">${translateText("Nama")}</label><input id="pfName" data-testid="profile-name" maxlength="16" value="${esc(pf.name)}" autocomplete="nickname" placeholder="${translateText("Masukkan nama")}" onkeydown="if(event.key==='Enter')saveProfile()">` : ""}
         <div class="mut profile-avatar-hint">${pf.avatar && pf.avatar !== "default" ? "Avatar siap digunakan" : "Avatar default"}</div>
       </div>
     </div>
     <div class="row profile-actions">
       <button class="g f" onclick="closeProfile()">Batal</button>
-      <button class="ok f" onclick="saveProfile()">${pf.mode === "createHost" || pf.mode === "join" ? "Lanjutkan" : "Simpan"}</button>
+      <button class="ok f" data-testid="profile-save" onclick="saveProfile()">${pf.mode === "createHost" || pf.mode === "join" ? "Lanjutkan" : "Simpan"}</button>
     </div>
     </div></div>
     ${
