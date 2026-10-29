@@ -1,4 +1,6 @@
 let renderScheduled = false;
+let lastRenderedHtml = "";
+let scrollRestoreHandle = null;
 
 function scheduleRender() {
   if (renderScheduled) return;
@@ -157,8 +159,13 @@ function render() {
   }
 
   if (toastMsg) h += `<div class="toast">${esc(toastMsg)}</div>`;
-  $("#app").innerHTML = h;
-  localizeTree($("#app"));
+
+  if (lastRenderedHtml !== h) {
+    $("#app").innerHTML = h;
+    localizeTree($("#app"));
+    lastRenderedHtml = h;
+  }
+  
   if ($("#modal .store-modal")) renderStore();
   else if ($("#modal .border-store-modal")) openBorderStore();
 
@@ -170,7 +177,9 @@ function render() {
   else if (dealerControlsOpen && st.isHost) renderDealerControls();
 
   if (preserveRoomViewport) {
-    requestAnimationFrame(() => {
+    if (scrollRestoreHandle) cancelAnimationFrame(scrollRestoreHandle);
+    scrollRestoreHandle = requestAnimationFrame(() => {
+      scrollRestoreHandle = null;
       const input = savedInput && document.getElementById(savedInput.id);
       if (input && !currentInput?.isConnected) {
         input.value = savedInput.value;
@@ -189,11 +198,9 @@ function render() {
         }
       }
       window.scrollTo(savedScrollX, savedScrollY);
-      requestAnimationFrame(() => {
-        const modalBox = $("#modal .mbox");
-        if (modalBox && savedModalScrollTop !== null)
-          modalBox.scrollTop = savedModalScrollTop;
-      });
+      const modalBox = $("#modal .mbox");
+      if (modalBox && savedModalScrollTop !== null)
+        modalBox.scrollTop = savedModalScrollTop;
     });
   }
 }

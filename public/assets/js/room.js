@@ -47,7 +47,12 @@ function scheduleRoomRender() {
 
 function connect() {
   if (!roomCode) return;
-  if (es) es.close();
+  if (es) {
+    es.onmessage = null;
+    es.onerror = null;
+    es.close();
+    es = null;
+  }
   es = new EventSource(`/events?token=${token}&room=${roomCode}`);
   es.onerror = () => {
     if (!st) render();
@@ -60,8 +65,8 @@ function connect() {
         data.ver !== APP_VER &&
         sessionStorage.cb_rl !== data.ver
       ) {
-        sessionStorage.cb_rl = data.ver; // server sudah versi baru -> muat ulang halaman sekali
-        location.reload();
+        sessionStorage.cb_rl = data.ver; // server sudah versi baru -&gt; muat ulang data saja, jangan reload halaman
+        api("refresh"); // Panggil fungsi untuk sinkronisasi ulang data
         return;
       }
       if (data.error === "ROOM_NOT_FOUND") {
@@ -168,6 +173,10 @@ function connect() {
   };
 }
 
-document.addEventListener("visibilitychange", () => {
+function visibilityHandler() {
   if (!document.hidden) connect();
-});
+}
+
+document.removeEventListener("visibilitychange", visibilityHandler);
+document.addEventListener("visibilitychange", visibilityHandler);
+
