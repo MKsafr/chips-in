@@ -1,3 +1,28 @@
+function askBjActionConfirmation(type, amount) {
+  const title = type === "split" ? "Split Hand?" : "Double Taruhan?";
+  const desc =
+    type === "split"
+      ? `Pisahkan kartu menjadi dua hand dengan menambah taruhan sebesar ${fmt(amount)}.`
+      : `Lipat gandakan taruhan awal dengan menambah ${fmt(amount)} dan ambil satu kartu terakhir.`;
+  const action = type === "split" ? "splitBJ" : "add";
+
+  $("#modal").innerHTML = `
+    <div class="winner-modal" style="z-index:10000">
+      <div style="font-size:48px">${type === "split" ? "✂️" : "💰"}</div>
+      <h1 style="color:var(--gold);font-size:28px;margin:10px 0">${translateText(title)}</h1>
+      <p style="color:#fff;max-width:320px">${translateText(desc)}</p>
+      <div class="row" style="margin-top:14px;justify-content:center">
+        <button class="ok" onclick="api('${action}',{amount:${amount}});closeBjActionConfirmation()">Ya, Lanjutkan</button>
+        <button class="g" onclick="closeBjActionConfirmation()">Batal</button>
+      </div>
+    </div>`;
+  localizeTree($("#modal"));
+}
+
+function closeBjActionConfirmation() {
+  $("#modal").innerHTML = "";
+}
+
 function bjView(me) {
   const bj = st.bj || {},
     players = st.players || [],
@@ -95,8 +120,8 @@ function bjView(me) {
     (!me.bjDoubled || !me.bjSplitBet)
   ) {
     h += `<div class="card"><h3>Opsi Tambahan</h3>
-      <div class="row">${me.bjDoubled ? "" : `<button class="b f" data-testid="bj-double" onclick="api('add',{amount:${me.bjBet}})">Double (+${fmt(me.bjBet)})</button>`}
-      ${me.bjSplitBet || me.bjDoubled ? "" : `<button class="y f" data-testid="bj-split" onclick="api('splitBJ')">Split (+${fmt(me.bjBet)})</button>`}</div></div>`;
+      <div class="row">${me.bjDoubled ? "" : `<button class="b f" data-testid="bj-double" onclick="askBjActionConfirmation('double',${me.bjBet})">Double (+${fmt(me.bjBet)})</button>`}
+      ${me.bjSplitBet || me.bjDoubled ? "" : `<button class="y f" data-testid="bj-split" onclick="askBjActionConfirmation('split',${me.bjBet})">Split (+${fmt(me.bjBet)})</button>`}</div></div>`;
   }
 
   return h;

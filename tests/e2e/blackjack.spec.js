@@ -112,6 +112,7 @@ test.describe("Blackjack", () => {
     await placeBet(player);
     await deal(session.host);
     await player.page.getByTestId("bj-double").click();
+    await player.page.getByText("Ya, Lanjutkan").click();
     await expect.poll(async () => myBet(player.page)).toBe(200);
 
     await session.host.page.getByTestId("bj-resolve-win").click();
@@ -126,6 +127,7 @@ test.describe("Blackjack", () => {
     await placeBet(player);
     await deal(session.host);
     await player.page.getByTestId("bj-split").click();
+    await player.page.getByText("Ya, Lanjutkan").click();
     await expect
       .poll(async () => (await currentPlayer(player.page))?.bjSplitBet)
       .toBe(100);
